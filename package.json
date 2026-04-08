@@ -1,0 +1,14 @@
+{
+  "name": "dalxic",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n main,media -c cyan,magenta \"npm run dev --prefix main-dalxic\" \"npm run dev --prefix media-dalxic -- -p 3001\"",
+    "dev:main": "npm run dev --prefix main-dalxic",
+    "dev:media": "npm run dev --prefix media-dalxic -- -p 3001",
+    "build": "concurrently \"npm run build --prefix main-dalxic\" \"npm run build --prefix media-dalxic\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

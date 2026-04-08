@@ -1,0 +1,430 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   NEXUSLINK HEALTH — DALXIC DNA DESIGN SYSTEM
+   Derived from dalxic.com master design language
+   ============================================================ */
+
+:root {
+  /* Backgrounds — deep midnight */
+  --nl-bg:        #03050F;
+  --nl-surf:      #080C1C;
+  --nl-surf2:     #0C1228;
+  --nl-surf3:     #101836;
+  --nl-border:    #1A2450;
+  --nl-border2:   #263168;
+
+  /* Primary — clinical blue spectrum */
+  --nl-blue:      #0EA5E9;
+  --nl-blue-deep: #0284C7;
+  --nl-blue-light:#38BDF8;
+  --nl-blue-glow: rgba(14, 165, 233, 0.15);
+
+  /* Copper — Dalxic signature warmth */
+  --nl-copper:    #B87333;
+  --nl-copper-mid:#D4904F;
+  --nl-copper-light:#E8B878;
+  --nl-copper-glow:rgba(184, 115, 51, 0.15);
+
+  /* Chrome / Muted */
+  --nl-chrome:    #94A3B8;
+  --nl-muted:     #64748B;
+
+  /* Text */
+  --nl-tx:        #E8ECF8;
+  --nl-txM:       #7080AA;
+  --nl-txD:       #3D4D78;
+
+  /* Status */
+  --nl-green:     #10B981;
+  --nl-red:       #EF4444;
+  --nl-amber:     #F59E0B;
+
+  /* Light zone */
+  --nl-surface:   #F1F5F9;
+  --nl-white:     #FFFFFF;
+  --nl-text:      #0F172A;
+  --nl-border-lt: #E2E8F0;
+
+  --radius:       16px;
+
+  /* Theme-aware tokens (dark defaults) */
+  --nl-page-bg: #03050F;
+  --nl-card-bg: rgba(8, 12, 28, 0.7);
+  --nl-card-border: var(--nl-border);
+  --nl-card-hover-border: var(--nl-border2);
+  --nl-particle-opacity: 1;
+  --nl-nebula-opacity: 0.9;
+  --nl-overlay-bg: rgba(0,0,0,0.6);
+  --nl-shadow-color: rgba(0,0,0,0.3);
+  --nl-copper-accent: #B87333;
+  --nl-copper-text: #D4956B;
+}
+
+/* ============================================================
+   LIGHT / DAY MODE
+   ============================================================ */
+
+[data-theme="light"] {
+  --nl-bg:        #F5F0EB;
+  --nl-surf:      #EDE6DE;
+  --nl-surf2:     #E5DDD4;
+  --nl-surf3:     #DDD4CA;
+  --nl-border:    rgba(139,90,43,0.12);
+  --nl-border2:   rgba(139,90,43,0.20);
+
+  --nl-copper:    #8B5A2B;
+  --nl-copper-mid:#A06730;
+  --nl-copper-light:#B87333;
+  --nl-copper-glow:rgba(139,90,43,0.12);
+
+  --nl-chrome:    #6B7280;
+  --nl-muted:     #9CA3AF;
+
+  --nl-tx:        #1A1714;
+  --nl-txM:       rgba(26,23,20,0.55);
+  --nl-txD:       rgba(26,23,20,0.35);
+
+  --nl-surface:   #FFFFFF;
+  --nl-white:     #FFFFFF;
+  --nl-text:      #1A1714;
+  --nl-border-lt: rgba(139,90,43,0.10);
+
+  --nl-page-bg: #F5F0EB;
+  --nl-card-bg: rgba(255,255,255,0.55);
+  --nl-card-border: rgba(139,90,43,0.12);
+  --nl-card-hover-border: rgba(139,90,43,0.30);
+  --nl-particle-opacity: 0.2;
+  --nl-nebula-opacity: 0.15;
+  --nl-overlay-bg: rgba(255,255,255,0.5);
+  --nl-shadow-color: rgba(139,90,43,0.08);
+  --nl-copper-accent: #8B5A2B;
+  --nl-copper-text: #8B5A2B;
+}
+
+[data-theme="light"] body {
+  background: var(--nl-bg);
+  color: var(--nl-tx);
+}
+
+[data-theme="light"] .glass {
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(139,90,43,0.12);
+  box-shadow: 0 2px 12px rgba(139,90,43,0.06), 0 1px 3px rgba(0,0,0,0.04);
+}
+[data-theme="light"] .glass:hover {
+  border-color: rgba(139,90,43,0.25);
+  box-shadow: 0 4px 20px rgba(139,90,43,0.10);
+}
+
+[data-theme="light"] .glass-copper {
+  background: rgba(139,90,43,0.04);
+  border-color: rgba(139,90,43,0.15);
+}
+
+[data-theme="light"] .glass-blue {
+  background: rgba(14,165,233,0.04);
+  border-color: rgba(14,165,233,0.12);
+}
+
+[data-theme="light"] .grid-bg {
+  background-image:
+    linear-gradient(rgba(139,90,43,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139,90,43,0.04) 1px, transparent 1px);
+}
+
+[data-theme="light"] .text-gradient-copper {
+  background: linear-gradient(135deg, #8B5A2B 0%, #A06730 50%, #B87333 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+[data-theme="light"] .section-label-copper {
+  color: #8B5A2B;
+}
+
+[data-theme="light"] .card-dark {
+  background: rgba(255,255,255,0.6);
+  border-color: rgba(139,90,43,0.10);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(139,90,43,0.2);
+}
+
+/* Day mode hover — kept for class reference, no pseudo-elements */
+.l-glow-day {
+  position: relative;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-dm-sans), "DM Sans", sans-serif;
+  background: var(--nl-bg);
+  color: var(--nl-tx);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--nl-border2); border-radius: 2px; }
+
+/* ============================================================
+   ANIMATIONS — from dalxic.com DNA
+   ============================================================ */
+
+@keyframes fadeUp   { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:none; } }
+@keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+@keyframes spin     { to { transform: rotate(360deg); } }
+@keyframes pulse    { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+@keyframes float    { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@keyframes shimmer  { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes scan-line { 0% { top: -4px; } 100% { top: 100%; } }
+
+/* Multi-tone glow pulse — shifts between blue and cyan */
+@keyframes glow-pulse {
+  0%   { box-shadow: 0 0 20px rgba(14,165,233,0.15), 0 0 40px rgba(2,132,199,0.05); }
+  33%  { box-shadow: 0 0 35px rgba(14,165,233,0.3), 0 0 70px rgba(56,189,248,0.1); }
+  66%  { box-shadow: 0 0 40px rgba(56,189,248,0.2), 0 0 80px rgba(14,165,233,0.08); }
+  100% { box-shadow: 0 0 20px rgba(14,165,233,0.15), 0 0 40px rgba(2,132,199,0.05); }
+}
+
+@keyframes glow-pulse-copper {
+  0%   { box-shadow: 0 0 20px rgba(184,115,51,0.15), 0 0 40px rgba(212,144,79,0.05); }
+  50%  { box-shadow: 0 0 35px rgba(184,115,51,0.3), 0 0 70px rgba(232,184,120,0.1); }
+  100% { box-shadow: 0 0 20px rgba(184,115,51,0.15), 0 0 40px rgba(212,144,79,0.05); }
+}
+
+/* Border glow */
+@keyframes border-glow {
+  0%,100% { border-color: var(--nl-border); box-shadow: none; }
+  50% { border-color: rgba(14,165,233,0.4); box-shadow: 0 0 20px rgba(14,165,233,0.1); }
+}
+
+/* Ambient color-shift glow */
+@keyframes ambient-glow {
+  0%   { filter: drop-shadow(0 0 20px rgba(14,165,233,0.4)) drop-shadow(0 0 40px rgba(56,189,248,0.15)); }
+  50%  { filter: drop-shadow(0 0 30px rgba(56,189,248,0.5)) drop-shadow(0 0 60px rgba(14,165,233,0.2)); }
+  100% { filter: drop-shadow(0 0 20px rgba(14,165,233,0.4)) drop-shadow(0 0 40px rgba(56,189,248,0.15)); }
+}
+
+@keyframes marqueeScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+.fade-up     { animation: fadeUp 0.6s ease forwards; }
+.fade-in     { animation: fadeIn 0.4s ease forwards; }
+.float-anim  { animation: float 4s ease-in-out infinite; }
+.glow-pulse  { animation: glow-pulse 4s ease-in-out infinite; }
+.glow-pulse-copper { animation: glow-pulse-copper 4s ease-in-out infinite; }
+.pulse-anim  { animation: pulse 2s ease-in-out infinite; }
+.ambient-glow { animation: ambient-glow 6s ease-in-out infinite; }
+
+/* ============================================================
+   GLASS PANELS — dalxic.com signature
+   ============================================================ */
+
+.glass {
+  background: rgba(8, 12, 28, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--nl-border);
+  border-radius: var(--radius);
+}
+.glass:hover { border-color: var(--nl-border2); }
+
+.glass-blue {
+  background: rgba(14, 165, 233, 0.04);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(14, 165, 233, 0.15);
+  border-radius: var(--radius);
+}
+
+.glass-copper {
+  background: rgba(184, 115, 51, 0.04);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(184, 115, 51, 0.15);
+  border-radius: var(--radius);
+}
+
+/* ============================================================
+   GLOW EFFECTS
+   ============================================================ */
+
+.glow-border-blue  { box-shadow: 0 0 0 1px rgba(14,165,233,0.3), 0 0 30px rgba(14,165,233,0.12); }
+.glow-border-copper { box-shadow: 0 0 0 1px rgba(184,115,51,0.3), 0 0 30px rgba(184,115,51,0.12); }
+.glow-text-blue    { text-shadow: 0 0 20px rgba(14,165,233,0.6), 0 0 40px rgba(2,132,199,0.3); }
+.glow-box-blue     { box-shadow: 0 0 40px rgba(14,165,233,0.15), 0 0 80px rgba(2,132,199,0.08); }
+.glow-box-copper   { box-shadow: 0 0 40px rgba(184,115,51,0.15), 0 0 80px rgba(212,144,79,0.08); }
+
+/* ============================================================
+   GRADIENT TEXT
+   ============================================================ */
+
+.text-gradient-blue {
+  background: linear-gradient(135deg, #0EA5E9 0%, #38BDF8 50%, #7DD3FC 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.text-gradient-copper {
+  background: linear-gradient(135deg, #B87333 0%, #D4904F 50%, #E8B878 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.text-gradient-health {
+  background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 45%, #0284C7 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+/* ============================================================
+   GRID BACKGROUND — dalxic.com pattern
+   ============================================================ */
+
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(14,165,233,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14,165,233,0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* ============================================================
+   SCAN LINE EFFECT
+   ============================================================ */
+
+.scan-line-effect { position: relative; overflow: hidden; }
+.scan-line-effect::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--nl-blue), transparent);
+  opacity: 0.5; animation: scan-line 2.5s linear infinite;
+}
+
+/* ============================================================
+   SECTION LABELS — dalxic.com style
+   ============================================================ */
+
+.section-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--nl-blue);
+}
+.section-label-copper {
+  font-size: 11px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--nl-copper);
+}
+
+/* ============================================================
+   STAT NUMBER — gradient mono
+   ============================================================ */
+
+.stat-number {
+  font-family: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+  font-size: clamp(2.6rem, 4.5vw, 4rem); font-weight: 500; line-height: 1;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #fff 0%, var(--nl-blue) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.stat-number-copper {
+  font-family: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+  font-size: clamp(2.6rem, 4.5vw, 4rem); font-weight: 500; line-height: 1;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #fff 0%, var(--nl-copper) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+/* ============================================================
+   BUTTONS — dalxic.com style
+   ============================================================ */
+
+.btn-nl {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 28px; border-radius: 10px; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 600; letter-spacing: 0.3px;
+  transition: all 0.25s ease; text-decoration: none; border: 1px solid transparent;
+  white-space: nowrap; position: relative; overflow: hidden;
+}
+.btn-nl:active { transform: scale(0.97); }
+
+.btn-nl-primary {
+  background: linear-gradient(135deg, var(--nl-blue), var(--nl-blue-deep));
+  color: #fff; border-color: var(--nl-blue);
+  box-shadow: 0 4px 20px rgba(14,165,233,0.3);
+}
+.btn-nl-primary:hover { background: linear-gradient(135deg, var(--nl-blue-light), var(--nl-blue)); box-shadow: 0 6px 30px rgba(14,165,233,0.4); transform: translateY(-2px); }
+
+.btn-nl-glow {
+  background: transparent; color: var(--nl-blue-light);
+  border: 1px solid rgba(14,165,233,0.35); box-shadow: 0 0 20px rgba(14,165,233,0.08);
+}
+.btn-nl-glow:hover { background: rgba(14,165,233,0.08); border-color: var(--nl-blue); box-shadow: 0 0 30px rgba(14,165,233,0.22); transform: translateY(-2px); }
+
+.btn-nl-copper {
+  background: linear-gradient(135deg, var(--nl-copper), #A06329);
+  color: #fff; border-color: var(--nl-copper);
+  box-shadow: 0 4px 20px rgba(184,115,51,0.3);
+}
+.btn-nl-copper:hover { background: linear-gradient(135deg, var(--nl-copper-mid), var(--nl-copper)); box-shadow: 0 6px 30px rgba(184,115,51,0.4); transform: translateY(-2px); }
+
+.btn-nl-ghost { background: transparent; color: var(--nl-tx); border-color: var(--nl-border); }
+.btn-nl-ghost:hover { background: var(--nl-surf2); border-color: var(--nl-border2); }
+
+.btn-nl-lg { padding: 16px 36px; font-size: 15px; border-radius: 12px; }
+.btn-nl-sm { padding: 8px 18px; font-size: 12px; border-radius: 8px; }
+
+/* ============================================================
+   DIVIDER — gradient fade
+   ============================================================ */
+
+.divider { height: 1px; background: linear-gradient(90deg, transparent, var(--nl-border2), transparent); }
+
+/* ============================================================
+   CARD VARIANTS
+   ============================================================ */
+
+.card-dark {
+  background: linear-gradient(180deg, #0D1117 0%, #0B0F18 100%);
+  border: 1px solid rgba(26, 36, 80, 0.6);
+  border-radius: var(--radius);
+}
+.card-dark-hover {
+  transition: all 0.35s ease;
+}
+.card-dark-hover:hover {
+  border-color: rgba(14, 165, 233, 0.3);
+  box-shadow: 0 4px 24px rgba(14, 165, 233, 0.06);
+  transform: translateY(-4px);
+}
+
+.card-light {
+  background: var(--nl-white);
+  border: 1px solid var(--nl-border-lt);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 6px 24px rgba(0, 0, 0, 0.03);
+}
+
+/* Accent top borders */
+.accent-top-blue { border-top: 2px solid var(--nl-blue); }
+.accent-top-copper { border-top: 2px solid var(--nl-copper); }
+
+/* ============================================================
+   DOT DECORATION — Dalxic DNA element
+   ============================================================ */
+
+.dot-decoration {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 2px solid rgba(14, 165, 233, 0.3);
+  display: flex; align-items: center; justify-content: center;
+}
+.dot-decoration::after {
+  content: ''; width: 12px; height: 12px;
+  border-radius: 50%; background: var(--nl-blue);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .section { padding: 70px 0; }
+}

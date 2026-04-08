@@ -1,0 +1,446 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Hospital & Tenancy ───
+
+model Hospital {
+  id        String   @id @default(cuid())
+  code      String   @unique // e.g. KBH
+  name      String
+  logoUrl   String?  @map("logo_url")
+  tagline   String?
+  subdomain String   @unique
+  tier            String   // T1, T2, T3, T4
+  activeModules   String[] @default([]) @map("active_modules")
+  maxDevices      Int      @default(6) @map("max_devices")
+  whatsappBundle  Int      @default(500) @map("whatsapp_bundle")
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  monthlyBooks             MonthlyBook[]
+  patientRecords           PatientRecord[]
+  devices                  Device[]
+  labOrders                LabOrder[]
+  hospitalLabTests         HospitalLabTest[]
+  accessGrants             AccessGrant[]
+  emergencyOverrideSessions EmergencyOverrideSession[]
+  hospitalEmergencyContacts HospitalEmergencyContact[]
+  auditLogs                AuditLog[]
+  deviceOperators          DeviceOperator[]
+  doctors                  Doctor[]
+  wards                    Ward[]
+  billableItems            BillableItem[]
+  bills                    Bill[]
+  servicePrices            ServicePrice[]
+
+  @@map("hospitals")
+}
+
+// ─── Monthly Book System ───
+
+model MonthlyBook {
+  id         String    @id @default(cuid())
+  hospitalId String    @map("hospital_id")
+  year       Int
+  month      Int       // 1-12
+  status     String    @default("active") // active | closed
+  closedAt   DateTime? @map("closed_at")
+  pdfUrl     String?   @map("pdf_url")
+
+  hospital       Hospital        @relation(fields: [hospitalId], references: [id])
+  patientRecords PatientRecord[]
+  labOrders      LabOrder[]
+
+  @@unique([hospitalId, year, month])
+  @@map("monthly_books")
+}
+
+// ─── Patient Records ───
+
+model PatientRecord {
+  id         String   @id @default(cuid())
+  bookId     String   @map("book_id")
+  hospitalId String   @map("hospital_id")
+  patient    Json     // Patient data
+  visit      Json     // Visit data
+  diagnosis  Json     // Diagnosis data
+  treatment  Json     // Treatment data
+  lab        Json?    // Lab summary
+  aiSummary  Json?    @map("ai_summary")
+  entryPoint String   @map("entry_point") // manual | bulk_paste | scan_upload
+  createdBy  String   @map("created_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  book     MonthlyBook @relation(fields: [bookId], references: [id])
+  hospital Hospital    @relation(fields: [hospitalId], references: [id])
+
+  emergencyRecordAccess EmergencyRecordAccess[]
+
+  @@index([hospitalId, bookId])
+  @@map("patient_records")
+}
+
+// ─── Device System ───
+
+model Device {
+  id         String    @id @default(cuid())
+  hospitalId String    @map("hospital_id")
+  deviceCode String    @unique @map("device_code") // e.g. KBH-FD-001
+  deviceName String    @map("device_name")
+  role       String    // front_desk, doctor, lab, etc.
+  pinHash    String    @map("pin_hash")
+  isActive   Boolean   @default(true) @map("is_active")
+  isLocked   Boolean   @default(false) @map("is_locked")
+  assignedBy String    @map("assigned_by")
+  lastSeenAt DateTime? @map("last_seen_at")
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id])
+
+  @@index([hospitalId])
+  @@map("devices")
+}
+
+// ─── Lab System ───
+
+model LabOrder {
+  id            String   @id @default(cuid())
+  patientId     String   @map("patient_id") // PatientRecord id
+  hospitalId    String   @map("hospital_id")
+  bookId        String   @map("book_id")
+  orderedBy     String   @map("ordered_by")
+  orderedAt     DateTime @default(now()) @map("ordered_at")
+  tests         Json     // Array of { testName, category }
+  customTests   String?  @map("custom_tests")
+  clinicalNotes String?  @map("clinical_notes")
+  status        String   @default("pending") // pending | in_progress | complete
+  labToken      String   @unique @map("lab_token") // e.g. LAB-KBH-006
+
+  hospital   Hospital    @relation(fields: [hospitalId], references: [id])
+  book       MonthlyBook @relation(fields: [bookId], references: [id])
+  labResults LabResult[]
+
+  @@index([hospitalId, bookId])
+  @@map("lab_orders")
+}
+
+model LabResult {
+  id             String   @id @default(cuid())
+  labOrderId     String   @map("lab_order_id")
+  patientId      String   @map("patient_id")
+  testName       String   @map("test_name")
+  resultValue    String   @map("result_value")
+  unit           String?
+  referenceRange String?  @map("reference_range")
+  flag           String   // normal | high | low | reactive | non_reactive
+  enteredBy      String   @map("entered_by")
+  enteredAt      DateTime @default(now()) @map("entered_at")
+
+  labOrder LabOrder @relation(fields: [labOrderId], references: [id])
+
+  @@map("lab_results")
+}
+
+model HospitalLabTest {
+  id         String  @id @default(cuid())
+  hospitalId String  @map("hospital_id")
+  category   String  // haematology | biochemistry | microbiology_serology | urine_stool
+  testName   String  @map("test_name")
+  isActive   Boolean @default(true) @map("is_active")
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id])
+
+  @@unique([hospitalId, testName])
+  @@map("hospital_lab_tests")
+}
+
+// ─── Access & Auth ───
+
+model DalxicStaff {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  role         String        // super_admin | support | analyst
+  accessGrants AccessGrant[]
+
+  @@map("dalxic_staff")
+}
+
+model AccessGrant {
+  id            String    @id @default(cuid())
+  dalxicStaffId String    @map("dalxic_staff_id")
+  hospitalId    String    @map("hospital_id")
+  grantedRole   String    @map("granted_role")
+  grantedBy     String    @map("granted_by")
+  grantedAt     DateTime  @default(now()) @map("granted_at")
+  expiresAt     DateTime  @map("expires_at")
+  reason        String
+  isActive      Boolean   @default(true) @map("is_active")
+  revokedAt     DateTime? @map("revoked_at")
+
+  dalxicStaff DalxicStaff @relation(fields: [dalxicStaffId], references: [id])
+  hospital    Hospital    @relation(fields: [hospitalId], references: [id])
+
+  @@map("access_grants")
+}
+
+// ─── Emergency Override ───
+
+model EmergencyOverrideSession {
+  id              String    @id @default(cuid())
+  hospitalId      String    @map("hospital_id")
+  triggeredBy     String    @map("triggered_by")
+  triggeredAt     DateTime  @default(now()) @map("triggered_at")
+  statedReason    String    @map("stated_reason")
+  ipAddress       String    @map("ip_address")
+  endedAt         DateTime? @map("ended_at")
+  endReason       String?   @map("end_reason") // manual | auto_expired
+  dalxicNotifiedAt DateTime? @map("dalxic_notified_at")
+  dalxicReviewed  Boolean   @default(false) @map("dalxic_reviewed")
+
+  hospital            Hospital                @relation(fields: [hospitalId], references: [id])
+  emergencyRecordAccess EmergencyRecordAccess[]
+
+  @@map("emergency_override_sessions")
+}
+
+model EmergencyRecordAccess {
+  id         String   @id @default(cuid())
+  sessionId  String   @map("session_id")
+  patientId  String   @map("patient_id")
+  recordType String   @map("record_type")
+  recordId   String   @map("record_id")
+  accessedAt DateTime @default(now()) @map("accessed_at")
+
+  session       EmergencyOverrideSession @relation(fields: [sessionId], references: [id])
+  patientRecord PatientRecord            @relation(fields: [patientId], references: [id])
+
+  @@map("emergency_record_access")
+}
+
+model HospitalEmergencyContact {
+  id              String  @id @default(cuid())
+  hospitalId      String  @map("hospital_id")
+  userId          String  @map("user_id")
+  designation     String  // e.g. CMO, Medical Director
+  overridePinHash String  @map("override_pin_hash")
+  assignedByDalxic Boolean @map("assigned_by_dalxic")
+  isActive        Boolean @default(true) @map("is_active")
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id])
+
+  @@map("hospital_emergency_contacts")
+}
+
+// ─── Billing System ───
+
+model BillableItem {
+  id          String   @id @default(cuid())
+  hospitalId  String   @map("hospital_id")
+  patientId   String   @map("patient_id")
+  bookId      String   @map("book_id")
+  serviceType String   @map("service_type") // CONSULTATION | LAB | IMAGING | DRUG | WARD_DAY | PROCEDURE | EMERGENCY | ICU_DAY
+  description String
+  unitCost    Float    @map("unit_cost")
+  quantity    Int      @default(1)
+  totalCost   Float    @map("total_cost")
+  renderedAt  DateTime @default(now()) @map("rendered_at")
+  renderedBy  String   @map("rendered_by")
+  isBilled    Boolean  @default(false) @map("is_billed")
+  billId      String?  @map("bill_id")
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id])
+  bill     Bill?    @relation(fields: [billId], references: [id])
+
+  @@index([hospitalId, patientId])
+  @@index([hospitalId, isBilled])
+  @@map("billable_items")
+}
+
+model Bill {
+  id            String    @id @default(cuid())
+  hospitalId    String    @map("hospital_id")
+  patientId     String    @map("patient_id")
+  bookId        String    @map("book_id")
+  billNumber    String    @unique @map("bill_number")
+  subtotal      Float
+  discount      Float     @default(0)
+  total         Float
+  status        String    @default("DRAFT") // DRAFT | ISSUED | PART_PAID | PAID | WAIVED
+  paymentMethod String?   @map("payment_method") // CASH | MOBILE_MONEY | INSURANCE | NHIS | WAIVED
+  issuedAt      DateTime? @map("issued_at")
+  paidAt        DateTime? @map("paid_at")
+  createdBy     String    @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  hospital Hospital       @relation(fields: [hospitalId], references: [id])
+  items    BillableItem[]
+
+  @@index([hospitalId, patientId])
+  @@index([hospitalId, status])
+  @@map("bills")
+}
+
+model ServicePrice {
+  id          String @id @default(cuid())
+  hospitalId  String @map("hospital_id")
+  serviceType String @map("service_type")
+  name        String
+  unitCost    Float  @map("unit_cost")
+  isActive    Boolean @default(true) @map("is_active")
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id])
+
+  @@unique([hospitalId, serviceType, name])
+  @@map("service_prices")
+}
+
+// ─── Doctor Management ───
+
+model Doctor {
+  id                    String   @id @default(cuid())
+  hospitalId            String   @map("hospital_id")
+  name                  String
+  specialty             String   // general | pediatrics | surgery | obstetrics | emergency | dental | eye | ent
+  status                String   @default("AVAILABLE") // AVAILABLE | ON_BREAK | IN_CONSULTATION | IN_SURGERY | OFF_DUTY | ON_CALL
+  maxConcurrentPatients Int      @default(10) @map("max_concurrent_patients")
+  activePatientCount    Int      @default(0) @map("active_patient_count")
+  supervisorId          String?  @map("supervisor_id")
+  role                  String   @default("attending") // attending | resident | intern
+  shiftStart            String?  @map("shift_start") // e.g. "08:00"
+  shiftEnd              String?  @map("shift_end")   // e.g. "17:00"
+  meta                  Json?    // break history, handover notes, etc.
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  hospital    Hospital  @relation(fields: [hospitalId], references: [id])
+  supervisor  Doctor?   @relation("DoctorSupervision", fields: [supervisorId], references: [id])
+  supervisees Doctor[]  @relation("DoctorSupervision")
+
+  handoversOut ShiftHandover[] @relation("HandoverOutgoing")
+  handoversIn  ShiftHandover[] @relation("HandoverIncoming")
+
+  @@index([hospitalId, specialty])
+  @@index([hospitalId, status])
+  @@map("doctors")
+}
+
+model ShiftHandover {
+  id               String   @id @default(cuid())
+  hospitalId       String   @map("hospital_id")
+  outgoingDoctorId String   @map("outgoing_doctor_id")
+  incomingDoctorId String   @map("incoming_doctor_id")
+  patientIds       Json     // array of patient record IDs
+  notes            String?
+  handoverAt       DateTime @default(now()) @map("handover_at")
+
+  outgoingDoctor Doctor @relation("HandoverOutgoing", fields: [outgoingDoctorId], references: [id])
+  incomingDoctor Doctor @relation("HandoverIncoming", fields: [incomingDoctorId], references: [id])
+
+  @@map("shift_handovers")
+}
+
+// ─── Bed Management ───
+
+model Ward {
+  id         String @id @default(cuid())
+  hospitalId String @map("hospital_id")
+  name       String
+  type       String // general | icu | maternity | pediatric | surgical
+  floor      Int    @default(1)
+  isActive   Boolean @default(true) @map("is_active")
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id])
+  rooms    Room[]
+
+  @@unique([hospitalId, name])
+  @@map("wards")
+}
+
+model Room {
+  id     String @id @default(cuid())
+  wardId String @map("ward_id")
+  name   String // e.g. "Room 101"
+
+  ward Ward  @relation(fields: [wardId], references: [id])
+  beds Bed[]
+
+  @@unique([wardId, name])
+  @@map("rooms")
+}
+
+model Bed {
+  id            String    @id @default(cuid())
+  roomId        String    @map("room_id")
+  label         String    // e.g. "Bed 1A"
+  status        String    @default("AVAILABLE") // AVAILABLE | OCCUPIED | RESERVED | MAINTENANCE | CLEANING
+  patientId     String?   @map("patient_id")
+  reservedUntil DateTime? @map("reserved_until")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  room        Room            @relation(fields: [roomId], references: [id])
+  transitions BedTransition[]
+
+  @@unique([roomId, label])
+  @@map("beds")
+}
+
+model BedTransition {
+  id          String   @id @default(cuid())
+  bedId       String   @map("bed_id")
+  fromStatus  String   @map("from_status")
+  toStatus    String   @map("to_status")
+  triggeredBy String   @map("triggered_by")
+  patientId   String?  @map("patient_id")
+  timestamp   DateTime @default(now())
+
+  bed Bed @relation(fields: [bedId], references: [id])
+
+  @@index([bedId, timestamp])
+  @@map("bed_transitions")
+}
+
+// ─── Device Operators (humans who use workstations) ───
+
+model DeviceOperator {
+  id         String   @id @default(cuid())
+  hospitalId String   @map("hospital_id")
+  name       String
+  phone      String?
+  pin        String   // 4-digit PIN (plain text — hospital-level, not internet-facing auth)
+  role       String   // front_desk | doctor | pharmacist | lab_tech | nurse | radiologist | admin | billing
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  lastLoginAt DateTime? @map("last_login_at")
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id])
+
+  @@unique([hospitalId, pin]) // PIN must be unique within a hospital
+  @@index([hospitalId, isActive])
+  @@map("device_operators")
+}
+
+// ─── Audit Trail ───
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorType  String   @map("actor_type") // dalxic_super_admin | dalxic_staff | hospital_admin | device_operator | emergency_override
+  actorId    String   @map("actor_id")
+  hospitalId String   @map("hospital_id")
+  action     String
+  metadata   Json?
+  ipAddress  String   @map("ip_address")
+  timestamp  DateTime @default(now())
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id])
+
+  @@index([hospitalId, timestamp])
+  @@index([actorType, actorId])
+  @@map("audit_log")
+}

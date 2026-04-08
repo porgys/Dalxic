@@ -1,0 +1,31 @@
+{
+  "name": "Dalxic AI Forensics",
+  "short_name": "Dalxic AI",
+  "description": "Forensic Excellence — We Catch Every Lie. World's most advanced AI detection platform.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#03050F",
+  "theme_color": "#0EA5E9",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["security", "technology", "business"],
+  "icons": [
+    { "src": "/logo.jpg", "sizes": "192x192", "type": "image/jpeg", "purpose": "any maskable" },
+    { "src": "/logo.jpg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any maskable" },
+    { "src": "/logo.jpg", "sizes": "180x180", "type": "image/jpeg" },
+    { "src": "/logo.jpg", "sizes": "152x152", "type": "image/jpeg" },
+    { "src": "/logo.jpg", "sizes": "120x120", "type": "image/jpeg" },
+    { "src": "/logo.jpg", "sizes": "76x76",   "type": "image/jpeg" },
+    { "src": "/logo.jpg", "sizes": "32x32",   "type": "image/jpeg" },
+    { "src": "/logo.jpg", "sizes": "16x16",   "type": "image/jpeg" }
+  ],
+  "shortcuts": [
+    { "name": "Forensic Scan", "url": "/scan", "description": "Start a new AI detection scan" },
+    { "name": "Projects", "url": "/projects", "description": "View your investigation projects" },
+    { "name": "Dalxic Chat", "url": "/chat", "description": "Chat with the forensic AI assistant" }
+  ],
+  "screenshots": [
+    { "src": "/logo.jpg", "type": "image/jpeg", "sizes": "512x512", "form_factor": "wide" }
+  ]
+}
