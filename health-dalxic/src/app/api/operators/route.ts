@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
-
+import { rateLimit, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
 /**
  * Device Operator management — humans who use workstations.
  *
@@ -11,7 +11,7 @@ import { logAudit, getClientIP } from "@/lib/audit";
 
 // GET: List operators for a hospital (filtered by role, active status)
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request, AUTH_RATE_LIMIT); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
   const role = searchParams.get("role");
   const activeOnly = searchParams.get("activeOnly") !== "false"; // default true
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
 
 // POST: Create operator, login, or logout
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request, AUTH_RATE_LIMIT); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, action } = body;
 
   if (!hospitalCode || !action) {
@@ -123,10 +123,29 @@ export async function POST(request: Request) {
     });
 
     if (!operator) {
+      // Audit failed PIN attempt — append-only, uneditable
+      await logAudit({
+        actorType: "device_operator",
+        actorId: "unknown",
+        hospitalId: hospital.id,
+        action: "operator.login_failed",
+        metadata: { reason: "invalid_pin", userAgent: request.headers.get("user-agent") ?? "unknown" },
+        ipAddress: getClientIP(request),
+      }).catch(() => {});
+
       return Response.json({ error: "Invalid PIN. No operator found." }, { status: 401 });
     }
 
     if (!operator.isActive) {
+      await logAudit({
+        actorType: "device_operator",
+        actorId: operator.id,
+        hospitalId: hospital.id,
+        action: "operator.login_blocked",
+        metadata: { reason: "deactivated", operatorName: operator.name },
+        ipAddress: getClientIP(request),
+      }).catch(() => {});
+
       return Response.json({ error: "This operator account is deactivated. Contact admin." }, { status: 403 });
     }
 
@@ -178,7 +197,7 @@ export async function POST(request: Request) {
 
 // PATCH: Update operator details (name, phone, role, active status, PIN reset)
 export async function PATCH(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request, AUTH_RATE_LIMIT); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, operatorId, name, phone, role, isActive, newPin } = body;
 
   if (!hospitalCode || !operatorId) {

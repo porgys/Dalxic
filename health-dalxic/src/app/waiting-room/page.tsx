@@ -119,18 +119,9 @@ export default function WaitingRoomPage() {
           <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ border: "1px solid rgba(184,115,51,0.3)" }}>
             <div className="w-2 h-2 rounded-full bg-[#B87333]" style={{ boxShadow: "0 0 8px rgba(184,115,51,0.6)" }} />
           </div>
-          <div>
-            <span className="font-display font-light text-[#94A3B8] tracking-[0.22em] text-xs uppercase">
-              NEXUSLINK
-            </span>{" "}
-            <span className="font-display font-medium text-xs uppercase" style={{
-              letterSpacing: "0.5em",
-              background: "linear-gradient(135deg, #B87333, #D4956B)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}>
-              HEALTH
-            </span>
+          <div className="flex items-center">
+            <span className="font-display font-light text-[#94A3B8] text-sm uppercase" style={{ letterSpacing: "0.08em" }}>Dalxic</span>
+            <span className="font-display font-bold text-sm uppercase" style={{ letterSpacing: "0.08em", background: "linear-gradient(135deg, #B87333, #D4956B)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
           </div>
         </div>
         <h1 className="font-display font-medium text-lg text-white tracking-tight">
@@ -270,7 +261,7 @@ export default function WaitingRoomPage() {
         <div className="flex items-center gap-2">
           <div className="w-1 h-1 rounded-full bg-[#B87333]/40" />
           <p className="text-[10px] text-[#64748B] font-body">
-            Powered By NexusLink Health — A Dalxic Subsidiary
+            Powered By DalxicHealth — A Dalxic Subsidiary
           </p>
         </div>
       </motion.footer>

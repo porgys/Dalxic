@@ -142,9 +142,9 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
       <div style={{ opacity: theme.canvasOpacity, transition: "opacity 0.5s ease" }}><GalaxyCanvas /></div>
 
       <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, padding: "16px 36px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: theme.headerBorder, background: theme.headerBg, transition: "background 0.5s ease", backdropFilter: "blur(12px)" }}>
-        <Link href="/platform" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontWeight: 300, fontSize: 12, color: theme.textSecondary, letterSpacing: "0.22em", textTransform: "uppercase", transition: "color 0.4s ease" }}>NEXUSLINK</span>
-          <span style={{ fontWeight: 500, fontSize: 11, letterSpacing: "0.5em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>HEALTH</span>
+        <Link href="/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+          <span style={{ fontWeight: 300, fontSize: 13, color: theme.textSecondary, letterSpacing: "0.08em", textTransform: "uppercase", transition: "color 0.4s ease" }}>Dalxic</span>
+          <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Maternity</span>
@@ -153,7 +153,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <OperatorBadge session={operator} onLogout={() => window.location.reload()} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
-          <span style={{ fontSize: 12, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
+          <span style={{ fontSize: 13, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>{currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
         </div>
@@ -286,7 +286,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
                           {p.gestationalWeeks && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Weeks</p><p style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#D4956B" }}>{p.gestationalWeeks}</p></div>}
                           {p.gravida != null && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>G</p><p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{p.gravida}</p></div>}
                           {p.para != null && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>P</p><p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{p.para}</p></div>}
-                          {p.edd && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>EDD</p><p style={{ fontSize: 12, color: "#94A3B8" }}>{new Date(p.edd).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</p></div>}
+                          {p.edd && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>EDD</p><p style={{ fontSize: 13, color: "#94A3B8" }}>{new Date(p.edd).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</p></div>}
                           {p.deliveryMode && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Delivery</p><p style={{ fontSize: 12, color: "#22C55E", fontWeight: 700 }}>{p.deliveryMode}</p></div>}
                           {p.babyWeight && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Baby</p><p style={{ fontSize: 12, color: "white" }}>{p.babyGender} — {p.babyWeight}kg</p></div>}
                         </div>

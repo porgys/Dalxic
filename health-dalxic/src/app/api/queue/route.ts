@@ -4,10 +4,10 @@ import { logAudit, getClientIP } from "@/lib/audit";
 import { getPusher, hospitalChannel } from "@/lib/pusher-server";
 import { sendWhatsApp } from "@/lib/whatsapp";
 import type { Patient } from "@/types";
-
+import { rateLimit } from "@/lib/rate-limit";
 // POST: Register patient and assign queue token
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, patient, chiefComplaint, department, symptomSeverity, symptomDuration } = body as {
     hospitalCode: string;
     patient: Patient;
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
 
 // GET: Get today's queue for a hospital
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
 
   if (!hospitalCode) {
@@ -192,7 +192,7 @@ export async function GET(request: Request) {
 
 // PATCH: Escalate patient to emergency (doctor escalation)
 export async function PATCH(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { recordId, hospitalCode, escalationReason, escalatedBy } = body as {
     recordId: string;
     hospitalCode: string;

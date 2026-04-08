@@ -2,10 +2,10 @@ import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { createBillableItem } from "@/lib/billing";
 import { notifyPatient } from "@/lib/whatsapp";
-
+import { rateLimit } from "@/lib/rate-limit";
 // GET: Get patients with prescriptions for today
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
   const view = searchParams.get("view"); // pending | dispensed | all
 
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
 
 // POST: Dispense prescriptions
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, recordId, dispensedBy } = body as {
     hospitalCode: string;
     recordId: string;

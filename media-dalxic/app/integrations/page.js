@@ -34,9 +34,9 @@ export default function IntegrationsPage() {
         <div style={{ position:"absolute", right:-4, top:0, bottom:0, width:8, zIndex:101, pointerEvents:"none", background:"url('/stitch-line.png') center top / 8px repeat-y", filter:"brightness(0.50)" }} />
         {/* Logo */}
         <div style={{ padding:"24px 20px 20px 59px", borderBottom:"1px solid " + P.border, position:"relative", zIndex:1 }}>
-          <div style={{ display:"inline-flex", flexDirection:"column" }}>
-            <span style={{ fontWeight:800, fontSize:18, color:"#F0F4FF", lineHeight:1, display:"flex", fontFamily:"'Space Grotesk', sans-serif" }}>{"Dalxıc".split("").map((c, i) => i === 4 ? <span key={i} style={{ display:"inline-block", position:"relative" }}>ı<span style={{ position:"absolute", top:-5, left:"50%", transform:"translateX(-50%)", width:6, height:6, borderRadius:"50%", background:"#818CF8", boxShadow:"0 0 10px #6366F1" }} /></span> : <span key={i}>{c}</span>)}</span>
-            <span style={{ fontWeight:600, fontSize:9, color:"#A78BFA", letterSpacing:"0.18em", textTransform:"uppercase", marginTop:4, fontFamily:"'DM Mono', monospace" }}>POWERED BY NEXUS-7</span>
+          <div style={{ display:"inline-flex", alignItems:"center" }}>
+            <span style={{ fontWeight:300, fontSize:15, color:"#94A3B8", letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"'Space Grotesk', sans-serif" }}>Dalxic</span>
+            <span style={{ fontWeight:700, fontSize:15, letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"'Space Grotesk', sans-serif", background:"linear-gradient(135deg, #818CF8, #A78BFA)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Media</span>
           </div>
         </div>
 

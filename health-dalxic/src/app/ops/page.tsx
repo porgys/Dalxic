@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import { TIER_DEFAULTS, ALL_WORKSTATIONS, UTILITY_STATIONS, type TierKey } from "@/lib/tier-defaults";
 
 /* ─── Constants ─── */
@@ -13,7 +12,8 @@ const OPS_KEY = "dalxic_ops_session";
 
 // SHA-256 hash of the passphrase — never store the passphrase itself
 // To change: run crypto.subtle.digest on new passphrase, update this hash
-const PASSPHRASE_HASH = "a0f3b8c2d4e6f8a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9c1d3e5f7"; // placeholder — will verify on first use
+// SHA-256 hash of the passphrase — reserved for future verification
+// const PASSPHRASE_HASH = "a0f3b8c2d4e6f8a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9c1d3e5f7";
 
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
@@ -509,7 +509,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   }, [selectedHospital, loadOperators]);
 
   const handleAddHospital = async () => {
-    const { code, name, subdomain, tier } = newHospital;
+    const { code, name, subdomain } = newHospital;
     if (!code || !name || !subdomain) return;
     setAddingHospital(true);
     try {
@@ -663,7 +663,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                     Command Center
                   </h1>
                   <p style={{ fontSize: 13, color: "#64748B", maxWidth: 500 }}>
-                    Master control for all NexusLink Health operations. Manage hospitals, operators, tiers, and system configuration.
+                    Master control for all DalxicHealth operations. Manage hospitals, operators, tiers, and system configuration.
                   </p>
                 </motion.div>
               </div>

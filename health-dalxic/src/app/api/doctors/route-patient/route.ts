@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
-
+import { rateLimit } from "@/lib/rate-limit";
 /**
  * POST: Three-layer doctor routing
  * 1. Specialty-based — filter eligible doctors
@@ -8,7 +8,7 @@ import { logAudit, getClientIP } from "@/lib/audit";
  * 3. Round-robin — tiebreaker (lowest activePatientCount wins, then alphabetical)
  */
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, department, recordId } = body;
 
   if (!hospitalCode || !department) {

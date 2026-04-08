@@ -1,12 +1,12 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
-
+import { rateLimit } from "@/lib/rate-limit";
 const VALID_BED_STATUSES = ["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE", "CLEANING"] as const;
 const VALID_WARD_TYPES = ["general", "icu", "maternity", "pediatric", "surgical"] as const;
 
 // GET: Bed dashboard — wards, rooms, beds with status counts
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
   const wardId = searchParams.get("wardId");
   const status = searchParams.get("status");
@@ -74,7 +74,7 @@ export async function GET(request: Request) {
 
 // POST: Create ward, room, or bed (action-based)
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, action } = body;
 
   if (!hospitalCode || !action) {
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
 
 // PATCH: Update bed status (with transition logging)
 export async function PATCH(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { bedId, status, patientId, triggeredBy } = body;
 
   if (!bedId || !status) {

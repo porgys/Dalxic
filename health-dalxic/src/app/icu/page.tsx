@@ -116,9 +116,9 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
       <div style={{ opacity: theme.canvasOpacity, transition: "opacity 0.5s ease" }}><GalaxyCanvas /></div>
 
       <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, padding: "16px 36px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: theme.headerBorder, background: theme.headerBg, transition: "background 0.5s ease", backdropFilter: "blur(12px)" }}>
-        <Link href="/platform" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontWeight: 300, fontSize: 12, color: theme.textSecondary, letterSpacing: "0.22em", textTransform: "uppercase", transition: "color 0.4s ease" }}>NEXUSLINK</span>
-          <span style={{ fontWeight: 500, fontSize: 11, letterSpacing: "0.5em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>HEALTH</span>
+        <Link href="/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+          <span style={{ fontWeight: 300, fontSize: 13, color: theme.textSecondary, letterSpacing: "0.08em", textTransform: "uppercase", transition: "color 0.4s ease" }}>Dalxic</span>
+          <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#EF4444" }}>ICU</span>
@@ -127,7 +127,7 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <OperatorBadge session={operator} onLogout={() => window.location.reload()} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
-          <span style={{ fontSize: 12, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
+          <span style={{ fontSize: 13, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>{currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
         </div>
@@ -208,7 +208,7 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
                       </div>
 
                       {/* Diagnosis */}
-                      {p.diagnosis && <p style={{ fontSize: 12, color: "#94A3B8", marginBottom: 12 }}>{p.diagnosis}</p>}
+                      {p.diagnosis && <p style={{ fontSize: 13, color: "#94A3B8", marginBottom: 12 }}>{p.diagnosis}</p>}
 
                       {/* Latest vitals grid */}
                       {p.latestObs && (

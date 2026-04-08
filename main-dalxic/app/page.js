@@ -8,12 +8,13 @@ import DalxicLogo from "./components/DalxicLogo"
    Galaxy particle canvas + copper/indigo/cyan palette
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Cross-vertical links ── */
-const MEDIA = process.env.NEXT_PUBLIC_MEDIA_URL || "http://localhost:3001"
+/* ── Cross-subsidiary links ── */
+const MEDIA  = process.env.NEXT_PUBLIC_MEDIA_URL  || "http://localhost:3001"
+const HEALTH = process.env.NEXT_PUBLIC_HEALTH_URL || "http://localhost:3002"
 const LINKS = {
   main: "/",
-  health: "/#stations",
-  media: `${MEDIA}/?from=nav`,
+  health: HEALTH,
+  media: MEDIA,
   judiciary: "#",
 }
 
@@ -884,8 +885,8 @@ export default function Home() {
               gap: "var(--sp-2xl)",
             }}
           >
-            <StatBlock value={3} suffix="" label="Verticals" delay={0} />
-            <StatBlock value={15} suffix="+" label="Hospital Stations" delay={0.1} />
+            <StatBlock value={3} suffix="" label="Subsidiaries" delay={0} />
+            <StatBlock value={15} suffix="+" label="Workstations" delay={0.1} />
             <StatBlock value={7} suffix="" label="Court Zones" delay={0.2} />
             <StatBlock value={50} suffix="+" label="Operational Modules" delay={0.3} />
           </div>
@@ -955,7 +956,7 @@ export default function Home() {
                 margin: "0 auto var(--sp-2xl)",
               }}
             >
-              Every Dalxic vertical is powered by Nexus-7 — a unified intelligence
+              Every Dalxic subsidiary is powered by Nexus-7 — a unified intelligence
               engine built for institutional-grade operations. One architecture that adapts
               across healthcare management, media authenticity, and court case
               lifecycle integrity. No third-party dependencies. No compromises.

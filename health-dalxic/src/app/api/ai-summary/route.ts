@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 import { generateAISummary } from "@/lib/ai-summary";
-
+import { rateLimit, AI_RATE_LIMIT } from "@/lib/rate-limit";
 // POST: Generate AI summary for a patient record
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request, AI_RATE_LIMIT); if (blocked) return blocked;  const body = await request.json();
   const { recordId } = body;
 
   if (!recordId) {

@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { getTierDefaults } from "@/lib/tier-defaults";
-
+import { rateLimit } from "@/lib/rate-limit";
 // GET: List all hospitals or single by code
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 
   if (code) {
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
 // POST: Create a new hospital — applies TIER_DEFAULTS automatically
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { code, name, subdomain, tier, tagline, actorId } = body;
 
   if (!code || !name || !subdomain || !tier || !actorId) {
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
 // PATCH: Upgrade/downgrade hospital tier
 export async function PATCH(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, newTier, actorId } = body;
 
   if (!hospitalCode || !newTier) {

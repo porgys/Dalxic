@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { createHash } from "crypto";
-
+import { rateLimit } from "@/lib/rate-limit";
 // POST: Trigger emergency override session
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalId, userId, pin, reason } = body;
 
   if (!hospitalId || !userId || !pin || !reason?.trim()) {
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
 // PATCH: End emergency session
 export async function PATCH(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { sessionId, endReason } = body as { sessionId: string; endReason: "manual" | "auto_expired" };
 
   const session = await db.emergencyOverrideSession.findUnique({ where: { id: sessionId } });
@@ -113,7 +113,7 @@ export async function PATCH(request: Request) {
 
 // GET: Log record access during emergency session
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const sessionId = searchParams.get("sessionId");
   const recordId = searchParams.get("recordId");
 

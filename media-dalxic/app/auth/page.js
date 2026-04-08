@@ -84,11 +84,9 @@ export default function AuthPage() {
 
         {/* Logo */}
         <div style={{ textAlign:"center", marginBottom:40 }}>
-          <Link href="/" style={{ textDecoration:"none" }}>
-            <div style={{ display:"inline-flex", flexDirection:"column", alignItems:"center" }}>
-              <span style={{ fontWeight:800, fontSize:22, color:C.tx, lineHeight:1, display:"flex", gap:1, fontFamily:"'Plus Jakarta Sans','Space Grotesk',sans-serif" }}>{"Dalxıc".split("").map((c, i) => i === 4 ? <span key={i} style={{ display:"inline-block", position:"relative" }}>{"ı"}<span style={{ position:"absolute", top:-6, left:"50%", transform:"translateX(-50%)", width:5, height:5, borderRadius:"50%", background:"#818CF8", boxShadow:"0 0 8px #6366F1" }} /></span> : <span key={i} style={{ display:"inline-block" }}>{c === " " ? "\u00A0" : c}</span>)}</span>
-              <span style={{ fontWeight:600, fontSize:12, color:"#A78BFA", letterSpacing:"0.12em", textTransform:"uppercase", marginTop:4, fontFamily:"'Space Grotesk',sans-serif" }}>POWERED BY NEXUS-7</span>
-            </div>
+          <Link href="/" style={{ textDecoration:"none", display:"inline-flex", alignItems:"center" }}>
+            <span style={{ fontWeight:300, fontSize:20, color:"#94A3B8", letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"'Plus Jakarta Sans','Space Grotesk',sans-serif" }}>Dalxic</span>
+            <span style={{ fontWeight:700, fontSize:20, letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"'Plus Jakarta Sans','Space Grotesk',sans-serif", background:"linear-gradient(135deg, #818CF8, #A78BFA)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Media</span>
           </Link>
           <div style={{ fontSize:13, color:C.txM, marginTop:8 }}>Forensic Excellence Platform</div>
         </div>

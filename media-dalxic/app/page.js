@@ -53,6 +53,10 @@ function Counter({ target, suffix = "", prefix = "", decimals = 0 }) {
   return <span ref={ref}>{prefix}{decimals > 0 ? val.toFixed(decimals) : val.toLocaleString()}{suffix}</span>
 }
 
+/* ── Cross-vertical links ── */
+const MAIN_URL   = process.env.NEXT_PUBLIC_MAIN_URL   || "http://localhost:3000"
+const HEALTH_URL = process.env.NEXT_PUBLIC_HEALTH_URL || "http://localhost:3002"
+
 /* ─── Nav ─── */
 function Nav({ onContact }) {
   const [scrolled, setScrolled] = useState(false)
@@ -66,17 +70,15 @@ function Nav({ onContact }) {
     { label: "Solutions", href: "#solutions" },
     { label: "Technology", href: "#technology" },
     { label: "Who We Serve", href: "#clients" },
-    { label: "Team", href: "/team" },
+    { label: "Health", href: `${HEALTH_URL}/?from=nav`, external: true },
     { label: "Pricing", href: "/pricing" },
   ]
   return (
     <>
       <nav className={`nav ${scrolled ? "scrolled" : ""}`}>
-        <Link href="/?from=nav" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-          <div style={{ display: "inline-flex", flexDirection: "column" }}>
-            <span style={{ fontWeight: 800, fontSize: 14, color: "var(--tx)", lineHeight: 1, display: "flex", gap: 1, fontFamily: "'Plus Jakarta Sans','Space Grotesk',sans-serif" }}>{"Dalxıc".split("").map((c, i) => i === 4 ? <span key={i} style={{ display: "inline-block", position: "relative" }}>{"ı"}<span style={{ position: "absolute", top: -5, left: "50%", transform: "translateX(-50%)", width: 5, height: 5, borderRadius: "50%", background: "#818CF8", boxShadow: "0 0 8px #6366F1" }} /></span> : <span key={i} style={{ display: "inline-block" }}>{c === " " ? "\u00A0" : c}</span>)}</span>
-            <span style={{ fontWeight: 600, fontSize: 11, color: "#A78BFA", letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 3, fontFamily: "'Space Grotesk',sans-serif" }}>Powered by Nexus-7</span>
-          </div>
+        <Link href="/?from=nav" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+          <span style={{ fontWeight: 300, fontSize: 14, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'Plus Jakarta Sans','Space Grotesk',sans-serif" }}>Dalxic</span>
+          <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'Plus Jakarta Sans','Space Grotesk',sans-serif", background: "linear-gradient(135deg, #818CF8, #A78BFA)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Media</span>
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="hidden-mobile">
           {links.map(l => <a key={l.label} href={l.href} className="nav-link">{l.label}</a>)}
@@ -205,8 +207,10 @@ function SplashScreen({ onDone }) {
         transformOrigin: "center center", opacity: isExit ? 0 : 1,
         transition: isExit ? "transform 1s cubic-bezier(0.76, 0, 0.24, 1), opacity 0.8s ease" : "none",
       }}>
-        <div style={{ fontWeight: 800, fontSize: "min(12vw, 64px)", color: "#F0F4FF", letterSpacing: -2, lineHeight: 1, fontFamily: "'Plus Jakarta Sans','Space Grotesk',sans-serif" }}>Dalx<span style={{ position: "relative", display: "inline-block" }}>ı<span style={{ position: "absolute", top: "-0.35em", left: "50%", transform: "translateX(-50%)", width: "0.12em", height: "0.12em", borderRadius: "50%", background: "#818CF8", boxShadow: "0 0 8px #6366F1" }} /></span>c</div>
-        <div style={{ fontWeight: 600, fontSize: "min(3.5vw, 18px)", color: "#A78BFA", letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 6, fontFamily: "'Space Grotesk',sans-serif" }}>Powered by Nexus-7</div>
+        <div style={{ display: "flex", alignItems: "baseline" }}>
+          <span style={{ fontWeight: 300, fontSize: "min(12vw, 64px)", color: "#94A3B8", letterSpacing: "0.04em", textTransform: "uppercase", fontFamily: "'Plus Jakarta Sans','Space Grotesk',sans-serif" }}>Dalxic</span>
+          <span style={{ fontWeight: 800, fontSize: "min(12vw, 64px)", letterSpacing: "0.04em", textTransform: "uppercase", fontFamily: "'Plus Jakarta Sans','Space Grotesk',sans-serif", background: "linear-gradient(135deg, #818CF8, #A78BFA)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Media</span>
+        </div>
         <div style={{ fontWeight: 400, fontSize: "min(2.5vw, 13px)", color: "rgba(240,244,255,0.4)", letterSpacing: 3, textTransform: "uppercase", marginTop: 16 }}>Forensic Intelligence</div>
       </div>
     </div>
@@ -783,19 +787,19 @@ function HomeInner() {
           <div className="container">
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 40, marginBottom: 48 }}>
               <div>
-                <div style={{ display: "inline-flex", flexDirection: "column", marginBottom: 16 }}>
-                  <span style={{ fontWeight: 800, fontSize: 14, color: "#F0F4FF", lineHeight: 1, display: "flex", gap: 1, fontFamily: "'Plus Jakarta Sans','Space Grotesk',sans-serif" }}>{"Dalxıc".split("").map((c, i) => <span key={i} style={{ display: "inline-block" }}>{c === " " ? "\u00A0" : i === 4 ? <span style={{ position: "relative" }}>ı<span style={{ position: "absolute", top: -5, left: "50%", transform: "translateX(-50%)", width: 5, height: 5, borderRadius: "50%", background: "#818CF8", boxShadow: "0 0 8px #6366F1" }} /></span> : c}</span>)}</span>
-                  <span style={{ fontWeight: 600, fontSize: 11, color: "#A78BFA", letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 3, fontFamily: "'Space Grotesk',sans-serif" }}>Powered by Nexus-7</span>
+                <div style={{ display: "inline-flex", alignItems: "center", marginBottom: 16 }}>
+                  <span style={{ fontWeight: 300, fontSize: 14, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'Plus Jakarta Sans','Space Grotesk',sans-serif" }}>Dalxic</span>
+                  <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'Plus Jakarta Sans','Space Grotesk',sans-serif", background: "linear-gradient(135deg, #818CF8, #A78BFA)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Media</span>
                 </div>
                 <p style={{ fontSize: 13.5, color: "var(--txM)", lineHeight: 1.7, maxWidth: 280, marginBottom: 16 }}>
                   Check Before You Talk. Powered by Nexus-7. Trained on 2.4 billion samples.
                 </p>
-                <a href={process.env.NEXT_PUBLIC_MAIN_URL || "http://localhost:3000"} style={{ fontSize: 12, color: "var(--txD)", textDecoration: "none" }}>dalxic.com</a>
+                <a href={MAIN_URL} style={{ fontSize: 12, color: "var(--txD)", textDecoration: "none" }}>dalxic.com</a>
               </div>
               {[
                 { title: "Platform", links: [["Workstation", "/workstation"], ["Reports", "/reports"], ["Dalxic Chat", "/chat"], ["Integrations", "/integrations"]] },
                 { title: "Company", links: [["About", "/about"], ["Team", "/team"], ["Pricing", "/pricing"], ["Contact", "#contact"]] },
-                { title: "Verticals", links: [["Dalxic Main", process.env.NEXT_PUBLIC_MAIN_URL || "http://localhost:3000"], ["DalxicHealth", (process.env.NEXT_PUBLIC_MAIN_URL || "http://localhost:3000") + "/#stations"], ["DalxicJudiciary", "#"]] },
+                { title: "Subsidiaries", links: [["Dalxic Main", MAIN_URL], ["DalxicHealth", HEALTH_URL], ["DalxicJudiciary", "#"]] },
                 { title: "Legal", links: [["Privacy Policy", "/privacy"], ["Terms of Service", "/terms"]] },
               ].map(col => (
                 <div key={col.title}>

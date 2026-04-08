@@ -15,7 +15,8 @@ export function getPusher(): Pusher {
   return pusherInstance;
 }
 
-// Channel naming: hospital-{code}-queue, hospital-{code}-lab, etc.
+// Channel naming: private-hospital-{code}-queue, private-hospital-{code}-lab, etc.
+// Private prefix requires auth via /api/pusher endpoint
 export function hospitalChannel(hospitalCode: string, suffix: string) {
-  return `hospital-${hospitalCode}-${suffix}`;
+  return `private-hospital-${hospitalCode}-${suffix}`;
 }

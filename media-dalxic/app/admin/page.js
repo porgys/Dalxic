@@ -164,11 +164,9 @@ export default function AdminDashboard() {
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
       {/* Nav */}
       <nav className="nav scrolled">
-        <Link href="/?from=nav" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-          <div style={{ display:"flex", flexDirection:"column" }}>
-            <span style={{ fontWeight:800, fontSize:14, color:"#F0F4FF", lineHeight:1, display:"flex", gap:1, fontFamily:"'Plus Jakarta Sans','Space Grotesk',sans-serif" }}>{"Dalxıc".split("").map((c, i) => i === 4 ? <span key={i} style={{ display:"inline-block", position:"relative" }}>{"ı"}<span style={{ position:"absolute", top:-5, left:"50%", transform:"translateX(-50%)", width:5, height:5, borderRadius:"50%", background:"#818CF8", boxShadow:"0 0 8px #6366F1" }} /></span> : <span key={i} style={{ display:"inline-block" }}>{c === " " ? "\u00A0" : c}</span>)}</span>
-            <span style={{ fontWeight:500, fontSize:10, color:"#A78BFA", letterSpacing:"0.15em", textTransform:"uppercase", marginTop:3, fontFamily:"'DM Mono','JetBrains Mono',monospace" }}>Admin Panel</span>
-          </div>
+        <Link href="/?from=nav" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+          <span style={{ fontWeight:300, fontSize:14, color:"#94A3B8", letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"'Plus Jakarta Sans','Space Grotesk',sans-serif" }}>Dalxic</span>
+          <span style={{ fontWeight:700, fontSize:14, letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"'Plus Jakarta Sans','Space Grotesk',sans-serif", background:"linear-gradient(135deg, #818CF8, #A78BFA)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Media</span>
         </Link>
         <div style={{ display: "flex", gap: 12 }}>
           <Link href="/" className="btn btn-ghost btn-sm">Home</Link>

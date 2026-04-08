@@ -7,12 +7,11 @@ import { motion } from "framer-motion";
 interface SidebarProps {
   hospitalName?: string;
   role?: string;
-  variant?: "health" | "dalxic";
+  variant?: string;
   children: ReactNode;
 }
 
-export function Sidebar({ hospitalName, role, variant = "health", children }: SidebarProps) {
-  const isDalxic = variant === "dalxic";
+export function Sidebar({ hospitalName, role, children }: SidebarProps) {
 
   return (
     <motion.aside
@@ -24,32 +23,15 @@ export function Sidebar({ hospitalName, role, variant = "health", children }: Si
     >
       {/* Brand */}
       <div className="p-6 border-b border-[rgba(184,115,51,0.1)]">
-        <Link href="/platform" className="block no-underline">
-          <div className="flex flex-col gap-0.5">
-            {isDalxic ? (
-              <>
-                <span className="font-display font-light text-nl-chrome tracking-brand text-xs uppercase">
-                  DALXIC
-                </span>
-                <span className="font-display font-medium text-nl-copper text-sm mt-0.5">
-                  Master Control
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="font-display font-light text-[#94A3B8] tracking-[0.22em] text-xs uppercase">
-                  NEXUSLINK
-                </span>
-                <span className="font-display font-medium text-xs uppercase mt-0.5" style={{
-                  letterSpacing: "0.5em",
-                  background: "linear-gradient(135deg, #B87333, #D4956B, #B87333)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}>
-                  HEALTH
-                </span>
-              </>
-            )}
+        <Link href="/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh" className="block no-underline">
+          <div className="flex items-center">
+            <span className="font-display font-light text-[#94A3B8] text-sm uppercase" style={{ letterSpacing: "0.08em" }}>Dalxic</span>
+            <span className="font-display font-bold text-sm uppercase" style={{
+              letterSpacing: "0.08em",
+              background: "linear-gradient(135deg, #B87333, #D4956B)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}>Health</span>
           </div>
         </Link>
         {hospitalName && (
@@ -77,7 +59,7 @@ export function Sidebar({ hospitalName, role, variant = "health", children }: Si
             <div className="w-1.5 h-1.5 rounded-full bg-[rgba(184,115,51,0.4)]" />
           </div>
           <p className="text-[10px] font-body text-[#64748B]">
-            {isDalxic ? "NexusLink Health" : "A Dalxic Subsidiary"}
+A Dalxic Subsidiary
           </p>
         </div>
       </div>

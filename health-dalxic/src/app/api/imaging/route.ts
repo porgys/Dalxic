@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { createBillableItem } from "@/lib/billing";
-
+import { rateLimit } from "@/lib/rate-limit";
 // GET: Get imaging orders (CT/Radiology or Ultrasound)
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
   const modality = searchParams.get("modality"); // "ct_radiology" | "ultrasound"
   const status = searchParams.get("status"); // pending | completed | all
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
 
 // POST: Create or update imaging orders
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, action } = body;
 
   if (!hospitalCode || !action) {

@@ -1,13 +1,13 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { getPusher, hospitalChannel } from "@/lib/pusher-server";
-
+import { rateLimit } from "@/lib/rate-limit";
 const VALID_STATUSES = ["AVAILABLE", "ON_BREAK", "IN_CONSULTATION", "IN_SURGERY", "OFF_DUTY", "ON_CALL"] as const;
 const VALID_ROLES = ["attending", "resident", "intern"] as const;
 
 // GET: List doctors for a hospital (optionally filter by specialty/status)
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
   const specialty = searchParams.get("specialty");
   const status = searchParams.get("status");
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 
 // POST: Create a new doctor profile
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, name, specialty, role, maxConcurrentPatients, supervisorId, shiftStart, shiftEnd } = body;
 
   if (!hospitalCode || !name || !specialty) {
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
 
 // PATCH: Update doctor status, patient count, or profile
 export async function PATCH(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { doctorId, status, activePatientCount, breakReason, meta } = body;
 
   if (!doctorId) {

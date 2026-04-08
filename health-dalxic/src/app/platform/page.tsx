@@ -279,15 +279,9 @@ export default function PlatformPage() {
         boxShadow: "none",
         transition: "background 0.4s ease, border-bottom 0.4s ease",
       }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontWeight: 500, fontSize: 14, color: isDayMode ? "#6B7280" : "#94A3B8", letterSpacing: "0.22em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif", transition: "color 0.4s ease" }}>
-              NEXUSLINK
-            </span>
-            <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.5em", textTransform: "uppercase", marginTop: 2, fontFamily: "var(--font-outfit), Outfit, sans-serif" }} className="text-gradient-copper">
-              HEALTH
-            </span>
-          </div>
+        <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+          <span style={{ fontWeight: 300, fontSize: 14, color: isDayMode ? "#6B7280" : "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif", transition: "color 0.4s ease" }}>Dalxic</span>
+          <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {/* Day/Night Toggle */}
@@ -358,23 +352,23 @@ export default function PlatformPage() {
           }}>
             <div style={{ width: 12, height: 12, borderRadius: "50%", background: isDayMode ? "#B87333" : COPPER, boxShadow: isDayMode ? "0 0 12px rgba(184,115,51,0.6)" : `0 0 14px ${COPPER_GLOW}`, transition: "all 0.4s ease" }} />
           </div>
-          <div className="section-label-copper" style={{ marginBottom: 14, fontSize: 12, fontWeight: 700 }}>Select Station</div>
+          <div className="section-label-copper" style={{ marginBottom: 14, fontSize: 12, fontWeight: 700 }}>Select Workstation</div>
           {tierLabel && (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 14px", borderRadius: 20, marginBottom: 12, background: isDayMode ? "rgba(184,115,51,0.08)" : "rgba(184,115,51,0.06)", border: `1px solid ${isDayMode ? "rgba(184,115,51,0.15)" : "rgba(184,115,51,0.12)"}` }}>
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{tierLabel}</span>
               <span style={{ fontSize: 10, color: isDayMode ? "#6B7280" : "#64748B" }}>•</span>
-              <span style={{ fontSize: 10, fontWeight: 600, color: isDayMode ? "#6B7280" : "#64748B" }}>{STATIONS.length} Stations</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: isDayMode ? "#6B7280" : "#64748B" }}>{STATIONS.length} Workstations</span>
             </div>
           )}
           <h1 style={{ fontSize: "clamp(2.2rem, 5vw, 3.6rem)", fontWeight: 800, letterSpacing: -2, lineHeight: 1.1, marginBottom: 16, fontFamily: "var(--font-outfit), Outfit, sans-serif", color: isDayMode ? "#1A1714" : undefined, transition: "color 0.4s ease" }}>
             Choose Your <span className="text-gradient-copper">Workstation</span>
           </h1>
           <p style={{ color: "var(--nl-txM)", maxWidth: 480, margin: "0 auto", lineHeight: 1.7, fontSize: 16, fontWeight: 500 }}>
-            Each Station Is Purpose-Built For Its Department. Select Yours To Begin.
+            Each Workstation Is Purpose-Built For Its Role. Select Yours To Begin.
           </p>
         </div>
 
-        {/* Station Grid — clinical stations */}
+        {/* Workstation Grid */}
         {/* ORIGINAL card styles (for revert): glass class default, no boxShadow, onMouseEnter copper 30/15 */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
           {STATIONS.map((s, i) => (
@@ -429,7 +423,7 @@ export default function PlatformPage() {
             <div className="section-label-copper" style={{ marginBottom: 0 }}>Privileged Access</div>
           </div>
           {/* ORIGINAL emergency card: borderColor COPPER+"25", no default boxShadow */}
-          <Link href="/emergency-override" style={{ textDecoration: "none", color: "inherit", display: "block", maxWidth: 680, margin: "0 auto" }}>
+          <Link href="/w/Dk7_xQ3nXv0T~sF6bW2mYr8hLa" style={{ textDecoration: "none", color: "inherit", display: "block", maxWidth: 680, margin: "0 auto" }}>
             <div className={`glass ${isDayMode ? "l-glow-day" : ""}`} style={{
               padding: "32px 32px", cursor: "pointer",
               display: "flex", flexDirection: "column",
@@ -473,13 +467,13 @@ export default function PlatformPage() {
 
       {/* Footer */}
       <footer style={{ position: "relative", zIndex: 1, padding: "20px 44px", borderTop: "1px solid var(--nl-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
           <div style={{ width: 16, height: 16, borderRadius: "50%", border: `1px solid ${COPPER}33`, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{ width: 5, height: 5, borderRadius: "50%", background: `${COPPER}66` }} />
           </div>
           <span style={{ fontSize: 12, fontWeight: 500, color: "var(--nl-txD)" }}>A Dalxic subsidiary</span>
         </div>
-        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--nl-txD)" }}>health.dalxic.com</span>
+        <Link href="/s/ZXJ2LkQ9Mnx0V3hCYTVrUw.aGVhbHRo" style={{ fontSize: 12, fontWeight: 500, color: "var(--nl-txD)", textDecoration: "none", cursor: "default" }}>We Serve You Better</Link>
       </footer>
     </div>
   )

@@ -315,9 +315,9 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
 
       {/* Header */}
       <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, padding: "16px 36px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: theme.headerBorder, background: theme.headerBg, transition: "background 0.5s ease", backdropFilter: "blur(12px)" }}>
-        <Link href="/platform" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontWeight: 300, fontSize: 12, color: theme.textSecondary, letterSpacing: "0.22em", textTransform: "uppercase", transition: "color 0.4s ease" }}>NEXUSLINK</span>
-          <span style={{ fontWeight: 500, fontSize: 11, letterSpacing: "0.5em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>HEALTH</span>
+        <Link href="/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+          <span style={{ fontWeight: 300, fontSize: 13, color: theme.textSecondary, letterSpacing: "0.08em", textTransform: "uppercase", transition: "color 0.4s ease" }}>Dalxic</span>
+          <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Billing Station</span>
@@ -326,7 +326,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <OperatorBadge session={operator} onLogout={() => window.location.reload()} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
-          <span style={{ fontSize: 12, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
+          <span style={{ fontSize: 13, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
@@ -449,8 +449,8 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                                       {item.serviceType}
                                     </td>
                                     <td style={{ padding: "10px 12px", fontSize: 12, color: "white" }}>{item.description}</td>
-                                    <td style={{ padding: "10px 12px", fontSize: 12, color: "#94A3B8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{formatCurrency(item.unitCost)}</td>
-                                    <td style={{ padding: "10px 12px", fontSize: 12, color: "#94A3B8", textAlign: "center" }}>{item.quantity}</td>
+                                    <td style={{ padding: "10px 12px", fontSize: 13, color: "#94A3B8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{formatCurrency(item.unitCost)}</td>
+                                    <td style={{ padding: "10px 12px", fontSize: 13, color: "#94A3B8", textAlign: "center" }}>{item.quantity}</td>
                                     <td style={{ padding: "10px 12px", fontSize: 12, color: "white", fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{formatCurrency(item.totalCost)}</td>
                                     <td style={{ padding: "10px 12px", fontSize: 11, color: "#64748B" }}>{formatTime(item.renderedAt)}</td>
                                   </tr>
@@ -677,7 +677,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
 
               {/* Price examples */}
               <WorkshopBox title="How Billing Auto-Capture Works" icon="💡" delay={0.1} className="mt-4">
-                <div style={{ fontSize: 12, color: "#94A3B8", lineHeight: 1.8 }}>
+                <div style={{ fontSize: 13, color: "#94A3B8", lineHeight: 1.8 }}>
                   <p style={{ marginBottom: 8 }}>Every Module Automatically Emits Billable Items When Services Are Rendered:</p>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                     {[

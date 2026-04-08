@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { calloutNumber } from "@/lib/voice-callout";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider } from "@/hooks/use-station-theme";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
@@ -383,9 +383,9 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         borderBottom: theme.headerBorder, background: theme.headerBg, transition: "background 0.5s ease",
         backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
       }}>
-        <Link href="/platform" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontWeight: 300, fontSize: 11, color: theme.textSecondary, letterSpacing: "0.22em", textTransform: "uppercase", transition: "color 0.4s ease" }}>NEXUSLINK</span>
-          <span style={{ fontWeight: 500, fontSize: 10, letterSpacing: "0.5em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>HEALTH</span>
+        <Link href="/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontWeight: 300, fontSize: 13, color: theme.textSecondary, letterSpacing: "0.08em", textTransform: "uppercase", transition: "color 0.4s ease" }}>Dalxic</span>
+          <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Doctor Station</span>
@@ -490,7 +490,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
               {activeSession.visit.symptomSeverity != null && <SeverityBadge severity={activeSession.visit.symptomSeverity} />}
               <span style={{ fontSize: 12, color: "#4A5568", fontStyle: "italic" }}>&ldquo;{activeSession.visit.chiefComplaint}&rdquo;</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
               {isER ? (
                 <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", padding: "3px 10px", borderRadius: 5, background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.2)", color: "#F87171" }}>Emergency</span>
               ) : (

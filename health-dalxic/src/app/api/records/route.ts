@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
-
+import { rateLimit } from "@/lib/rate-limit";
 // GET: Fetch a single patient record by ID
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const recordId = searchParams.get("recordId");
 
   if (!recordId) return Response.json({ error: "recordId required" }, { status: 400 });
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 
 // PATCH: Update patient record — diagnosis, treatment, referrals, notes
 export async function PATCH(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { recordId, hospitalCode, diagnosis, treatment, referral, addReferral } = body as {
     recordId: string;
     hospitalCode: string;

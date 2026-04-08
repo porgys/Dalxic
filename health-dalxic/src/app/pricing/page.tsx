@@ -154,7 +154,7 @@ const TIERS = [
 ];
 
 const FAQ = [
-  { q: "How Do I Get Started With NexusLink Health?", a: "All tiers are request-based. Submit a demo request and our team will contact you within 24 hours to assess your facility, recommend the right tier, and begin onboarding." },
+  { q: "How Do I Get Started With DalxicHealth?", a: "All tiers are request-based. Submit a demo request and our team will contact you within 24 hours to assess your facility, recommend the right tier, and begin onboarding." },
   { q: "Can I Upgrade Between Tiers?", a: "Absolutely. Your hospital can upgrade at any time. New modules activate instantly and all existing patient data is preserved. Downgrading is also supported \u2014 modules are hidden but data is never deleted." },
   { q: "How Does The Device Limit Work?", a: "Each tier has a maximum number of concurrent devices (tablets, desktops) that can be logged in simultaneously. Devices are registered to your hospital and each operator authenticates through StationGuard\u2122." },
   { q: "Is My Patient Data Secure?", a: "Yes. All data is encrypted in transit and at rest. AuditVault\u2122 logs every action with operator identity, timestamp, and source. StationGuard\u2122 prevents unauthorised workstation access. We are GDPR-aligned and built for African healthcare compliance." },
@@ -452,15 +452,15 @@ export default function PricingPage() {
         borderBottom: "1px solid rgba(184,115,51,0.08)", background: "rgba(3,5,15,0.4)",
         backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
       }}>
-        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontWeight: 300, fontSize: 12, color: "#94A3B8", letterSpacing: "0.22em", textTransform: "uppercase" }}>NEXUSLINK</span>
-          <span style={{ fontWeight: 500, fontSize: 11, letterSpacing: "0.5em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>HEALTH</span>
+        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+          <span style={{ fontWeight: 300, fontSize: 13, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase" }}>Dalxic</span>
+          <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Link href="/" style={{ fontSize: 12, color: "#94A3B8", textDecoration: "none", padding: "6px 12px", borderRadius: 8 }}>Home</Link>
-          <Link href="/platform" style={{ fontSize: 12, color: "#94A3B8", textDecoration: "none", padding: "6px 12px", borderRadius: 8 }}>Platform</Link>
+          <Link href="/" style={{ fontSize: 13, color: "#94A3B8", textDecoration: "none", padding: "6px 12px", borderRadius: 8 }}>Home</Link>
+          <Link href="/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh" style={{ fontSize: 13, color: "#94A3B8", textDecoration: "none", padding: "6px 12px", borderRadius: 8 }}>Platform</Link>
           <button
-            onClick={() => openContact("NexusLink Health")}
+            onClick={() => openContact("DalxicHealth")}
             style={{
               fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
               padding: "8px 18px", borderRadius: 10, cursor: "pointer",
@@ -593,7 +593,7 @@ export default function PricingPage() {
                       <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#64748B", marginBottom: 10 }}>Stations Included</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {tier.stations.map((s, j) => (
-                          <div key={j} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div key={j} style={{ display: "flex", alignItems: "center" }}>
                             <div style={{
                               width: 16, height: 16, borderRadius: 8, flexShrink: 0,
                               display: "flex", alignItems: "center", justifyContent: "center",
@@ -616,7 +616,7 @@ export default function PricingPage() {
                       <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#64748B", marginBottom: 10 }}>Features & Capabilities</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                         {tier.features.map((feat, j) => (
-                          <div key={j} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div key={j} style={{ display: "flex", alignItems: "center" }}>
                             <div style={{
                               width: 16, height: 16, borderRadius: 8, flexShrink: 0,
                               display: "flex", alignItems: "center", justifyContent: "center",
@@ -795,10 +795,10 @@ export default function PricingPage() {
               Ready To Transform Your Hospital?
             </h2>
             <p style={{ color: "#64748B", fontSize: 13, marginBottom: 24, maxWidth: 400, margin: "0 auto 24px" }}>
-              Join hospitals across Africa already using NexusLink Health to digitise their operations.
+              Join hospitals across Africa already using DalxicHealth to digitise their operations.
             </p>
             <button
-              onClick={() => openContact("NexusLink Health")}
+              onClick={() => openContact("DalxicHealth")}
               style={{
                 padding: "14px 40px", borderRadius: 14, cursor: "pointer",
                 fontSize: 14, fontWeight: 700, letterSpacing: "0.06em",
@@ -815,18 +815,12 @@ export default function PricingPage() {
 
       {/* Footer */}
       <footer style={{ padding: "24px 0 32px", borderTop: `1px solid ${COPPER}08`, textAlign: "center", position: "relative", zIndex: 1 }}>
-        <span style={{ fontSize: 11, color: "#334155" }}>&copy; 2026 Dalxic &mdash; NexusLink Health</span>
+        <span style={{ fontSize: 11, color: "#334155" }}>&copy; 2026 Dalxic &mdash; DalxicHealth</span>
       </footer>
     </div>
   );
 }
 
-/* ─── Shared input style ─── */
-const inputStyle: React.CSSProperties = {
-  width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 13,
-  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.12)",
-  color: "#E2E8F0", outline: "none",
-};
 
 /* ─── Modal input style (premium contact modal) ─── */
 const modalInputStyle: React.CSSProperties = {

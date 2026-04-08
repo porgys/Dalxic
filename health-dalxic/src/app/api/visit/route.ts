@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { getPusher, hospitalChannel } from "@/lib/pusher-server";
 import { notifyPatient } from "@/lib/whatsapp";
-
+import { rateLimit } from "@/lib/rate-limit";
 /**
  * Visit lifecycle management.
  *
@@ -19,7 +19,7 @@ import { notifyPatient } from "@/lib/whatsapp";
 
 // GET: Get patients by visit status (for front desk close queue, etc.)
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
   const status = searchParams.get("status"); // awaiting_close | active | paused_for_lab | lwbs | all
   const view = searchParams.get("view"); // close_queue (front desk closing view)
@@ -90,7 +90,7 @@ export async function GET(request: Request) {
 
 // POST: Visit lifecycle transitions
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, action } = body;
 
   if (!hospitalCode || !action) return Response.json({ error: "hospitalCode and action required" }, { status: 400 });

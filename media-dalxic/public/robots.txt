@@ -1,0 +1,41 @@
+# DalxicMedia — robots.txt
+# Allow public pages, block everything internal
+
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /team
+Allow: /pricing
+Allow: /integrations
+Disallow: /api/
+Disallow: /workstation
+Disallow: /reports
+Disallow: /chat
+Disallow: /admin/
+
+# Block AI training crawlers entirely
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+Sitemap: https://media.dalxic.com/sitemap.xml

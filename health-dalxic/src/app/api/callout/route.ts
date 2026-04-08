@@ -2,10 +2,10 @@ import { getPusher, hospitalChannel } from "@/lib/pusher-server";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { sendWhatsApp } from "@/lib/whatsapp";
-
+import { rateLimit } from "@/lib/rate-limit";
 // POST: Trigger a callout event (doctor calls a patient number)
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, token, patientName, department, room, calledBy } = body;
 
   if (!hospitalCode || !token) {

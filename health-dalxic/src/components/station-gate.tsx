@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { OperatorSession } from "@/types";
 import { useOperator } from "@/hooks/use-operator";
@@ -29,8 +29,31 @@ interface StationGateProps {
   children: (session: OperatorSession) => React.ReactNode;
 }
 
+/** Idle timeout in milliseconds — lock after 10 minutes of no interaction */
+const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
+
 export function StationGate({ hospitalCode, stationName, stationIcon, allowedRoles, children }: StationGateProps) {
   const { session, isAuthenticated, loading, login, logout } = useOperator(hospitalCode);
+
+  // Auto-lock on idle — resets on mouse, keyboard, touch activity
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let timer = setTimeout(() => logout(), IDLE_TIMEOUT_MS);
+
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => logout(), IDLE_TIMEOUT_MS);
+    };
+
+    const events = ["mousedown", "keydown", "touchstart", "scroll"] as const;
+    events.forEach(e => window.addEventListener(e, reset, { passive: true }));
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach(e => window.removeEventListener(e, reset));
+    };
+  }, [isAuthenticated, logout]);
 
   if (loading) {
     return <GateLoading stationName={stationName} stationIcon={stationIcon} />;
@@ -100,7 +123,7 @@ export function OperatorBadge({ session, onLogout }: { session: OperatorSession;
           color: "#EF4444", cursor: "pointer", fontWeight: 500,
           letterSpacing: "0.04em", textTransform: "uppercase",
         }}
-        title="Lock Station"
+        title="Lock Workstation"
       >
         Lock
       </motion.button>
@@ -122,46 +145,44 @@ function PinEntry({
   allowedRoles?: string[];
   onLogin: (pin: string) => Promise<{ success: boolean; error?: string }>;
 }) {
-  const [digits, setDigits] = useState<string[]>(["", "", "", ""]);
+  const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [authenticating, setAuthenticating] = useState(false);
   const [success, setSuccess] = useState(false);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [attempts, setAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [lockCountdown, setLockCountdown] = useState(0);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Focus first input on mount
+  const MAX_ATTEMPTS = 5;
+
+  // Focus input on mount
   useEffect(() => {
-    inputRefs.current[0]?.focus();
+    inputRef.current?.focus();
   }, []);
 
-  const handleDigitChange = useCallback((index: number, value: string) => {
-    if (!/^\d?$/.test(value)) return; // only single digit
+  // Lockout countdown timer
+  useEffect(() => {
+    if (!lockedUntil) return;
+    const interval = setInterval(() => {
+      const remaining = Math.ceil((lockedUntil - Date.now()) / 1000);
+      if (remaining <= 0) {
+        setLockedUntil(null);
+        setLockCountdown(0);
+        setAttempts(0);
+        setError(null);
+        setTimeout(() => inputRef.current?.focus(), 100);
+      } else {
+        setLockCountdown(remaining);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockedUntil]);
 
-    const newDigits = [...digits];
-    newDigits[index] = value;
-    setDigits(newDigits);
-    setError(null);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pin.trim() || authenticating || lockedUntil) return;
 
-    // Auto-advance to next
-    if (value && index < 3) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    // Auto-submit when all 4 filled
-    if (value && index === 3 && newDigits.every(d => d)) {
-      submitPin(newDigits.join(""));
-    }
-  }, [digits]);
-
-  const handleKeyDown = useCallback((index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !digits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-      const newDigits = [...digits];
-      newDigits[index - 1] = "";
-      setDigits(newDigits);
-    }
-  }, [digits]);
-
-  const submitPin = async (pin: string) => {
     setAuthenticating(true);
     setError(null);
 
@@ -170,10 +191,23 @@ function PinEntry({
     if (result.success) {
       setSuccess(true);
     } else {
-      setError(result.error || "Login failed");
-      setDigits(["", "", "", ""]);
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+
+      if (newAttempts >= MAX_ATTEMPTS) {
+        // Escalating lockout: 60s, 120s, 300s
+        const lockDurations = [60, 120, 300];
+        const lockIndex = Math.min(Math.floor(newAttempts / MAX_ATTEMPTS) - 1, lockDurations.length - 1);
+        const lockMs = lockDurations[lockIndex] * 1000;
+        setLockedUntil(Date.now() + lockMs);
+        setError(`Too many attempts. Locked for ${lockDurations[lockIndex]}s`);
+      } else {
+        setError(`Access Denied — ${MAX_ATTEMPTS - newAttempts} attempts remaining`);
+      }
+
+      setPin("");
       setAuthenticating(false);
-      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
   };
 
@@ -214,10 +248,10 @@ function PinEntry({
         animation: "sg-corner-glow 5s ease-in-out 1.5s infinite",
       }} />
 
-      {/* NexusLink brand — top left */}
-      <div style={{ position: "absolute", top: 28, left: 36, zIndex: 2, display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontWeight: 300, fontSize: 11, color: "#4A5568", letterSpacing: "0.25em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>NexusLink</span>
-        <span style={{ fontWeight: 700, fontSize: 10, letterSpacing: "0.5em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Health</span>
+      {/* Dalxic brand — top left */}
+      <div style={{ position: "absolute", top: 28, left: 36, zIndex: 2, display: "flex", alignItems: "center" }}>
+        <span style={{ fontWeight: 300, fontSize: 13, color: "#4A5568", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Dalxic</span>
+        <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Health</span>
       </div>
 
       {/* Glow animation styles */}
@@ -317,14 +351,14 @@ function PinEntry({
             fontSize: 11, color: "#475569", letterSpacing: "0.2em", textTransform: "uppercase",
             fontFamily: "var(--font-outfit), Outfit, sans-serif", fontWeight: 600,
           }}>
-            {hospitalCode} &middot; StationGuard™
+            {hospitalCode} &middot; WorkstationGuard™
           </p>
         </motion.div>
 
         {/* Divider */}
         <div style={{ width: 56, height: 1, background: `linear-gradient(90deg, transparent, ${COPPER}30, transparent)`, margin: "28px auto" }} />
 
-        {/* Prompt — ChickenAI weight */}
+        {/* Prompt */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -335,58 +369,67 @@ function PinEntry({
             fontFamily: "var(--font-outfit), Outfit, sans-serif",
           }}
         >
-          Enter Your 4-Digit Access PIN
+          Enter Access PIN
         </motion.p>
 
-        {/* PIN boxes — larger, more premium */}
-        <div style={{ display: "flex", gap: 14, justifyContent: "center", marginBottom: 28 }}>
-          {digits.map((digit, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 16 }}
-              animate={error ? { x: [0, -6, 6, -4, 4, 0], opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
-              transition={error ? { duration: 0.4 } : { delay: 0.4 + i * 0.06, duration: 0.4 }}
+        {/* Single password input — no digit count visible */}
+        <form onSubmit={handleSubmit} style={{ marginBottom: 28 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={error ? { x: [0, -6, 6, -4, 4, 0], opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+            transition={error ? { duration: 0.4 } : { delay: 0.4, duration: 0.4 }}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}
+          >
+            <input
+              ref={inputRef}
+              type="password"
+              inputMode="numeric"
+              value={pin}
+              onChange={(e) => { if (/^\d*$/.test(e.target.value)) { setPin(e.target.value); setError(null); } }}
+              disabled={authenticating || success || !!lockedUntil}
+              autoComplete="off"
+              placeholder="••••"
+              style={{
+                width: 200, height: 56, textAlign: "center",
+                fontSize: 24, fontWeight: 800, color: COPPER,
+                fontFamily: "var(--font-outfit), Outfit, sans-serif",
+                letterSpacing: "0.3em",
+                background: "rgba(255,255,255,0.025)",
+                border: `2px solid ${error ? "rgba(239,68,68,0.5)" : "rgba(255,255,255,0.08)"}`,
+                borderRadius: 14,
+                outline: "none",
+                transition: "all 0.25s ease",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = COPPER + "50";
+                e.target.style.boxShadow = `0 0 24px ${COPPER}12`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = error ? "rgba(239,68,68,0.5)" : "rgba(255,255,255,0.08)";
+                e.target.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,0.02)";
+              }}
+            />
+            <motion.button
+              type="submit"
+              disabled={!pin.trim() || authenticating || success || !!lockedUntil}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              style={{
+                padding: "12px 40px", borderRadius: 12, fontSize: 12,
+                background: `linear-gradient(135deg, ${COPPER}, #D4956B)`,
+                border: "none", color: "#fff", cursor: "pointer", fontWeight: 700,
+                letterSpacing: "0.1em", textTransform: "uppercase",
+                fontFamily: "var(--font-outfit), Outfit, sans-serif",
+                boxShadow: `0 6px 20px ${COPPER}25`,
+                opacity: (!pin.trim() || authenticating || !!lockedUntil) ? 0.4 : 1,
+                transition: "opacity 0.2s ease",
+              }}
             >
-              <input
-                ref={el => { inputRefs.current[i] = el; }}
-                type="password"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleDigitChange(i, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(i, e)}
-                disabled={authenticating || success}
-                autoComplete="off"
-                style={{
-                  width: 64, height: 72, textAlign: "center",
-                  fontSize: 28, fontWeight: 800, color: digit ? COPPER : "#3E4A5C",
-                  fontFamily: "var(--font-outfit), Outfit, sans-serif",
-                  background: digit
-                    ? `linear-gradient(180deg, ${COPPER}08, ${COPPER}04)`
-                    : "rgba(255,255,255,0.025)",
-                  border: `2px solid ${error
-                    ? "rgba(239,68,68,0.5)"
-                    : digit
-                      ? COPPER + "40"
-                      : "rgba(255,255,255,0.06)"}`,
-                  borderRadius: 16,
-                  outline: "none",
-                  transition: "all 0.25s ease",
-                  caretColor: "transparent",
-                  boxShadow: digit ? `0 4px 20px ${COPPER}10, inset 0 1px 0 rgba(255,255,255,0.03)` : "inset 0 1px 0 rgba(255,255,255,0.02)",
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = COPPER + "60";
-                  e.target.style.boxShadow = `0 0 24px ${COPPER}15, 0 4px 20px ${COPPER}10`;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = digit ? COPPER + "40" : "rgba(255,255,255,0.06)";
-                  e.target.style.boxShadow = digit ? `0 4px 20px ${COPPER}10` : "none";
-                }}
-              />
-            </motion.div>
-          ))}
-        </div>
+              {lockedUntil ? `Locked (${lockCountdown}s)` : "Authenticate"}
+            </motion.button>
+          </motion.div>
+        </form>
 
         {/* Status messages */}
         <div style={{ minHeight: 36 }}>
@@ -484,7 +527,7 @@ function PinEntry({
           fontSize: 9, color: "#1E293B", letterSpacing: "0.3em", textTransform: "uppercase",
           fontFamily: "var(--font-outfit), Outfit, sans-serif", fontWeight: 600,
         }}>
-          NexusLink Health &mdash; StationGuard™
+          Dalxic Health &mdash; WorkstationGuard™
         </p>
       </motion.div>
     </div>
@@ -564,7 +607,7 @@ function RoleBlocked({
           color: "#EF4444", marginBottom: 16,
           fontFamily: "var(--font-outfit), Outfit, sans-serif",
         }}>
-          Access Restricted
+          {stationName} — Access Restricted
         </h1>
         <p style={{ fontSize: 14, color: "#94A3B8", marginBottom: 6, fontWeight: 600, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
           <strong style={{ color: "#D4956B" }}>{operatorName}</strong>
@@ -578,7 +621,7 @@ function RoleBlocked({
           background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)",
         }}>
           <p style={{ fontSize: 11, color: "#64748B", fontWeight: 600, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
-            This station requires: <strong style={{ color: "#94A3B8" }}>{allowedRoles.map(r => r.replace("_", " ")).join(", ")}</strong>
+            This workstation requires: <strong style={{ color: "#94A3B8" }}>{allowedRoles.map(r => r.replace("_", " ")).join(", ")}</strong>
           </p>
         </div>
 

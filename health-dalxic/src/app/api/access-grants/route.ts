@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
-
+import { rateLimit, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
 // POST: Create a temporary access grant
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request, AUTH_RATE_LIMIT); if (blocked) return blocked;  const body = await request.json();
   const { dalxicStaffId, hospitalId, grantedRole, grantedBy, expiresAt, reason } = body;
 
   if (!dalxicStaffId || !hospitalId || !grantedRole || !grantedBy || !expiresAt || !reason) {
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
 // PATCH: Revoke an access grant
 export async function PATCH(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request, AUTH_RATE_LIMIT); if (blocked) return blocked;  const body = await request.json();
   const { grantId, revokedBy } = body;
 
   if (!grantId || !revokedBy) {
@@ -66,7 +66,7 @@ export async function PATCH(request: Request) {
 
 // GET: List active grants
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request, AUTH_RATE_LIMIT); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalId = searchParams.get("hospitalId");
 
   const where = hospitalId

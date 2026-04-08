@@ -188,14 +188,14 @@ export default function BedManagementPage() {
 
       {/* Header */}
       <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, padding: "16px 36px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(184,115,51,0.08)", background: "rgba(3,5,15,0.3)", backdropFilter: "blur(12px)" }}>
-        <Link href="/platform" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontWeight: 300, fontSize: 12, color: "#94A3B8", letterSpacing: "0.22em", textTransform: "uppercase" }}>NEXUSLINK</span>
-          <span style={{ fontWeight: 500, fontSize: 11, letterSpacing: "0.5em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>HEALTH</span>
+        <Link href="/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+          <span style={{ fontWeight: 300, fontSize: 13, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase" }}>Dalxic</span>
+          <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Bed Management</span>
           <div style={{ width: 1, height: 16, background: "rgba(184,115,51,0.15)" }} />
-          <span style={{ fontSize: 12, color: "#94A3B8" }}>{HOSPITAL_NAME}</span>
+          <span style={{ fontSize: 13, color: "#94A3B8" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: "rgba(184,115,51,0.15)" }} />
           <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: COPPER }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
@@ -248,7 +248,7 @@ export default function BedManagementPage() {
                       onClick={() => { setSelectedWard(ward.id); setActiveNav("manage"); }}
                       style={{ padding: 20, borderRadius: 14, background: "rgba(255,255,255,0.025)", border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)", cursor: "pointer", transition: "all 0.3s" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center" }}>
                           <span style={{ fontSize: 20 }}>{typeInfo?.icon || "🏥"}</span>
                           <div>
                             <p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{ward.name}</p>

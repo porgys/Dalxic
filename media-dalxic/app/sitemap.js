@@ -1,5 +1,5 @@
 export default function sitemap() {
-  const base = "https://dalxic.com"
+  const base = "https://media.dalxic.com"
   const routes = [
     { url: base, changeFrequency: "weekly", priority: 1 },
     { url: `${base}/about`, changeFrequency: "monthly", priority: 0.9 },

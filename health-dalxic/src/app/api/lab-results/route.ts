@@ -1,11 +1,12 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { getPusher, hospitalChannel } from "@/lib/pusher-server";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { notifyPatient } from "@/lib/whatsapp";
-
+import { rateLimit } from "@/lib/rate-limit";
 // POST: Enter lab results
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { labOrderId, results, enteredBy } = body as {
     labOrderId: string;
     results: {

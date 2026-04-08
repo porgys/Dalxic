@@ -2,10 +2,10 @@ import { db } from "@/lib/db";
 import { generateERToken } from "@/lib/tokens";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { getPusher, hospitalChannel } from "@/lib/pusher-server";
-
+import { rateLimit } from "@/lib/rate-limit";
 // POST: Emergency admission — ambulance/walk-in/transfer intake (bypasses normal registration)
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, patientName, severity, chiefComplaint, arrivalMode } = body as {
     hospitalCode: string;
     patientName: string;

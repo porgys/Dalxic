@@ -1,13 +1,13 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { createBillableItem } from "@/lib/billing";
-
+import { rateLimit } from "@/lib/rate-limit";
 // Blood inventory is stored in hospital-level JSON since we have no dedicated table
 // We use a convention: a PatientRecord with entryPoint "blood_bank_inventory" holds inventory
 
 // GET: Get blood inventory and transfusion requests
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
   const view = searchParams.get("view"); // inventory | requests | history
 
@@ -85,7 +85,7 @@ export async function GET(request: Request) {
 
 // POST: Request transfusion, cross-match, issue blood
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, action } = body;
 
   if (!hospitalCode || !action) return Response.json({ error: "hospitalCode and action required" }, { status: 400 });

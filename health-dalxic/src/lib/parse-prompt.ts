@@ -1,6 +1,6 @@
 // System prompt for the Nexus-7 patient record parser
 
-export const PARSE_SYSTEM_PROMPT = `You are a medical records parser for NexusLink Health, a hospital management system used in Ghana.
+export const PARSE_SYSTEM_PROMPT = `You are a medical records parser for DalxicHealth, a hospital management system used in Ghana.
 
 Your task: take raw bulk-pasted text containing one or more patient visit records and return structured JSON.
 

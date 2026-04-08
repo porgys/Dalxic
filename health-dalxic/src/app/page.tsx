@@ -2,6 +2,11 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
+import Image from "next/image"
+
+/* ─── Cross-platform URLs ─── */
+const MAIN_URL  = process.env.NEXT_PUBLIC_MAIN_URL  || "http://localhost:3000"
+const MEDIA_URL = process.env.NEXT_PUBLIC_MEDIA_URL || "http://localhost:3001"
 
 /* ─── Scroll-triggered reveal (dalxic.com pattern) ─── */
 function useReveal(threshold = 0.15) {
@@ -211,6 +216,7 @@ function GalaxyCanvas() {
 }
 
 /* ─── Scrolling ticker ─── */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function Ticker({ text }: { text: string }) {
   const content = Array(4).fill(text).join("   ·   ")
   return (
@@ -226,7 +232,7 @@ const COPPER_LIGHT = "#D4956B";
 /* ─── Ticker with glowing country names ─── */
 function TickerMulti() {
   const items = [
-    { text: "NEXUSLINK HEALTH", glow: false },
+    { text: "DALXIC HEALTH", glow: false },
     { text: "NEXUS-7™", glow: false },
     { text: "GHANA", glow: true },
     { text: "LIVEQUEUE™", glow: false },
@@ -267,7 +273,7 @@ function TickerMulti() {
 
 /* ═══════════════════ DATA ═══════════════════ */
 
-const DEPARTMENTS = [
+const WORKSTATIONS = [
   { icon: "🏥", title: "Registration & Triage", engine: "FlowEngine™", desc: "Patient intake in under 30 seconds. TriageIQ™ severity classification with automatic priority routing.", color: "#0EA5E9" },
   { icon: "📺", title: "Queue & Display", engine: "CallBoard™", desc: "LiveQueue™ real-time patient flow. Auto-updates across all devices instantly — no refresh, no delays.", color: "#38BDF8" },
   { icon: "🩺", title: "Consultation", engine: "Clinical Engine", desc: "Full consultation workflow with InsightBrief™ summaries. CareChain™ specialist routing, prescriptions, and diagnosis.", color: "#0EA5E9" },
@@ -279,13 +285,13 @@ const DEPARTMENTS = [
   { icon: "🤰", title: "Maternity", engine: "MaternaFlow™", desc: "Antenatal tracking, labour monitoring, and postnatal care — full maternal lifecycle in one workflow.", color: "#A855F7" },
   { icon: "🩸", title: "Blood Bank", engine: "HemoVault™", desc: "Inventory management, cross-matching, and transfusion tracking with full compatibility verification.", color: "#DC2626" },
   { icon: "📡", title: "Imaging & Radiology", engine: "ScanLink™", desc: "CT, ultrasound, and X-ray order management with result delivery direct to the consulting physician.", color: "#38BDF8" },
-  { icon: "💰", title: "Billing & Revenue", engine: "BillStream™", desc: "Auto-captured billing from every department. SafeExit™ discharge verification ensures nothing leaves unbilled.", color: "#B87333" },
+  { icon: "💰", title: "Billing & Revenue", engine: "BillStream™", desc: "Auto-captured billing from every workstation. SafeExit™ discharge verification ensures nothing leaves unbilled.", color: "#B87333" },
 ]
 
 const STATS = [
   { value: 30, suffix: "s", prefix: "<", decimals: 0, label: "FlowEngine™ Registration" },
   { display: "100%", label: "AuditVault™ Coverage" },
-  { value: 13, suffix: "+", decimals: 0, label: "Connected Stations" },
+  { value: 46, suffix: "+", decimals: 0, label: "Connected Workstations" },
   { display: "Real-time", label: "LiveQueue™ Updates" },
 ]
 
@@ -327,19 +333,13 @@ function Nav() {
       backdropFilter: scrolled ? "blur(24px)" : "none",
       borderBottom: scrolled ? "1px solid var(--nl-border)" : "1px solid transparent",
     }}>
-      <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontWeight: 300, fontSize: 13, color: "#94A3B8", letterSpacing: "0.22em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
-            NEXUSLINK
-          </span>
-          <span style={{ fontWeight: 500, fontSize: 12, letterSpacing: "0.5em", textTransform: "uppercase", marginTop: 2, fontFamily: "var(--font-outfit), Outfit, sans-serif" }} className="text-gradient-blue">
-            HEALTH
-          </span>
-        </div>
+      <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+        <span style={{ fontWeight: 300, fontSize: 14, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Dalxic</span>
+        <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }} className="text-gradient-blue">Health</span>
       </Link>
       <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
         {[
-          { label: "Departments", href: "#stations" },
+          { label: "Workstations", href: "#stations" },
           { label: "Technology", href: "#technology" },
           { label: "Pricing", href: "/pricing" },
           { label: "Access", href: "#access" },
@@ -357,7 +357,7 @@ function Nav() {
         ))}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Link href="/platform" style={{
+        <Link href="/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh" style={{
           padding: "8px 20px", borderRadius: 10, fontSize: 13, fontWeight: 700,
           textDecoration: "none", color: "#fff",
           background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`,
@@ -419,29 +419,29 @@ export default function HomePage() {
 
             {/* Sub-copy */}
             <p style={{ fontSize: "clamp(0.95rem, 1.5vw, 1.1rem)", color: "var(--nl-txM)", lineHeight: 1.8, maxWidth: 580, margin: "0 auto 44px", animation: "fadeUp 0.6s ease 0.5s both" }}>
-              From patient intake to pharmacy dispensing — every department connected in real-time. Eight proprietary systems, one seamless platform.
+              From patient intake to pharmacy dispensing — every workstation connected in real-time. Eight proprietary systems, one seamless platform.
             </p>
 
             {/* CTAs */}
             <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", animation: "fadeUp 0.6s ease 0.65s both" }}>
-              <Link href="/platform" style={{
-                padding: "16px 40px", borderRadius: 14, fontSize: 15, fontWeight: 700,
-                letterSpacing: "0.04em", textDecoration: "none", color: "#fff",
+              <Link href="/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh" style={{
+                padding: "16px 0", width: 240, textAlign: "center", borderRadius: 14, fontSize: 15, fontWeight: 700,
+                letterSpacing: "0.04em", textDecoration: "none", color: "#fff", display: "inline-block",
                 background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`,
                 boxShadow: `0 8px 32px ${COPPER}40`,
                 transition: "all 0.3s ease",
               }}>
                 Enter Platform
               </Link>
-              <a href="#stations" className="btn-nl btn-nl-glow btn-nl-lg">
-                Explore Departments
+              <a href="#stations" className="btn-nl btn-nl-glow btn-nl-lg" style={{ width: 240, textAlign: "center", display: "inline-block", boxSizing: "border-box" }}>
+                Explore Workstations
               </a>
             </div>
 
             {/* Trust badges */}
             <div style={{ marginTop: 56, display: "flex", gap: 32, flexWrap: "wrap", justifyContent: "center", animation: "fadeUp 0.6s ease 0.8s both" }}>
               {["Pan-African Compliance", "AuditVault™ Trail", "Multi-Facility Ready", "LiveQueue™ Sync"].map(t => (
-                <div key={t} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div key={t} style={{ display: "flex", alignItems: "center" }}>
                   <span style={{ width: 6, height: 6, background: COPPER, borderRadius: "50%", boxShadow: `0 0 8px ${COPPER}90`, display: "inline-block" }} />
                   <span style={{ fontSize: 12, color: "var(--nl-txM)", letterSpacing: 0.5 }}>{t}</span>
                 </div>
@@ -467,6 +467,47 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ═══════════════════ SHOWCASE 1: CONNECTED CORRIDOR ═══════════════════ */}
+      <section style={{ padding: "100px 0", background: "var(--nl-bg)", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 30% 50%, rgba(184,115,51,0.04) 0%, transparent 60%)", pointerEvents: "none" }} />
+        <div style={{ maxWidth: 1240, margin: "0 auto", padding: "0 32px", position: "relative", zIndex: 1 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
+            {/* Image */}
+            <Reveal>
+              <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", border: "1px solid rgba(184,115,51,0.15)", boxShadow: "0 24px 80px rgba(0,0,0,0.4), 0 0 60px rgba(184,115,51,0.08)" }}>
+                <Image src="/images/connected-corridor.jpg" alt="Hospital departments connected by intelligent data streams" width={600} height={400} style={{ width: "100%", height: "auto", display: "block" }} />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 60%, rgba(3,5,15,0.6) 100%)", pointerEvents: "none" }} />
+              </div>
+            </Reveal>
+            {/* Text */}
+            <Reveal delay={0.15}>
+              <div className="section-label" style={{ marginBottom: 14 }}>Seamless Integration</div>
+              <h2 style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.6rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 20, lineHeight: 1.1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+                Every Department.{" "}<span className="text-gradient-copper">One Nervous System.</span>
+              </h2>
+              <p style={{ fontSize: 15, color: "var(--nl-txM)", lineHeight: 1.8, marginBottom: 28 }}>
+                From pharmacy shelves to radiology suites — every corridor pulses with real-time data. Staff carry intelligent tablets that sync with LiveQueue™, routing patients through departments without a single paper handoff.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {[
+                  { label: "LiveQueue™ Sync", desc: "Patient position updates propagate across all departments instantly", accent: "#0EA5E9" },
+                  { label: "CareChain™ Routing", desc: "Automatic handoff between pharmacy, radiology, lab, and consultation", accent: "#38BDF8" },
+                  { label: "Zero Paper Trail", desc: "Every order, result, and referral travels digitally through the facility", accent: COPPER },
+                ].map(f => (
+                  <div key={f.label} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                    <div style={{ width: 3, height: 36, background: `linear-gradient(to bottom, ${f.accent}, transparent)`, borderRadius: 2, flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: f.accent, marginBottom: 3 }}>{f.label}</div>
+                      <div style={{ fontSize: 13, color: "var(--nl-txM)", lineHeight: 1.6 }}>{f.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
       <div className="divider" />
 
       {/* ═══════════════════ STATIONS ═══════════════════ */}
@@ -475,18 +516,18 @@ export default function HomePage() {
           <Reveal style={{ textAlign: "center", marginBottom: 64 }}>
             <div className="section-label" style={{ marginBottom: 12 }}>Full Hospital Coverage</div>
             <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 3rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 16, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
-              Every Department.{" "}<span className="text-gradient-blue">One Platform.</span>
+              Every Workstation.{" "}<span className="text-gradient-blue">One Platform.</span>
             </h2>
             <p style={{ color: "var(--nl-txM)", maxWidth: 580, margin: "0 auto", lineHeight: 1.7 }}>
               From registration to pharmacy, emergency to maternity — every workflow connected in real-time. Fully integrated onboarding for facilities up to 1,000+ beds.
             </p>
           </Reveal>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 18 }}>
-            {DEPARTMENTS.map((s, i) => (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+            {WORKSTATIONS.map((s, i) => (
               <Reveal key={s.title} delay={i * 0.06} style={{ height: "100%" }}>
                 <div className="glass" style={{
-                  padding: "28px 24px", width: "100%",
+                  padding: "28px 24px", width: "100%", height: 290,
                   display: "flex", flexDirection: "column",
                   transition: "all 0.35s ease", cursor: "default",
                 }}
@@ -516,7 +557,7 @@ export default function HomePage() {
               <div style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: 1, background: "linear-gradient(90deg, transparent, rgba(14,165,233,0.4), rgba(184,115,51,0.3), transparent)" }} />
               {[
                 { value: "1,000+", label: "Bed Capacity", accent: "#0EA5E9" },
-                { value: "12", label: "Integrated Departments", accent: "#38BDF8" },
+                { value: "46", label: "Integrated Workstations", accent: "#38BDF8" },
                 { value: "< 48hrs", label: "Full Onboarding", accent: "#B87333" },
                 { value: "99.9%", label: "Uptime Target", accent: "#0EA5E9" },
               ].map(s => (
@@ -539,6 +580,47 @@ export default function HomePage() {
               ))}
             </div>
           </Reveal>
+        </div>
+      </section>
+
+      {/* ═══════════════════ SHOWCASE 2: COMMAND CENTER ═══════════════════ */}
+      <section style={{ padding: "100px 0", background: "var(--nl-surf)", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 70% 40%, rgba(14,165,233,0.04) 0%, transparent 55%)", pointerEvents: "none" }} />
+        <div style={{ maxWidth: 1240, margin: "0 auto", padding: "0 32px", position: "relative", zIndex: 1 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
+            {/* Text (left this time — alternating layout) */}
+            <Reveal>
+              <div className="section-label-copper" style={{ marginBottom: 14 }}>Central Intelligence</div>
+              <h2 style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.6rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 20, lineHeight: 1.1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+                Total Hospital{" "}<span className="text-gradient-blue">Visibility.</span>
+              </h2>
+              <p style={{ fontSize: 15, color: "var(--nl-txM)", lineHeight: 1.8, marginBottom: 28 }}>
+                A command centre where administrators see everything — live patient flow, department loads, queue lengths, billing throughput, and emergency alerts — all on one wall. This is not a dashboard. This is hospital-wide consciousness.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {[
+                  { label: "Real-Time Facility Map", desc: "Every workstation, every queue, every bed — live on screen with auto-refresh", accent: "#0EA5E9" },
+                  { label: "AuditVault™ Oversight", desc: "Complete audit trail visibility — who did what, when, from which station", accent: COPPER },
+                  { label: "RedLine™ Alert Feed", desc: "Emergency escalations surface instantly with severity classification and routing", accent: "#EF4444" },
+                ].map(f => (
+                  <div key={f.label} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                    <div style={{ width: 3, height: 36, background: `linear-gradient(to bottom, ${f.accent}, transparent)`, borderRadius: 2, flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: f.accent, marginBottom: 3 }}>{f.label}</div>
+                      <div style={{ fontSize: 13, color: "var(--nl-txM)", lineHeight: 1.6 }}>{f.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+            {/* Image */}
+            <Reveal delay={0.15}>
+              <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", border: "1px solid rgba(14,165,233,0.15)", boxShadow: "0 24px 80px rgba(0,0,0,0.4), 0 0 60px rgba(14,165,233,0.08)" }}>
+                <Image src="/images/command-center.jpg" alt="Hospital command centre with live dashboard monitoring all departments" width={600} height={400} style={{ width: "100%", height: "auto", display: "block" }} />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 60%, rgba(3,5,15,0.6) 100%)", pointerEvents: "none" }} />
+              </div>
+            </Reveal>
+          </div>
         </div>
       </section>
 
@@ -602,8 +684,10 @@ export default function HomePage() {
               <div style={{ width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(14,165,233,0.12) 0%, transparent 70%)", position: "absolute" }} />
               {/* Center text */}
               <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-                <div style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif", fontWeight: 300, fontSize: 15, color: "#94A3B8", letterSpacing: "0.22em", textTransform: "uppercase" }}>NEXUSLINK</div>
-                <div style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif", fontWeight: 500, fontSize: 14, letterSpacing: "0.5em", textTransform: "uppercase", marginTop: 2 }} className="text-gradient-blue">HEALTH</div>
+                <div style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif", display: "flex", alignItems: "baseline" }}>
+                  <span style={{ fontWeight: 300, fontSize: 14, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase" }}>Dalxic</span>
+                  <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase" }} className="text-gradient-blue">Health</span>
+                </div>
               </div>
               {/* Scan line */}
               <div className="scan-line-effect" style={{ position: "absolute", width: 380, height: 380, borderRadius: "50%", overflow: "hidden", opacity: 0.3, pointerEvents: "none" }} />
@@ -638,6 +722,47 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ═══════════════════ SHOWCASE 3: HOLOGRAPHIC RECORDS ═══════════════════ */}
+      <section style={{ padding: "100px 0", background: "var(--nl-bg)", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 40% 60%, rgba(184,115,51,0.04) 0%, transparent 55%)", pointerEvents: "none" }} />
+        <div style={{ maxWidth: 1240, margin: "0 auto", padding: "0 32px", position: "relative", zIndex: 1 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
+            {/* Image */}
+            <Reveal>
+              <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", border: "1px solid rgba(184,115,51,0.15)", boxShadow: "0 24px 80px rgba(0,0,0,0.4), 0 0 60px rgba(184,115,51,0.08)" }}>
+                <Image src="/images/holographic-records.jpg" alt="Doctor reviewing intelligent patient records with connected workstation modules" width={600} height={400} style={{ width: "100%", height: "auto", display: "block" }} />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 60%, rgba(3,5,15,0.6) 100%)", pointerEvents: "none" }} />
+              </div>
+            </Reveal>
+            {/* Text */}
+            <Reveal delay={0.15}>
+              <div className="section-label" style={{ marginBottom: 14 }}>Intelligence At The Point Of Care</div>
+              <h2 style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.6rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 20, lineHeight: 1.1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+                The Patient Record,{" "}<span className="text-gradient-copper">Reimagined.</span>
+              </h2>
+              <p style={{ fontSize: 15, color: "var(--nl-txM)", lineHeight: 1.8, marginBottom: 28 }}>
+                Every consultation connects to every workstation. Lab results, pharmacy orders, imaging reports, billing items, and referral chains — all visible in one intelligent patient view. Nexus-7™ structures the data so doctors think, not search.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {[
+                  { label: "Nexus-7™ InsightBrief", desc: "Structured clinical summaries generated from consultation data in real-time", accent: "#0EA5E9" },
+                  { label: "Cross-Station Context", desc: "Lab, pharmacy, radiology, and billing data all visible from the consultation screen", accent: "#38BDF8" },
+                  { label: "BillStream™ Auto-Capture", desc: "Every test ordered, drug dispensed, and procedure performed — billed automatically", accent: COPPER },
+                ].map(f => (
+                  <div key={f.label} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                    <div style={{ width: 3, height: 36, background: `linear-gradient(to bottom, ${f.accent}, transparent)`, borderRadius: 2, flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: f.accent, marginBottom: 3 }}>{f.label}</div>
+                      <div style={{ fontSize: 13, color: "var(--nl-txM)", lineHeight: 1.6 }}>{f.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
       <div className="divider" />
 
       {/* ═══════════════════ OPERATIONAL DEPTH ═══════════════════ */}
@@ -656,7 +781,7 @@ export default function HomePage() {
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 18 }}>
             {[
               { title: "Doctor Break & Ward Rounds", desc: "Doctors pause their queue for breaks, prayer, or ward visits. Patients hold position — queue resumes seamlessly when they return.", accent: "#0EA5E9" },
-              { title: "RedLine™ Emergency Escalation", desc: "Any doctor can escalate a patient to emergency mid-consultation. ER token issued instantly, priority queue activated across every department.", accent: "#EF4444" },
+              { title: "RedLine™ Emergency Escalation", desc: "Any doctor can escalate a patient to emergency mid-consultation. ER token issued instantly, priority queue activated across every workstation.", accent: "#EF4444" },
               { title: "Lab Return Priority Queue", desc: "Patient sent to lab returns to the doctor with priority status — they skip to the front, not the back.", accent: "#38BDF8" },
               { title: "SafeExit™ Discharge Verification", desc: "No patient leaves without verification. Discharge requires confirmation — prevents walkouts on unpaid bills and ensures billing closure.", accent: "#B87333" },
               { title: "CareChain™ Multi-Doctor Routing", desc: "Doctor A refers to Doctor B, who can chain to Doctor C. Full specialist routing with handover context at every step.", accent: "#0EA5E9" },
@@ -695,7 +820,7 @@ export default function HomePage() {
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(14,165,233,0.5)"; e.currentTarget.style.background = "rgba(14,165,233,0.06)" }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(14,165,233,0.2)"; e.currentTarget.style.background = "none" }}
               >
-                See More NexusLink Solutions →
+                See More Dalxic Solutions →
               </button>
 
               <div id="demo-gate" style={{ display: "none", marginTop: 32 }}>
@@ -777,9 +902,9 @@ export default function HomePage() {
       {/* ═══════════════════ FOOTER ═══════════════════ */}
       <footer style={{ padding: "48px 0 32px", background: "var(--nl-bg)" }}>
         <div style={{ maxWidth: 1240, margin: "0 auto", padding: "0 32px" }}>
-          {/* Departments grid */}
+          {/* Workstations grid */}
           <div style={{ marginBottom: 36 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--nl-txM)", marginBottom: 20, textAlign: "center" }}>Departments</div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--nl-txM)", marginBottom: 20, textAlign: "center" }}>Workstations</div>
             <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "8px 32px" }}>
               {["Registration & Triage", "Consultation", "Laboratory", "Pharmacy", "Nursing & Injection", "Emergency & ICU", "Inpatient & Ward", "Maternity", "Blood Bank", "Imaging & Radiology", "Billing & Revenue", "Queue & Display"].map(l => (
                 <span key={l} style={{ fontSize: 13, color: "var(--nl-txD)" }}>{l}</span>
@@ -787,11 +912,42 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Dalxic Subsidiaries */}
+          <div style={{ textAlign: "center", marginBottom: 36 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--nl-txM)", marginBottom: 20 }}>Dalxic Subsidiaries</div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 18, flexWrap: "wrap" }}>
+              {/* Dalxic — Copper */}
+              <a href={MAIN_URL} style={{ textDecoration: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, width: 160, height: 80, borderRadius: 14, border: "none", background: "none", transition: "all 0.3s ease", position: "relative", overflow: "hidden" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(184,115,51,0.12) 0%, rgba(210,150,80,0.05) 100%)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(184,115,51,0.15)" }}
+                onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.boxShadow = "none" }}>
+                <span style={{ fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #D4956B, #B87333)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Dalxic</span>
+                <span style={{ fontSize: 11, color: "var(--nl-txD)" }}>dalxic.com</span>
+              </a>
+              {/* DalxicHealth — Blue (active) */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, width: 160, height: 80, borderRadius: 14, border: "none", background: "linear-gradient(135deg, rgba(14,165,233,0.1) 0%, rgba(56,189,248,0.04) 100%)", position: "relative", overflow: "hidden", boxShadow: "0 4px 20px rgba(14,165,233,0.08)" }}>
+                <span style={{ fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #38BDF8, #0EA5E9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>DalxicHealth</span>
+                <span style={{ fontSize: 11, color: "var(--nl-txM)" }}>You Are Here</span>
+              </div>
+              {/* DalxicMedia — Indigo/Violet */}
+              <a href={MEDIA_URL} style={{ textDecoration: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, width: 160, height: 80, borderRadius: 14, border: "none", background: "none", transition: "all 0.3s ease", position: "relative", overflow: "hidden" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(167,139,250,0.05) 100%)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(99,102,241,0.15)" }}
+                onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.boxShadow = "none" }}>
+                <span style={{ fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #818CF8, #A78BFA)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>DalxicMedia</span>
+                <span style={{ fontSize: 11, color: "var(--nl-txD)" }}>media.dalxic.com</span>
+              </a>
+              {/* DalxicJudiciary — Ruby Red */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, width: 160, height: 80, borderRadius: 14, border: "none", background: "none", position: "relative", overflow: "hidden", opacity: 0.45 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #EF4444, #DC2626)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>DalxicJudiciary</span>
+                <span style={{ fontSize: 11, color: "var(--nl-txD)" }}>judiciary.dalxic.com</span>
+              </div>
+            </div>
+          </div>
+
           {/* Brand */}
           <div style={{ textAlign: "center", marginBottom: 36 }}>
-            <div style={{ display: "inline-flex", flexDirection: "column", marginBottom: 12 }}>
-              <span style={{ fontWeight: 300, fontSize: 13, color: "#94A3B8", letterSpacing: "0.22em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>NEXUSLINK</span>
-              <span style={{ fontWeight: 500, fontSize: 12, letterSpacing: "0.5em", textTransform: "uppercase", marginTop: 2, fontFamily: "var(--font-outfit), Outfit, sans-serif" }} className="text-gradient-blue">HEALTH</span>
+            <div style={{ display: "inline-flex", alignItems: "baseline", marginBottom: 12 }}>
+              <span style={{ fontWeight: 300, fontSize: 14, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Dalxic</span>
+              <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }} className="text-gradient-blue">Health</span>
             </div>
             <p style={{ fontSize: 13, color: "var(--nl-txD)", maxWidth: 400, margin: "0 auto", lineHeight: 1.7 }}>
               Nexus-7™ hospital management platform. Built for speed. Designed for precision. A Dalxic subsidiary.

@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { createBillableItem } from "@/lib/billing";
-
+import { rateLimit } from "@/lib/rate-limit";
 // GET: Get maternity patients
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
   const view = searchParams.get("view"); // antenatal | labour | postnatal | all
 
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
 
 // POST: Register, update stage, record visit, delivery
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, action } = body;
 
   if (!hospitalCode || !action) return Response.json({ error: "hospitalCode and action required" }, { status: 400 });
@@ -186,6 +186,7 @@ export async function POST(request: Request) {
 
   // Discharge
   if (action === "discharge") {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { recordId, dischargedBy } = body;
     if (!recordId) return Response.json({ error: "recordId required" }, { status: 400 });
 

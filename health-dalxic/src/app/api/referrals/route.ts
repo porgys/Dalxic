@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { generateLabToken, generateReferralToken } from "@/lib/tokens";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { getPusher, hospitalChannel } from "@/lib/pusher-server";
-
+import { rateLimit } from "@/lib/rate-limit";
 type StationReferralType = "lab" | "injection" | "radiology" | "ct" | "ultrasound";
 
 const STATION_MAP: Record<StationReferralType, { prefix: string; channel: string; role: string }> = {
@@ -40,7 +40,7 @@ type DoctorReferral = {
 
 // GET: Fetch referrals — supports both station referrals and doctor-to-doctor
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
   const targetStation = searchParams.get("targetStation"); // "doctor", "lab", "radiology", etc.
   const specialty = searchParams.get("specialty"); // filter by specialist type
@@ -101,7 +101,7 @@ export async function GET(request: Request) {
 
 // POST: Create referrals — station referrals, doctor-to-doctor, accept, complete, chain
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, action } = body;
 
   if (!hospitalCode) return Response.json({ error: "hospitalCode required" }, { status: 400 });

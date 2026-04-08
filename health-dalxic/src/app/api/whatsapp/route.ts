@@ -1,11 +1,11 @@
 import { logAudit, getClientIP } from "@/lib/audit";
 import { db } from "@/lib/db";
-
+import { rateLimit } from "@/lib/rate-limit";
 const WHATSAPP_API = "https://graph.facebook.com/v21.0";
 
 // POST: Send patient report PDF via WhatsApp
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { recordId, phoneNumber } = body;
 
   if (!recordId || !phoneNumber) {

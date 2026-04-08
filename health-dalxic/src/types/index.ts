@@ -1,4 +1,4 @@
-// NexusLink Health — Shared TypeScript Types
+// DalxicHealth — Shared TypeScript Types
 
 // ─── Hospital & Tenancy ───
 

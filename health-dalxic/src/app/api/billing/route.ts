@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
-import { assembleBill, getUnbilledItems, generateBillNumber, createBillableItem } from "@/lib/billing";
-
+import { assembleBill, getUnbilledItems, createBillableItem } from "@/lib/billing";
+import { rateLimit } from "@/lib/rate-limit";
 // GET: Get billing data — unbilled items, bills, or patient bill history
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
   const patientId = searchParams.get("patientId");
   const view = searchParams.get("view"); // "unbilled" | "bills" | "summary"
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
 
 // POST: Create a bill from unbilled items, or record payment
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, action } = body;
 
   if (!hospitalCode || !action) {

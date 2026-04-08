@@ -18,7 +18,7 @@ export async function generateAISummary(recordData: {
 }): Promise<AISummary> {
   const { output } = await generateText({
     model: anthropic("claude-sonnet-4-20250514"),
-    system: `You are a clinical summarisation assistant for NexusLink Health. Generate concise, accurate summaries of patient visit records.
+    system: `You are a clinical summarisation assistant for DalxicHealth. Generate concise, accurate summaries of patient visit records.
 
 Rules:
 - brief: max 20 words, captures the essence of the visit

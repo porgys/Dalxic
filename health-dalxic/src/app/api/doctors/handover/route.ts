@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { getPusher, hospitalChannel } from "@/lib/pusher-server";
-
+import { rateLimit } from "@/lib/rate-limit";
 // POST: Create a shift handover between two doctors
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, outgoingDoctorId, incomingDoctorId, patientIds, notes } = body;
 
   if (!hospitalCode || !outgoingDoctorId || !incomingDoctorId) {

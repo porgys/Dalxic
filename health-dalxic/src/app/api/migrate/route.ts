@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
-
+import { rateLimit, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
 // POST: Run raw SQL to create new tables (one-time migration helper)
-export async function POST() {
+export async function POST(request: Request) {
+  const blocked = rateLimit(request, AUTH_RATE_LIMIT); if (blocked) return blocked;
   try {
     // Create doctors table
     await db.$executeRawUnsafe(`

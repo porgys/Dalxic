@@ -117,7 +117,7 @@ function TicketContent() {
       <div className="ticket">
         <div className="ticket-header">
           <div className="hospital-name">{ticket.hospitalName}</div>
-          <div className="hospital-sub">NexusLink Health System</div>
+          <div className="hospital-sub">DalxicHealth System</div>
         </div>
 
         {ticket.emergencyFlag && (
@@ -166,7 +166,7 @@ function TicketContent() {
 
         <div className="footer">
           <div>Keep this ticket — your number will be called</div>
-          <div style={{ marginTop: "1mm" }}>Powered by NexusLink Health &bull; Dalxic</div>
+          <div style={{ marginTop: "1mm" }}>Powered by DalxicHealth &bull; Dalxic</div>
         </div>
       </div>
 

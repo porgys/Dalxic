@@ -174,10 +174,10 @@ function DisplayContent() {
         borderBottom: "1px solid rgba(184,115,51,0.1)", background: "rgba(3,5,15,0.4)",
         backdropFilter: "blur(16px)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#B87333", boxShadow: "0 0 12px rgba(184,115,51,0.6)" }} />
-          <span style={{ fontWeight: 300, fontSize: 13, color: "#94A3B8", letterSpacing: "0.22em", textTransform: "uppercase" }}>NEXUSLINK</span>
-          <span style={{ fontWeight: 500, fontSize: 12, letterSpacing: "0.5em", textTransform: "uppercase", background: "linear-gradient(135deg, #B87333, #D4956B)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>HEALTH</span>
+          <span style={{ fontWeight: 300, fontSize: 13, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase" }}>Dalxic</span>
+          <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: "linear-gradient(135deg, #B87333, #D4956B)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </div>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: "0.5px" }}>{HOSPITAL_NAME}</div>
@@ -349,7 +349,7 @@ function DisplayContent() {
           {queue.length} Patient{queue.length !== 1 ? "s" : ""} Waiting
         </p>
         <p style={{ fontSize: 10, color: "#3D4D78" }}>
-          Powered By NexusLink Health — A Dalxic Subsidiary
+          Powered By DalxicHealth — A Dalxic Subsidiary
         </p>
       </footer>
     </div>

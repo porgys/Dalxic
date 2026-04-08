@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ALL_WORKSTATIONS, UTILITY_STATIONS, getTierDefaults } from "@/lib/tier-defaults";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,6 +11,7 @@ const COPPER_LIGHT = "#D4956B";
 const BOOT_HOLD = 5000; // ms — how long the landing page stays visible before transitioning
 
 /* ─── Fullscreen helpers ─── */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function requestFullscreen() {
   const el = document.documentElement as HTMLElement & {
     webkitRequestFullscreen?: () => Promise<void>;
@@ -171,13 +172,13 @@ function StationPicker({ hospitalCode, onSelect }: { hospitalCode: string; onSel
         borderBottom: `1px solid ${COPPER}08`, background: "rgba(3,5,15,0.4)",
         backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontWeight: 300, fontSize: 12, color: "#94A3B8", letterSpacing: "0.22em", textTransform: "uppercase" }}>NexusLink</span>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span style={{ fontWeight: 300, fontSize: 13, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase" }}>Dalxic</span>
           <span style={{
-            fontWeight: 700, fontSize: 11, letterSpacing: "0.5em", textTransform: "uppercase",
+            fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase",
             background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`,
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          }}>HEALTH</span>
+          }}>Health</span>
         </div>
         <div style={{
           padding: "4px 12px", borderRadius: 8,
@@ -313,7 +314,7 @@ function TransitionOverlay({ station, onDone }: { station: ReturnType<typeof get
    URL: /kiosk?module=front_desk&hospital=KBH
 
    Boot flow:
-     1. The actual NexusLink landing page loads in a full-screen iframe
+     1. The actual DalxicHealth landing page loads in a full-screen iframe
         — galaxy canvas, "Worlds Best Hospital", copper accents, the whole show
      2. The landing page animates into place (CSS animations already built in)
      3. After 5 seconds, a transition overlay fades in showing the target module
@@ -327,11 +328,15 @@ function TransitionOverlay({ station, onDone }: { station: ReturnType<typeof get
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 export default function KioskPage() {
+  return <Suspense><KioskInner /></Suspense>
+}
+
+function KioskInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const module = searchParams.get("module");
+  const stationKey = searchParams.get("module");
   const hospitalCode = searchParams.get("hospital") || "KBH";
-  const station = module ? getStationByKey(module) : null;
+  const station = stationKey ? getStationByKey(stationKey) : null;
 
   const [phase, setPhase] = useState<"landing" | "transition" | "navigate" | "picker">("landing");
 
@@ -347,12 +352,12 @@ export default function KioskPage() {
 
   // Phase 3: After transition, navigate to module or show picker
   const handleTransitionDone = useCallback(() => {
-    if (module && station) {
+    if (stationKey && station) {
       router.push(station.href);
     } else {
       setPhase("picker");
     }
-  }, [module, station, router]);
+  }, [stationKey, station, router]);
 
   const handleStationSelect = useCallback((href: string) => {
     router.push(href);
@@ -368,7 +373,7 @@ export default function KioskPage() {
             position: "fixed", inset: 0, width: "100%", height: "100%",
             border: "none", zIndex: 1,
           }}
-          title="NexusLink Health"
+          title="DalxicHealth"
         />
       )}
 

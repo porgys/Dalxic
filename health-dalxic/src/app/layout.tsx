@@ -24,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NexusLink Health",
+  title: "DalxicHealth",
   description: "Nexus-7 powered hospital management platform — A Dalxic subsidiary",
 };
 

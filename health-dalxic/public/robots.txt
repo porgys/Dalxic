@@ -1,0 +1,59 @@
+# DalxicHealth — robots.txt
+# Allow public pages, block everything internal
+
+User-agent: *
+Allow: /
+Allow: /pricing
+Disallow: /api/
+Disallow: /w/
+Disallow: /s/
+Disallow: /front-desk
+Disallow: /waiting-room
+Disallow: /doctor
+Disallow: /pharmacy
+Disallow: /billing
+Disallow: /lab
+Disallow: /injection-room
+Disallow: /nurse-station
+Disallow: /radiology
+Disallow: /ward
+Disallow: /ultrasound
+Disallow: /emergency-triage
+Disallow: /icu
+Disallow: /maternity
+Disallow: /blood-bank
+Disallow: /admin
+Disallow: /beds
+Disallow: /display
+Disallow: /platform
+Disallow: /kiosk
+Disallow: /ops
+Disallow: /emergency-override
+Disallow: /print/
+
+# Block AI training crawlers entirely
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+Sitemap: https://health.dalxic.com/sitemap.xml

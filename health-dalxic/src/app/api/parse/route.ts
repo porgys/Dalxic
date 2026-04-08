@@ -3,7 +3,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { PARSE_SYSTEM_PROMPT } from "@/lib/parse-prompt";
 import type { ParseRequest, ParseResponse } from "@/types";
-
+import { rateLimit, AI_RATE_LIMIT } from "@/lib/rate-limit";
 const ParsedEntrySchema = z.object({
   patient: z.object({
     fullName: z.string(),
@@ -69,7 +69,7 @@ const ParseOutputSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  try {
+  const blocked = rateLimit(request, AI_RATE_LIMIT); if (blocked) return blocked;  try {
     const body = (await request.json()) as ParseRequest;
 
     if (!body.rawText?.trim()) {

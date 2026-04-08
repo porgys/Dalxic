@@ -3,10 +3,10 @@ import { generateLabToken } from "@/lib/tokens";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { getPusher, hospitalChannel } from "@/lib/pusher-server";
 import { createBillableItem } from "@/lib/billing";
-
+import { rateLimit } from "@/lib/rate-limit";
 // POST: Create a lab order
 export async function POST(request: Request) {
-  const body = await request.json();
+  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { patientId, hospitalCode, tests, customTests, clinicalNotes, orderedBy } = body;
 
   if (!patientId || !hospitalCode || !tests?.length) {
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
 
 // GET: List lab orders for a hospital
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
   const status = searchParams.get("status");
 
