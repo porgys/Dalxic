@@ -965,10 +965,12 @@ export default function Home() {
         <div style={{
           position: "relative",
           zIndex: 2,
+          background: "rgba(3,5,15,0.80)",
           backgroundImage: "url(/wallpaper-dark.jpg)",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundAttachment: "fixed",
+          backgroundBlendMode: "overlay",
         }}>
 
         {/* ── TICKER ───────────────────────────────────── */}
