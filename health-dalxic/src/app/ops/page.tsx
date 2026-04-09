@@ -305,7 +305,32 @@ type OpsView = "command" | "hospitals" | "operators" | "tiers" | "audit" | "modu
 interface HospitalItem {
   id: string; code: string; name: string; subdomain: string;
   tier: string; active: boolean;
+  groupId?: string | null; groupCode?: string | null;
+  group?: { groupCode: string; name: string } | null;
   _count: { devices: number; monthlyBooks: number; patientRecords: number };
+}
+
+interface GroupedHospitals {
+  groups: { groupCode: string; groupName: string; hospitals: HospitalItem[] }[];
+  standalone: HospitalItem[];
+}
+
+function groupHospitals(hospitals: HospitalItem[]): GroupedHospitals {
+  const groupMap = new Map<string, { groupName: string; hospitals: HospitalItem[] }>();
+  const standalone: HospitalItem[] = [];
+  for (const h of hospitals) {
+    if (h.group?.groupCode) {
+      const existing = groupMap.get(h.group.groupCode);
+      if (existing) { existing.hospitals.push(h); }
+      else { groupMap.set(h.group.groupCode, { groupName: h.group.name, hospitals: [h] }); }
+    } else {
+      standalone.push(h);
+    }
+  }
+  const groups = Array.from(groupMap.entries()).map(([groupCode, data]) => ({
+    groupCode, groupName: data.groupName, hospitals: data.hospitals,
+  }));
+  return { groups, standalone };
 }
 
 interface OperatorItem {
@@ -469,6 +494,17 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const [selectedTier, setSelectedTier] = useState<TierKey>("T1");
   const [selectedHospital, setSelectedHospital] = useState<string>("");
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Group folding
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const toggleGroup = (groupCode: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupCode)) next.delete(groupCode); else next.add(groupCode);
+      return next;
+    });
+  };
+  const grouped = groupHospitals(hospitals);
 
   // New hospital form
   const [newHospital, setNewHospital] = useState({ code: "", name: "", subdomain: "", tier: "T1" as string, tagline: "" });
@@ -679,20 +715,167 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
               </div>
 
               {/* Stats */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 36 }}>
+              <div style={{ display: "grid", gridTemplateColumns: grouped.groups.length > 0 ? "repeat(5, 1fr)" : "repeat(4, 1fr)", gap: 16, marginBottom: 36 }}>
                 <StatCard icon="🏥" label="Hospitals" value={hospitals.length} color={COPPER} />
+                {grouped.groups.length > 0 && (
+                  <StatCard icon="📂" label="Groups" value={grouped.groups.length} color={COPPER_LIGHT} />
+                )}
                 <StatCard icon="👤" label="Total Patients" value={totalPatients.toLocaleString()} color={BLUE} />
                 <StatCard icon="📱" label="Active Devices" value={totalDevices} color="#22C55E" />
                 <StatCard icon="📦" label="Tier Templates" value="4" color="#A855F7" />
               </div>
 
-              {/* Hospital quick list */}
+              {/* Hospital quick list — grouped */}
               <div style={{ marginBottom: 36 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#64748B", marginBottom: 16 }}>
                   Registered Hospitals
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {hospitals.map((h, i) => (
+                  {/* ── Group folders ── */}
+                  {grouped.groups.map((g) => {
+                    const isOpen = !collapsedGroups.has(g.groupCode);
+                    const groupPatients = g.hospitals.reduce((s, h) => s + h._count.patientRecords, 0);
+                    const groupDevices = g.hospitals.reduce((s, h) => s + h._count.devices, 0);
+                    return (
+                      <motion.div key={g.groupCode} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+                        {/* Group header (folder) */}
+                        <motion.div
+                          onClick={() => toggleGroup(g.groupCode)}
+                          whileHover={{ scale: 1.003 }}
+                          style={{
+                            padding: "14px 20px", borderRadius: isOpen ? "14px 14px 0 0" : 14,
+                            background: "rgba(184,115,51,0.04)",
+                            border: `1px solid ${COPPER}18`,
+                            borderBottom: isOpen ? `1px solid ${COPPER}10` : `1px solid ${COPPER}18`,
+                            display: "flex", alignItems: "center", justifyContent: "space-between",
+                            cursor: "pointer", transition: "all 0.2s",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            {/* Folder chevron */}
+                            <motion.div
+                              animate={{ rotate: isOpen ? 90 : 0 }}
+                              transition={{ duration: 0.2 }}
+                              style={{ display: "flex", alignItems: "center" }}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={COPPER} strokeWidth="2.5" strokeLinecap="round">
+                                <path d="M9 18l6-6-6-6" />
+                              </svg>
+                            </motion.div>
+                            {/* Group icon */}
+                            <div style={{
+                              width: 36, height: 36, borderRadius: 10,
+                              background: `linear-gradient(135deg, ${COPPER}15, ${COPPER}08)`,
+                              border: `1px solid ${COPPER}25`,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: 14,
+                            }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={COPPER} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 14, fontWeight: 800, color: COPPER_LIGHT, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+                                {g.groupName}
+                              </div>
+                              <div style={{ fontSize: 10, color: "#64748B", fontFamily: "var(--font-jetbrains-mono), monospace", letterSpacing: "0.04em" }}>
+                                {g.groupCode} &middot; {g.hospitals.length} {g.hospitals.length === 1 ? "Branch" : "Branches"}
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                            <div style={{ textAlign: "right" }}>
+                              <div style={{ fontSize: 11, color: "#64748B" }}>{groupPatients} patients</div>
+                              <div style={{ fontSize: 11, color: "#475569" }}>{groupDevices} devices</div>
+                            </div>
+                            <div style={{
+                              padding: "3px 10px", borderRadius: 6,
+                              background: `${COPPER}10`, border: `1px solid ${COPPER}20`,
+                              fontSize: 9, fontWeight: 700, color: COPPER,
+                              letterSpacing: "0.08em", textTransform: "uppercase",
+                            }}>
+                              Group
+                            </div>
+                          </div>
+                        </motion.div>
+
+                        {/* Branches (collapsible) */}
+                        <AnimatePresence>
+                          {isOpen && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.25 }}
+                              style={{
+                                overflow: "hidden",
+                                borderLeft: `1px solid ${COPPER}12`,
+                                borderRight: `1px solid ${COPPER}12`,
+                                borderBottom: `1px solid ${COPPER}12`,
+                                borderRadius: "0 0 14px 14px",
+                                background: "rgba(184,115,51,0.015)",
+                              }}
+                            >
+                              {g.hospitals.map((h, i) => (
+                                <motion.div
+                                  key={h.id}
+                                  initial={{ opacity: 0, x: -12 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: i * 0.04 }}
+                                  style={{
+                                    padding: "12px 20px 12px 52px",
+                                    borderTop: i > 0 ? `1px solid rgba(255,255,255,0.03)` : "none",
+                                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                                    cursor: "pointer", transition: "all 0.2s",
+                                  }}
+                                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(184,115,51,0.04)"; }}
+                                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+                                  onClick={() => { setSelectedHospital(h.code); setView("operators"); }}
+                                >
+                                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                    {/* Branch connector line */}
+                                    <div style={{ width: 12, borderBottom: `1px solid ${COPPER}20`, marginRight: 2 }} />
+                                    <div style={{
+                                      minWidth: 40, padding: "4px 8px", borderRadius: 8,
+                                      background: `${COPPER}06`, border: `1px solid ${COPPER}12`,
+                                      fontSize: 10, fontWeight: 800, color: COPPER,
+                                      fontFamily: "var(--font-jetbrains-mono), monospace",
+                                      textAlign: "center",
+                                    }}>
+                                      {h.code}
+                                    </div>
+                                    <div>
+                                      <div style={{ fontSize: 13, fontWeight: 700, color: "#E2E8F0" }}>{h.name}</div>
+                                      <div style={{ fontSize: 10, color: "#4A5568", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                                        {h.subdomain}.health.dalxic.com
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                                    <div style={{ textAlign: "right" }}>
+                                      <div style={{ fontSize: 10, color: "#64748B" }}>{h._count.patientRecords} patients</div>
+                                      <div style={{ fontSize: 10, color: "#475569" }}>{h._count.devices} devices</div>
+                                    </div>
+                                    <div style={{
+                                      padding: "3px 8px", borderRadius: 5,
+                                      background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)",
+                                      fontSize: 9, fontWeight: 700, color: "#22C55E",
+                                      letterSpacing: "0.04em",
+                                    }}>
+                                      {h.tier}
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    );
+                  })}
+
+                  {/* ── Standalone hospitals ── */}
+                  {grouped.standalone.map((h, i) => (
                     <motion.div
                       key={h.id}
                       initial={{ opacity: 0, x: -16 }}
@@ -742,6 +925,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                       </div>
                     </motion.div>
                   ))}
+
                   {hospitals.length === 0 && (
                     <div style={{ textAlign: "center", padding: "40px 0", color: "#475569", fontSize: 13 }}>
                       No hospitals registered yet. Go to Hospitals to add one.
@@ -858,9 +1042,97 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 </div>
               </div>
 
-              {/* Hospital list */}
+              {/* Hospital list — grouped */}
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {hospitals.map((h, i) => (
+                {/* Group folders */}
+                {grouped.groups.map((g) => {
+                  const isOpen = !collapsedGroups.has(g.groupCode);
+                  return (
+                    <div key={g.groupCode}>
+                      <motion.div
+                        onClick={() => toggleGroup(g.groupCode)}
+                        whileHover={{ scale: 1.003 }}
+                        style={{
+                          padding: "16px 20px", borderRadius: isOpen ? "14px 14px 0 0" : 14,
+                          background: "rgba(184,115,51,0.04)",
+                          border: `1px solid ${COPPER}18`,
+                          borderBottom: isOpen ? `1px solid ${COPPER}10` : `1px solid ${COPPER}18`,
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <motion.div animate={{ rotate: isOpen ? 90 : 0 }} transition={{ duration: 0.2 }} style={{ display: "flex" }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={COPPER} strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
+                          </motion.div>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={COPPER} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                          </svg>
+                          <div>
+                            <span style={{ fontSize: 14, fontWeight: 800, color: COPPER_LIGHT }}>{g.groupName}</span>
+                            <span style={{ fontSize: 10, color: "#64748B", marginLeft: 10 }}>{g.groupCode} &middot; {g.hospitals.length} Branches</span>
+                          </div>
+                        </div>
+                        <div style={{
+                          width: 8, height: 8, borderRadius: "50%",
+                          background: "#22C55E", boxShadow: "0 0 8px rgba(34,197,94,0.4)",
+                        }} />
+                      </motion.div>
+                      <AnimatePresence>
+                        {isOpen && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25 }}
+                            style={{
+                              overflow: "hidden",
+                              borderLeft: `1px solid ${COPPER}12`, borderRight: `1px solid ${COPPER}12`,
+                              borderBottom: `1px solid ${COPPER}12`, borderRadius: "0 0 14px 14px",
+                              background: "rgba(184,115,51,0.015)",
+                            }}
+                          >
+                            {g.hospitals.map((h, i) => (
+                              <div
+                                key={h.id}
+                                style={{
+                                  padding: "14px 20px 14px 48px",
+                                  borderTop: i > 0 ? "1px solid rgba(255,255,255,0.03)" : "none",
+                                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                                }}
+                              >
+                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                  <div style={{ width: 12, borderBottom: `1px solid ${COPPER}20` }} />
+                                  <div style={{
+                                    minWidth: 44, padding: "4px 8px", borderRadius: 8,
+                                    background: `${COPPER}06`, border: `1px solid ${COPPER}12`,
+                                    fontSize: 11, fontWeight: 800, color: COPPER, textAlign: "center",
+                                    fontFamily: "var(--font-jetbrains-mono), monospace",
+                                  }}>
+                                    {h.code}
+                                  </div>
+                                  <div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: "#E2E8F0" }}>{h.name}</div>
+                                    <div style={{ fontSize: 10, color: "#4A5568", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                                      {h.subdomain}.health.dalxic.com &middot; {h.tier} &middot; {h._count.patientRecords} patients
+                                    </div>
+                                  </div>
+                                </div>
+                                <div style={{
+                                  width: 8, height: 8, borderRadius: "50%",
+                                  background: h.active ? "#22C55E" : "#EF4444",
+                                  boxShadow: h.active ? "0 0 6px rgba(34,197,94,0.3)" : "0 0 6px rgba(239,68,68,0.3)",
+                                }} />
+                              </div>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+                {/* Standalone hospitals */}
+                {grouped.standalone.map((h, i) => (
                   <motion.div
                     key={h.id}
                     initial={{ opacity: 0, y: 12 }}
@@ -909,11 +1181,37 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Workstation Operators</h2>
               </div>
 
-              {/* Hospital selector */}
+              {/* Hospital selector — grouped */}
               <div style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>Select Hospital</div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {hospitals.map(h => (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  {/* Group clusters */}
+                  {grouped.groups.map(g => (
+                    <div key={g.groupCode} style={{ display: "flex", gap: 4, alignItems: "center", padding: "4px 6px", borderRadius: 12, background: `${COPPER}06`, border: `1px solid ${COPPER}10` }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: COPPER, letterSpacing: "0.06em", padding: "0 6px", textTransform: "uppercase" }}>{g.groupCode}</span>
+                      <div style={{ width: 1, height: 16, background: `${COPPER}15` }} />
+                      {g.hospitals.map(h => (
+                        <motion.button
+                          key={h.code}
+                          onClick={() => setSelectedHospital(h.code)}
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          style={{
+                            padding: "8px 14px", borderRadius: 8, cursor: "pointer",
+                            background: selectedHospital === h.code ? `${COPPER}15` : "transparent",
+                            border: `1px solid ${selectedHospital === h.code ? COPPER + "30" : "transparent"}`,
+                            color: selectedHospital === h.code ? COPPER_LIGHT : "#64748B",
+                            fontSize: 11, fontWeight: 700, letterSpacing: "0.03em",
+                            transition: "all 0.2s",
+                          }}
+                        >
+                          {h.code}
+                        </motion.button>
+                      ))}
+                    </div>
+                  ))}
+                  {/* Standalone */}
+                  {grouped.standalone.map(h => (
                     <motion.button
                       key={h.code}
                       onClick={() => setSelectedHospital(h.code)}
