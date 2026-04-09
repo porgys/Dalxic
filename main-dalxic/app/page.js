@@ -638,20 +638,14 @@ export default function Home() {
 
       {/* ── Scroll indicator — fades in at 5s, hides on scroll ── */}
       {!scrolled && (
+        <div style={{ position: "fixed", bottom: "28px", left: "50%", zIndex: 50, pointerEvents: "none", opacity: showScroll ? 1 : 0, transition: "opacity 1.5s ease" }}>
         <div
           style={{
-            position: "fixed",
-            bottom: "28px",
-            left: "50%",
-            zIndex: 50,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             gap: "8px",
             animation: "scrollBob 2.5s ease-in-out infinite",
-            pointerEvents: "none",
-            opacity: showScroll ? 1 : 0,
-            transition: "opacity 1.5s ease",
           }}
         >
           <span
@@ -669,7 +663,8 @@ export default function Home() {
           </span>
           <div style={{ width: "2px", height: "32px", background: "linear-gradient(to bottom, #E8B878, rgba(184,115,51,0.3), transparent)", borderRadius: "1px", boxShadow: "0 0 10px rgba(232,184,120,0.5)" }} />
           <div style={{ width: "10px", height: "10px", borderRight: "2px solid #E8B878", borderBottom: "2px solid #E8B878", transform: "rotate(45deg)", filter: "drop-shadow(0 0 8px rgba(232,184,120,0.7))", marginTop: "-8px" }} />
-          <style>{`@keyframes scrollBob { 0%,100% { transform: translateX(-50%) translateY(0); opacity: 0.8; } 50% { transform: translateX(-50%) translateY(8px); opacity: 1; } }`}</style>
+          <style>{`@keyframes scrollBob { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(8px); } }`}</style>
+        </div>
         </div>
       )}
 
