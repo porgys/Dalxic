@@ -419,7 +419,7 @@ export default function HomePage() {
 
             {/* Sub-copy */}
             <p style={{ fontSize: "clamp(0.95rem, 1.5vw, 1.1rem)", color: "var(--nl-txM)", lineHeight: 1.8, maxWidth: 580, margin: "0 auto 44px", animation: "fadeUp 0.6s ease 0.5s both" }}>
-              From patient intake to pharmacy dispensing — every workstation connected in real-time. 46+ connected modules, one seamless platform.
+              From patient intake to pharmacy dispensing — every workstation connected in real-time. 46+ connected workstations, one seamless platform.
             </p>
 
             {/* CTAs */}
