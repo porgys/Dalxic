@@ -565,14 +565,24 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const activeTierModules = TIER_DEFAULTS[selectedTier].modules;
 
   const ROLE_OPTIONS = [
-    { value: "front_desk", label: "Front Desk" },
+    { value: "front_desk", label: "Front Desk / Records" },
     { value: "doctor", label: "Doctor" },
+    { value: "specialist", label: "Specialist / Consultant" },
+    { value: "surgeon", label: "Surgeon" },
     { value: "pharmacist", label: "Pharmacist" },
     { value: "lab_tech", label: "Lab Technician" },
     { value: "nurse", label: "Nurse" },
+    { value: "midwife", label: "Midwife" },
     { value: "radiologist", label: "Radiologist" },
-    { value: "billing", label: "Billing Officer" },
+    { value: "sonographer", label: "Sonographer" },
+    { value: "anaesthetist", label: "Anaesthetist" },
+    { value: "physiotherapist", label: "Physiotherapist" },
+    { value: "billing", label: "Billing / Accounts" },
+    { value: "records", label: "Medical Records" },
+    { value: "porter", label: "Porter / Orderly" },
+    { value: "it_support", label: "IT Support" },
     { value: "admin", label: "Hospital Admin" },
+    { value: "super_admin", label: "Super Admin (Dalxic)" },
   ];
 
   return (

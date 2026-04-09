@@ -138,7 +138,7 @@ const TASK_TYPES = [
 
 export default function NurseStationPage() {
   return (
-    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Nurse Station" stationIcon="👩‍⚕️" allowedRoles={["nurse", "admin"]}>
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Nurse Station" stationIcon="👩‍⚕️" allowedRoles={["nurse", "midwife", "admin", "super_admin"]}>
       {(operator) => <NurseStationContent operator={operator} />}
     </StationGate>
   );

@@ -121,7 +121,7 @@ const CT_EXAMS = [
 
 export default function RadiologyPage() {
   return (
-    <StationGate hospitalCode={HOSPITAL_CODE} stationName="CT / Radiology" stationIcon="☢️" allowedRoles={["radiologist", "admin"]}>
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="CT / Radiology" stationIcon="☢️" allowedRoles={["radiologist", "admin", "super_admin"]}>
       {(operator) => <RadiologyContent operator={operator} />}
     </StationGate>
   );

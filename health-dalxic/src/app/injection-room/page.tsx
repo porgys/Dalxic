@@ -114,7 +114,7 @@ const STATUS_STYLES: Record<string, { bg: string; border: string; text: string }
 
 export default function InjectionRoomPage() {
   return (
-    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Injection Room" stationIcon="💉" allowedRoles={["nurse", "admin"]}>
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Injection Room" stationIcon="💉" allowedRoles={["nurse", "midwife", "admin", "super_admin"]}>
       {(operator) => <InjectionRoomContent operator={operator} />}
     </StationGate>
   );

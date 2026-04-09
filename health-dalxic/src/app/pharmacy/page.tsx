@@ -123,7 +123,7 @@ const NAV_ITEMS = [
 
 export default function PharmacyPage() {
   return (
-    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Pharmacy" stationIcon="💊" allowedRoles={["pharmacist", "admin"]}>
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Pharmacy" stationIcon="💊" allowedRoles={["pharmacist", "admin", "super_admin"]}>
       {(operator) => <PharmacyContent operator={operator} />}
     </StationGate>
   );

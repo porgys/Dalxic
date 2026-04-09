@@ -48,7 +48,7 @@ interface ICUPatient {
 
 export default function ICUPage() {
   return (
-    <StationGate hospitalCode={HOSPITAL_CODE} stationName="ICU" stationIcon="🫀" allowedRoles={["nurse", "doctor", "admin"]}>
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="ICU" stationIcon="🫀" allowedRoles={["nurse", "doctor", "specialist", "anaesthetist", "admin", "super_admin"]}>
       {(operator) => <ICUContent operator={operator} />}
     </StationGate>
   );

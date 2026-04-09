@@ -168,7 +168,7 @@ const NAV_ITEMS = [
 
 export default function LabPage() {
   return (
-    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Laboratory" stationIcon="🔬" allowedRoles={["lab_tech", "admin"]}>
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Laboratory" stationIcon="🔬" allowedRoles={["lab_tech", "admin", "super_admin"]}>
       {(operator) => <LabContent operator={operator} />}
     </StationGate>
   );

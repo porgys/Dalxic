@@ -287,7 +287,7 @@ function DatePickerTrigger({ value, label, onClick }: { value: string; label?: s
 
 export default function FrontDeskPage() {
   return (
-    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Front Desk" stationIcon="🏥" allowedRoles={["front_desk", "admin"]}>
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Front Desk" stationIcon="🏥" allowedRoles={["front_desk", "records", "admin", "super_admin"]}>
       {(operator) => <FrontDeskContent operator={operator} />}
     </StationGate>
   );

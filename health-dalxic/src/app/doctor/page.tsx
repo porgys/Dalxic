@@ -165,7 +165,7 @@ const LAB_TESTS = [
 
 export default function DoctorPage() {
   return (
-    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Doctor Station" stationIcon="🩺" allowedRoles={["doctor", "admin"]}>
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Doctor Station" stationIcon="🩺" allowedRoles={["doctor", "specialist", "surgeon", "admin", "super_admin"]}>
       {(operator) => <DoctorContent operator={operator} />}
     </StationGate>
   );

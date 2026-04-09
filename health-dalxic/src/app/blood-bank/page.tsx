@@ -58,7 +58,7 @@ const STATUS_STYLES: Record<string, { bg: string; border: string; text: string }
 
 export default function BloodBankPage() {
   return (
-    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Blood Bank" stationIcon="🩸" allowedRoles={["lab_tech", "nurse", "admin"]}>
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Blood Bank" stationIcon="🩸" allowedRoles={["lab_tech", "nurse", "doctor", "admin", "super_admin"]}>
       {(operator) => <BloodBankContent operator={operator} />}
     </StationGate>
   );

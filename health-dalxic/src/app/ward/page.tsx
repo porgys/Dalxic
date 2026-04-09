@@ -98,7 +98,7 @@ interface Inpatient {
 
 export default function WardIPDPage() {
   return (
-    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Ward / IPD" stationIcon="🏥" allowedRoles={["nurse", "doctor", "admin"]}>
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Ward / IPD" stationIcon="🏥" allowedRoles={["nurse", "doctor", "specialist", "porter", "admin", "super_admin"]}>
       {(operator) => <WardIPDContent operator={operator} />}
     </StationGate>
   );

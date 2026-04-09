@@ -107,7 +107,7 @@ const STATUS_STYLES: Record<string, { bg: string; border: string; text: string }
 
 export default function UltrasoundPage() {
   return (
-    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Ultrasound" stationIcon="📡" allowedRoles={["radiologist", "admin"]}>
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Ultrasound" stationIcon="📡" allowedRoles={["radiologist", "sonographer", "admin", "super_admin"]}>
       {(operator) => <UltrasoundContent operator={operator} />}
     </StationGate>
   );

@@ -59,7 +59,7 @@ const DELIVERY_MODES = [
 
 export default function MaternityPage() {
   return (
-    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Maternity" stationIcon="👶" allowedRoles={["nurse", "doctor", "admin"]}>
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Maternity" stationIcon="👶" allowedRoles={["nurse", "midwife", "doctor", "specialist", "admin", "super_admin"]}>
       {(operator) => <MaternityContent operator={operator} />}
     </StationGate>
   );

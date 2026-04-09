@@ -141,7 +141,7 @@ const SERVICE_TYPES = [
 
 export default function BillingStationPage() {
   return (
-    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Billing" stationIcon="💰" allowedRoles={["billing", "admin"]}>
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Billing" stationIcon="💰" allowedRoles={["billing", "admin", "super_admin"]}>
       {(operator) => <BillingContent operator={operator} />}
     </StationGate>
   );
