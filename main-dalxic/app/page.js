@@ -553,15 +553,10 @@ export default function Home() {
     const FADE_IN  = 3000   // text out / first image in
     const HOLD     = 5000   // each image holds
     const CROSS    = 2000   // cross-dissolve between images
-    const FADE_OUT = 3000   // last image dissolves
-    const PAUSE    = 2000   // gap before loop restarts
 
-    // Per-image segment: HOLD + CROSS (except last: HOLD + FADE_OUT)
+    // Every image gets HOLD + CROSS (last one cross-dissolves back to first)
     const N = BANNER_IMAGES.length
-    const SEGMENT = HOLD + CROSS
-    const LOOP_BODY = (N - 1) * SEGMENT + HOLD + FADE_OUT + PAUSE
-    // Total first pass: READ + FADE_IN + LOOP_BODY
-    // Subsequent loops: just LOOP_BODY (no reading time, text stays gone)
+    const LOOP_BODY = N * (HOLD + CROSS)
 
     function tick(now) {
       const elapsed = now - start
@@ -584,47 +579,30 @@ export default function Home() {
         return
       }
 
-      // Phase 3+: Image slideshow (loops)
+      // Phase 3+: Seamless image loop (no gaps)
       setTextOp(0)
       const loopTime = (elapsed - READ - FADE_IN) % LOOP_BODY
 
-      // Calculate which image segment we're in
       const opacities = BANNER_IMAGES.map(() => 0)
       let t = loopTime
 
       for (let i = 0; i < N; i++) {
-        if (i < N - 1) {
-          // Normal image: HOLD then CROSS into next
-          if (t < HOLD) {
-            opacities[i] = 1
-            setActiveImage(i)
-            break
-          }
-          t -= HOLD
-          if (t < CROSS) {
-            // Cross-dissolve: current fades out, next fades in
-            const p = t / CROSS
-            const ease = p * p
-            opacities[i] = 1 - ease
-            opacities[i + 1] = ease
-            break
-          }
-          t -= CROSS
-        } else {
-          // Last image: HOLD then FADE_OUT then PAUSE
-          if (t < HOLD) {
-            opacities[i] = 1
-            setActiveImage(i)
-            break
-          }
-          t -= HOLD
-          if (t < FADE_OUT) {
-            const p = t / FADE_OUT
-            opacities[i] = 1 - p * p
-            break
-          }
-          // PAUSE: all zeros, loop will restart
+        if (t < HOLD) {
+          // Holding on this image
+          opacities[i] = 1
+          setActiveImage(i)
+          break
         }
+        t -= HOLD
+        if (t < CROSS) {
+          // Cross-dissolve: current out, next in (wraps to 0)
+          const p = t / CROSS
+          const ease = p * p
+          opacities[i] = 1 - ease
+          opacities[(i + 1) % N] = ease
+          break
+        }
+        t -= CROSS
       }
 
       setImageOpacities(opacities)
