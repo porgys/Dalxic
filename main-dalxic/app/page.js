@@ -515,6 +515,7 @@ function StatBlock({ value, suffix, label, delay }) {
    ═══════════════════════════════════════════════════════════ */
 export default function Home() {
   const [scrolled, setScrolled] = useState(false)
+  const [bannerOpacity, setBannerOpacity] = useState(0)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
@@ -522,8 +523,62 @@ export default function Home() {
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
+  /* ── Banner crossfade: image glides up, text fades down, then reverses ── */
+  useEffect(() => {
+    let raf
+    const CYCLE = 12000   // full cycle in ms (up + hold + down + hold)
+    const RISE = 3500     // time to glide up
+    const HOLD = 2500     // time at peak
+    const FALL = 3500     // time to dissolve back
+    const PEAK = 0.35     // max image opacity
+    const start = performance.now()
+
+    function tick(now) {
+      const elapsed = (now - start) % CYCLE
+      let opacity = 0
+      if (elapsed < RISE) {
+        // Glide up
+        const t = elapsed / RISE
+        opacity = PEAK * (1 - Math.pow(1 - t, 2)) // ease-out
+      } else if (elapsed < RISE + HOLD) {
+        // Hold at peak
+        opacity = PEAK
+      } else if (elapsed < RISE + HOLD + FALL) {
+        // Dissolve back
+        const t = (elapsed - RISE - HOLD) / FALL
+        opacity = PEAK * (1 - t * t) // ease-in
+      }
+      // else: rest period, opacity stays 0
+      setBannerOpacity(opacity)
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  // Text opacity is inverse of banner — fades as image rises
+  const textOpacity = 1 - bannerOpacity * 1.8 // goes from 1 → ~0.37 at peak
+  const textOpacityClamped = Math.max(0.35, Math.min(1, textOpacity))
+
   return (
     <>
+      {/* ── Banner image — behind galaxy particles ── */}
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 0,
+        backgroundImage: "url(/dalxic-city.jpg)",
+        backgroundSize: "cover",
+        backgroundPosition: "center 40%",
+        opacity: bannerOpacity,
+        transition: "opacity 0.1s linear",
+        pointerEvents: "none",
+      }}>
+        {/* Dark vignette overlay to blend with galaxy theme */}
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "radial-gradient(ellipse at 50% 50%, rgba(3,5,15,0.3) 0%, rgba(3,5,15,0.7) 70%, rgba(3,5,15,0.9) 100%)",
+        }} />
+      </div>
+
       <GalaxyCanvas />
 
       {/* ── Nav ─────────────────────────────────────────── */}
@@ -614,6 +669,8 @@ export default function Home() {
             textAlign: "center",
             padding: "var(--sp-3xl) var(--sp-xl) var(--sp-3xl)",
             position: "relative",
+            opacity: textOpacityClamped,
+            transition: "opacity 0.1s linear",
           }}
         >
           {/* Nexus-7 badge */}

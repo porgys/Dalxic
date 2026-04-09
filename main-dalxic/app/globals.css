@@ -44,15 +44,15 @@
   --danger-light: #F87171;
   --warning: #F59E0B;
 
-  /* ── Typography Scale (clamp-based) ── */
-  --fs-hero: clamp(2.2rem, 5vw, 3.5rem);
-  --fs-h1: clamp(1.8rem, 3.5vw, 2.5rem);
-  --fs-h2: clamp(1.25rem, 2vw, 1.5rem);
-  --fs-h3: clamp(1rem, 1.5vw, 1.125rem);
-  --fs-body: clamp(0.875rem, 1.2vw, 0.9375rem);
-  --fs-sm: clamp(0.75rem, 1vw, 0.8125rem);
-  --fs-xs: clamp(0.625rem, 0.8vw, 0.6875rem);
-  --fs-mono: clamp(0.6875rem, 0.9vw, 0.75rem);
+  /* ── Typography Scale (ChickenAi research — heavy + large) ── */
+  --fs-hero: clamp(2.8rem, 7vw, 5.2rem);
+  --fs-h1: clamp(2rem, 4vw, 3.2rem);
+  --fs-h2: clamp(1.4rem, 2.2vw, 1.65rem);
+  --fs-h3: clamp(1.05rem, 1.5vw, 1.2rem);
+  --fs-body: clamp(0.9rem, 1.2vw, 1rem);
+  --fs-sm: clamp(0.8rem, 1vw, 0.875rem);
+  --fs-xs: clamp(0.65rem, 0.85vw, 0.75rem);
+  --fs-mono: clamp(0.7rem, 0.9vw, 0.8rem);
 
   /* ── Spacing ── */
   --sp-xs: 4px;
@@ -64,11 +64,12 @@
   --sp-3xl: 80px;
   --sp-4xl: 120px;
 
-  /* ── Font Families ── */
-  --font-display: "Space Grotesk", sans-serif;
-  --font-body: "DM Sans", sans-serif;
+  /* ── Font Families (ChickenAi stack) ── */
+  --font-display: "Sora", "Space Grotesk", sans-serif;
+  --font-body: "Plus Jakarta Sans", "DM Sans", sans-serif;
   --font-mono: "DM Mono", monospace;
   --font-accent: "Cormorant Garamond", serif;
+  --font-thin: "Lato", sans-serif;
 }
 
 /* ── Reset ── */
