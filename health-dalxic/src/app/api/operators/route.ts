@@ -44,7 +44,13 @@ export async function GET(request: Request) {
     },
   });
 
-  return Response.json({ operators, hospitalId: hospital.id });
+  // Count operators online (lastLoginAt within 10 minutes)
+  const onlineThreshold = new Date(Date.now() - 10 * 60 * 1000);
+  const onlineCount = operators.filter(
+    (o) => o.lastLoginAt && new Date(o.lastLoginAt) >= onlineThreshold
+  ).length;
+
+  return Response.json({ operators, hospitalId: hospital.id, onlineCount });
 }
 
 // POST: Create operator, login, or logout
@@ -176,6 +182,17 @@ export async function POST(request: Request) {
     });
   }
 
+  // ─── HEARTBEAT: Update lastLoginAt to keep operator "online" ───
+  if (action === "heartbeat") {
+    const { operatorId } = body;
+    if (!operatorId) return Response.json({ error: "operatorId required" }, { status: 400 });
+    await db.deviceOperator.update({
+      where: { id: operatorId },
+      data: { lastLoginAt: new Date() },
+    }).catch(() => {});
+    return Response.json({ ok: true });
+  }
+
   // ─── LOGOUT ───
   if (action === "logout") {
     const { operatorId } = body;
@@ -194,7 +211,7 @@ export async function POST(request: Request) {
     return Response.json({ success: true });
   }
 
-  return Response.json({ error: "Invalid action. Use: create, login, logout" }, { status: 400 });
+  return Response.json({ error: "Invalid action. Use: create, login, logout, heartbeat" }, { status: 400 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown server error";
     console.error("[operators] POST error:", message);

@@ -495,6 +495,9 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const [selectedHospital, setSelectedHospital] = useState<string>("");
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  // Online operators
+  const [onlineOps, setOnlineOps] = useState(0);
+
   // Group folding
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const toggleGroup = (groupCode: string) => {
@@ -564,7 +567,19 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     } catch { /* */ }
   }, []);
 
+  // Fetch online operator count across all hospitals
+  const loadOnlineCount = useCallback(async (hosList: typeof hospitals) => {
+    if (hosList.length === 0) { setOnlineOps(0); return; }
+    try {
+      const results = await Promise.all(
+        hosList.map(h => fetch(`/api/operators?hospitalCode=${h.code}`).then(r => r.ok ? r.json() : { onlineCount: 0 }))
+      );
+      setOnlineOps(results.reduce((s: number, r: { onlineCount?: number }) => s + (r.onlineCount || 0), 0));
+    } catch { setOnlineOps(0); }
+  }, []);
+
   useEffect(() => { loadHospitals(); loadGroups(); }, [loadHospitals, loadGroups]);
+  useEffect(() => { if (hospitals.length > 0) loadOnlineCount(hospitals); }, [hospitals, loadOnlineCount]);
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(t);
@@ -821,7 +836,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   <StatCard icon="📂" label="Groups" value={grouped.groups.length} color={COPPER_LIGHT} />
                 )}
                 <StatCard icon="👤" label="Total Patients" value={totalPatients.toLocaleString()} color={BLUE} />
-                <StatCard icon="📱" label="Registered Terminals" value={totalDevices} color="#22C55E" />
+                <StatCard icon="📱" label="Operators Online" value={`${onlineOps} / ${totalDevices}`} color={onlineOps > 0 ? "#22C55E" : "#64748B"} />
                 <StatCard icon="📦" label="Tier Templates" value="4" color="#A855F7" />
               </div>
 

@@ -31,6 +31,19 @@ export function useOperator(hospitalCode: string) {
     setLoading(false);
   }, [hospitalCode]);
 
+  // Heartbeat — ping every 5 min to keep operator "online"
+  useEffect(() => {
+    if (!session?.operatorId) return;
+    const interval = setInterval(() => {
+      fetch("/api/operators", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hospitalCode, action: "heartbeat", operatorId: session.operatorId }),
+      }).catch(() => {});
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [hospitalCode, session?.operatorId]);
+
   // Listen for cross-tab session changes
   useEffect(() => {
     const handler = (e: StorageEvent) => {
