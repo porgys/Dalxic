@@ -515,6 +515,7 @@ function StatBlock({ value, suffix, label, delay }) {
    ═══════════════════════════════════════════════════════════ */
 export default function Home() {
   const [scrolled, setScrolled] = useState(false)
+  const [showScroll, setShowScroll] = useState(false)
   const BANNER_IMAGES = [
     "/dalxic-city.jpg",
     "/banner-careplan.jpg",
@@ -529,7 +530,8 @@ export default function Home() {
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
     window.addEventListener("scroll", onScroll, { passive: true })
-    return () => window.removeEventListener("scroll", onScroll)
+    const timer = setTimeout(() => setShowScroll(true), 5000)
+    return () => { window.removeEventListener("scroll", onScroll); clearTimeout(timer) }
   }, [])
 
   /* ── Banner slideshow sequence ──
@@ -634,7 +636,7 @@ export default function Home() {
 
       <GalaxyCanvas />
 
-      {/* ── Scroll indicator — fixed, independent of hero fade ── */}
+      {/* ── Scroll indicator — fades in at 5s, hides on scroll ── */}
       {!scrolled && (
         <div
           style={{
@@ -648,6 +650,8 @@ export default function Home() {
             gap: "8px",
             animation: "scrollBob 2.5s ease-in-out infinite",
             pointerEvents: "none",
+            opacity: showScroll ? 1 : 0,
+            transition: "opacity 1.5s ease",
           }}
         >
           <span
