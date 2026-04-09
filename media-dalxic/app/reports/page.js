@@ -6,6 +6,8 @@ import PlatformHeader from "../components/PlatformHeader"
 import { P, VIOLET } from "../../lib/tokens"
 import AmbientBg from "../components/AmbientBg"
 import ConfRing from "../components/ConfRing"
+import ForensicReport from "../components/ForensicReport"
+import { generateForensicPdf } from "../../lib/generatePdf"
 
 const SAMPLE_REPORTS = [
   {
@@ -460,8 +462,8 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Report Modal Overlay */}
-      {activeReport && <ReportModal report={activeReport} onClose={() => setActiveReport(null)} router={router} />}
+      {/* Keynote-Style Forensic Report */}
+      {activeReport && <ForensicReport report={activeReport} onClose={() => setActiveReport(null)} onExportPdf={generateForensicPdf} />}
     </div>
   )
 }

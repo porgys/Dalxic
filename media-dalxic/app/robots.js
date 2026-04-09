@@ -3,7 +3,7 @@ export default function robots() {
     rules: [
       { userAgent: "*", allow: ["/", "/about", "/team", "/pricing", "/workstation", "/chat", "/reports", "/integrations"], disallow: ["/api/", "/auth"] },
     ],
-    sitemap: "https://dalxic.com/sitemap.xml",
-    host: "https://dalxic.com",
+    sitemap: "https://media.dalxic.com/sitemap.xml",
+    host: "https://media.dalxic.com",
   }
 }
