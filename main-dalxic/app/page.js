@@ -634,6 +634,41 @@ export default function Home() {
 
       <GalaxyCanvas />
 
+      {/* ── Scroll indicator — fixed, independent of hero fade ── */}
+      {!scrolled && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "28px",
+            left: "50%",
+            zIndex: 50,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "8px",
+            animation: "scrollBob 2.5s ease-in-out infinite",
+            pointerEvents: "none",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "12px",
+              fontWeight: 700,
+              letterSpacing: "4px",
+              textTransform: "uppercase",
+              color: "#E8B878",
+              textShadow: "0 0 14px rgba(232,184,120,0.8), 0 0 28px rgba(184,115,51,0.5), 0 0 48px rgba(184,115,51,0.2)",
+            }}
+          >
+            Scroll
+          </span>
+          <div style={{ width: "2px", height: "32px", background: "linear-gradient(to bottom, #E8B878, rgba(184,115,51,0.3), transparent)", borderRadius: "1px", boxShadow: "0 0 10px rgba(232,184,120,0.5)" }} />
+          <div style={{ width: "10px", height: "10px", borderRight: "2px solid #E8B878", borderBottom: "2px solid #E8B878", transform: "rotate(45deg)", filter: "drop-shadow(0 0 8px rgba(232,184,120,0.7))", marginTop: "-8px" }} />
+          <style>{`@keyframes scrollBob { 0%,100% { transform: translateX(-50%) translateY(0); opacity: 0.8; } 50% { transform: translateX(-50%) translateY(8px); opacity: 1; } }`}</style>
+        </div>
+      )}
+
       {/* ── Nav ─────────────────────────────────────────── */}
       <nav
         style={{
@@ -904,55 +939,6 @@ export default function Home() {
             </div>
           </Reveal>
 
-          {/* Scroll indicator — glowing, always visible */}
-          <div
-            style={{
-              position: "absolute",
-              bottom: "var(--sp-xl)",
-              left: "50%",
-              transform: "translateX(-50%)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "10px",
-              animation: "scrollPulse 2.5s ease-in-out infinite",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "var(--fs-xs)",
-                fontWeight: 600,
-                letterSpacing: "3px",
-                textTransform: "uppercase",
-                color: "var(--copper-light)",
-                textShadow: "0 0 12px rgba(184,115,51,0.6), 0 0 24px rgba(184,115,51,0.3)",
-              }}
-            >
-              Scroll
-            </span>
-            <div
-              style={{
-                width: "2px",
-                height: "36px",
-                background: "linear-gradient(to bottom, var(--copper), rgba(184,115,51,0.2), transparent)",
-                borderRadius: "1px",
-                boxShadow: "0 0 8px rgba(184,115,51,0.4)",
-              }}
-            />
-            <div
-              style={{
-                width: "8px",
-                height: "8px",
-                borderRight: "2px solid var(--copper-light)",
-                borderBottom: "2px solid var(--copper-light)",
-                transform: "rotate(45deg)",
-                filter: "drop-shadow(0 0 6px rgba(184,115,51,0.5))",
-                marginTop: "-6px",
-              }}
-            />
-            <style>{`@keyframes scrollPulse { 0%,100% { opacity: 0.7; transform: translateX(-50%) translateY(0); } 50% { opacity: 1; transform: translateX(-50%) translateY(6px); } }`}</style>
-          </div>
         </section>
 
         {/* ── Content backdrop — 80% dark, 20% banner bleed-through ── */}
