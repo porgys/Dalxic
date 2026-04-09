@@ -43,7 +43,6 @@ export async function GET(request: Request) {
     patientCounts,
     operatorCounts,
     todayRecords,
-    billTotals,
   ] = await Promise.all([
     // Total patient records per hospital
     db.patientRecord.groupBy({
@@ -62,13 +61,17 @@ export async function GET(request: Request) {
       where: { hospitalId: { in: hospitalIds }, createdAt: { gte: today } },
       select: { id: true, hospitalId: true, patient: true, visit: true },
     }),
-    // Billing totals per hospital (all time)
-    db.bill.groupBy({
+  ]);
+
+  // Bill totals — bills table may not exist yet, graceful fallback
+  let billTotals: { hospitalId: string; _sum: { total: number | null } }[] = [];
+  try {
+    billTotals = await db.bill.groupBy({
       by: ["hospitalId"],
       where: { hospitalId: { in: hospitalIds }, status: { in: ["PAID", "PART_PAID"] } },
       _sum: { total: true },
-    }),
-  ]);
+    });
+  } catch { /* bills table not yet created */ }
 
   // Build lookup maps
   const patientMap = Object.fromEntries(patientCounts.map(p => [p.hospitalId, p._count]));
