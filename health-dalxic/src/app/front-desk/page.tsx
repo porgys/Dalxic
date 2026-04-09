@@ -326,6 +326,42 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
   const [closeLoading, setCloseLoading] = useState(false);
   const [closeSuccess, setCloseSuccess] = useState<{ token: string; duration: number } | null>(null);
 
+  // Cross-branch search (group-aware)
+  const [hospitalGroup, setHospitalGroup] = useState<{ groupCode: string; name: string } | null>(null);
+  const [crossSearchQuery, setCrossSearchQuery] = useState("");
+  const [crossSearchResults, setCrossSearchResults] = useState<{ recordId: string; patientName: string; phone: string | null; queueToken: string | null; visitStatus: string | null; department: string | null; hospitalCode: string; hospitalName: string; hospitalTier: string; createdAt: string }[]>([]);
+  const [crossSearchLoading, setCrossSearchLoading] = useState(false);
+  const [crossSearchMeta, setCrossSearchMeta] = useState<{ totalFound: number; branchCount: number } | null>(null);
+
+  // Check if current hospital belongs to a group
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`/api/hospitals?code=${HOSPITAL_CODE}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.group?.groupCode) {
+            setHospitalGroup({ groupCode: data.group.groupCode, name: data.group.name });
+          }
+        }
+      } catch { /* */ }
+    })();
+  }, []);
+
+  const handleCrossSearch = async () => {
+    if (!crossSearchQuery.trim() || crossSearchQuery.length < 2 || !hospitalGroup) return;
+    setCrossSearchLoading(true);
+    try {
+      const res = await fetch(`/api/groups/patients/search?groupCode=${hospitalGroup.groupCode}&q=${encodeURIComponent(crossSearchQuery)}&fromHospitalCode=${HOSPITAL_CODE}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCrossSearchResults(data.results || []);
+        setCrossSearchMeta({ totalFound: data.totalFound, branchCount: data.branchCount });
+      }
+    } catch { /* */ }
+    finally { setCrossSearchLoading(false); }
+  };
+
   // Form state
   const [form, setForm] = useState({
     fullName: "", dateOfBirth: todayISO(), gender: "", phone: "", email: "",
@@ -1222,6 +1258,78 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
                   </div>
                 )}
               </WorkshopBox>
+
+              {/* Cross-Branch Search — only visible if hospital is in a group */}
+              {hospitalGroup && (
+                <WorkshopBox title={`Cross-Branch Search — ${hospitalGroup.name}`} icon="🌐" delay={0.15}>
+                  <p className="text-xs text-[#64748B] mb-3">Search patients across all {hospitalGroup.name} branches</p>
+                  <div className="flex gap-3 mb-4">
+                    <div className="flex-1">
+                      <DInput placeholder="Search By Name, Phone, Token, Or Insurance ID..." value={crossSearchQuery}
+                        onChange={(e) => setCrossSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleCrossSearch()} />
+                    </div>
+                    <button type="button" onClick={handleCrossSearch} disabled={crossSearchLoading || crossSearchQuery.length < 2}
+                      className="px-5 py-2.5 rounded-xl text-sm font-body font-medium text-white shrink-0 disabled:opacity-40 transition-all"
+                      style={{ background: "linear-gradient(135deg, #0EA5E9, #38BDF8)" }}>
+                      {crossSearchLoading ? "..." : "Search Group"}
+                    </button>
+                  </div>
+
+                  {crossSearchResults.length > 0 && crossSearchMeta ? (
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                      <p className="text-xs text-[#64748B] mb-2">{crossSearchMeta.totalFound} Result{crossSearchMeta.totalFound !== 1 ? "s" : ""} Across {crossSearchMeta.branchCount} Branches</p>
+                      {crossSearchResults.map((item, i) => {
+                        const isOtherBranch = item.hospitalCode !== HOSPITAL_CODE;
+                        return (
+                          <motion.div key={item.recordId}
+                            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.04 }}
+                            className="p-3.5 rounded-xl"
+                            style={{
+                              background: isOtherBranch ? "rgba(14,165,233,0.04)" : "rgba(255,255,255,0.025)",
+                              border: `1px solid ${isOtherBranch ? "rgba(14,165,233,0.15)" : "rgba(184,115,51,0.1)"}`,
+                            }}>
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-3">
+                                {item.queueToken && (
+                                  <span className="font-mono font-bold text-sm" style={{ color: isOtherBranch ? "#0EA5E9" : COPPER }}>
+                                    {item.queueToken}
+                                  </span>
+                                )}
+                                <span className="text-sm text-white font-body">{item.patientName}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] px-2 py-0.5 rounded font-bold font-mono" style={{
+                                  background: isOtherBranch ? "rgba(14,165,233,0.1)" : "rgba(184,115,51,0.08)",
+                                  border: `1px solid ${isOtherBranch ? "rgba(14,165,233,0.2)" : "rgba(184,115,51,0.15)"}`,
+                                  color: isOtherBranch ? "#38BDF8" : COPPER,
+                                }}>
+                                  {item.hospitalCode}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-[#94A3B8]">
+                              <span>{item.hospitalName}</span>
+                              {item.department && <><span className="text-[#64748B]">•</span><span className="text-[#64748B]">{item.department}</span></>}
+                              {item.phone && <><span className="text-[#64748B]">•</span><span className="text-[#64748B]">{item.phone}</span></>}
+                              {item.visitStatus && <><span className="text-[#64748B]">•</span><span className="text-[#64748B] uppercase text-[10px]">{item.visitStatus.replace(/_/g, " ")}</span></>}
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  ) : crossSearchQuery.length >= 2 && !crossSearchLoading ? (
+                    <div className="text-center py-6">
+                      <p className="text-[#64748B] text-sm">No Patients Found Across Group Branches</p>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p className="text-[#475569] text-xs">Minimum 2 Characters Required</p>
+                    </div>
+                  )}
+                </WorkshopBox>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

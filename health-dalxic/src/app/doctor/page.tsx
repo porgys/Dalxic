@@ -197,6 +197,96 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [incomingReferrals, setIncomingReferrals] = useState<{ id: string; recordId: string; patientName: string; queueToken: string; specialty?: string; reason: string; urgency: string; referredBy: string; referredAt: string; status: string; chiefComplaint: string; currentDiagnosis: string | null }[]>([]);
   const [referralCount, setReferralCount] = useState(0);
 
+  // Inter-branch referral state
+  const [hospitalGroup, setHospitalGroup] = useState<{ groupCode: string; name: string } | null>(null);
+  const [groupBranches, setGroupBranches] = useState<{ code: string; name: string; tier: string; activeModules: string[] }[]>([]);
+  const [showInterBranchPanel, setShowInterBranchPanel] = useState(false);
+  const [ibDest, setIbDest] = useState("");
+  const [ibDept, setIbDept] = useState("");
+  const [ibType, setIbType] = useState("OUTPATIENT");
+  const [ibPriority, setIbPriority] = useState("ROUTINE");
+  const [ibReason, setIbReason] = useState("");
+  const [ibNotes, setIbNotes] = useState("");
+  const [ibSending, setIbSending] = useState(false);
+  const [ibIncoming, setIbIncoming] = useState<{ id: string; fromHospitalCode: string; fromHospitalName: string; toHospitalCode: string; department: string; priority: string; status: string; clinicalReason: string; referringDoctorName: string; patientName: string; patientRecordId: string; createdAt: string }[]>([]);
+  const [ibCount, setIbCount] = useState(0);
+
+  // Check group membership + load branches
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`/api/hospitals?code=${HOSPITAL_CODE}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.group?.groupCode) {
+            setHospitalGroup({ groupCode: data.group.groupCode, name: data.group.name });
+            // Load group detail for branches
+            const gRes = await fetch(`/api/groups?groupCode=${data.group.groupCode}`);
+            if (gRes.ok) {
+              const gData = await gRes.json();
+              setGroupBranches((gData.hospitals || []).filter((h: { code: string }) => h.code !== HOSPITAL_CODE));
+            }
+          }
+        }
+      } catch { /* */ }
+    })();
+  }, []);
+
+  // Poll inter-branch referrals
+  useEffect(() => {
+    if (!hospitalGroup) return;
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/groups/referrals?groupCode=${hospitalGroup.groupCode}&hospitalCode=${HOSPITAL_CODE}&status=all`);
+        if (res.ok) {
+          const data = await res.json();
+          const incoming = (data.referrals || []).filter((r: { toHospitalCode: string; status: string }) => r.toHospitalCode === HOSPITAL_CODE && (r.status === "PENDING" || r.status === "ACCEPTED"));
+          setIbIncoming(incoming);
+          setIbCount(incoming.filter((r: { status: string }) => r.status === "PENDING").length);
+        }
+      } catch { /* */ }
+    };
+    load();
+    const t = setInterval(load, 8000);
+    return () => clearInterval(t);
+  }, [hospitalGroup]);
+
+  const sendInterBranchReferral = async () => {
+    if (!activeSession || !hospitalGroup || !ibDest || !ibDept || !ibReason.trim()) return;
+    setIbSending(true);
+    try {
+      await fetch("/api/groups/referrals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create",
+          groupCode: hospitalGroup.groupCode,
+          hospitalCode: HOSPITAL_CODE,
+          recordId: activeSession.recordId,
+          toHospitalCode: ibDest,
+          department: ibDept,
+          referralType: ibType,
+          priority: ibPriority,
+          clinicalReason: ibReason,
+          referringDoctorName: operator.operatorName,
+          notes: ibNotes || undefined,
+        }),
+      });
+      setIbDest(""); setIbDept(""); setIbType("OUTPATIENT"); setIbPriority("ROUTINE"); setIbReason(""); setIbNotes("");
+      setShowInterBranchPanel(false);
+    } catch { /* */ }
+    finally { setIbSending(false); }
+  };
+
+  const handleIbAccept = async (referral: typeof ibIncoming[0]) => {
+    if (!hospitalGroup) return;
+    await fetch("/api/groups/referrals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "accept", groupCode: hospitalGroup.groupCode, hospitalCode: HOSPITAL_CODE, recordId: referral.patientRecordId, referralId: referral.id, operatorName: operator.operatorName }),
+    });
+  };
+
   const loadQueue = useCallback(async () => {
     try {
       const res = await fetch(`/api/queue?hospitalCode=${HOSPITAL_CODE}`);
@@ -598,6 +688,42 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
               </div>
             </>
           )}
+
+          {/* Incoming Inter-Branch Referrals */}
+          {hospitalGroup && ibIncoming.length > 0 && (
+            <>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 20, marginBottom: 8 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>Branch Transfers</span>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: `${COPPER}10`, color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{ibIncoming.length}</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {ibIncoming.map((ref, i) => {
+                  const pColor = ref.priority === "CRITICAL" ? "#EF4444" : ref.priority === "URGENT" ? "#F59E0B" : "#22C55E";
+                  return (
+                    <motion.div key={ref.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
+                      style={{ padding: "10px 10px", borderRadius: 10, background: `${pColor}04`, border: `1px solid ${pColor}15` }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+                        <span style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 10, fontWeight: 700, color: pColor }}>{ref.fromHospitalCode}</span>
+                        <span style={{ fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 3, textTransform: "uppercase", background: `${pColor}12`, color: pColor }}>{ref.priority}</span>
+                      </div>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ref.patientName}</p>
+                      <p style={{ fontSize: 10, color: "#64748B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>{ref.clinicalReason}</p>
+                      <div style={{ display: "flex", gap: 4, marginTop: 2 }}>
+                        <span style={{ fontSize: 9, fontWeight: 600, color: COPPER }}>{ref.department}</span>
+                        <span style={{ fontSize: 9, color: "#475569" }}>&middot; {ref.status}</span>
+                      </div>
+                      {ref.status === "PENDING" && (
+                        <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleIbAccept(ref)}
+                          style={{ display: "block", width: "100%", marginTop: 6, padding: "5px 0", borderRadius: 6, fontSize: 10, fontWeight: 600, color: COPPER, cursor: "pointer", background: `${COPPER}06`, border: `1px solid ${COPPER}18` }}>
+                          Accept Transfer
+                        </motion.button>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
 
         {/* ─── CENTER: Charting Workspace ─── */}
@@ -763,6 +889,108 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                     </div>
                   )}
                 </motion.div>
+
+                {/* Inter-Branch Referral — only if hospital is in a group */}
+                {hospitalGroup && (
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.135 }}
+                    style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.15)", backdropFilter: "blur(12px)", marginBottom: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showInterBranchPanel ? 12 : 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 14 }}>🌐</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                          Inter-Branch Referral
+                        </span>
+                        <span style={{ fontSize: 9, color: "#64748B", marginLeft: 4 }}>({hospitalGroup.name})</span>
+                      </div>
+                      <button type="button" onClick={() => setShowInterBranchPanel(!showInterBranchPanel)}
+                        style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: showInterBranchPanel ? `${COPPER}15` : "rgba(255,255,255,0.03)", border: `1px solid ${showInterBranchPanel ? COPPER + "30" : "rgba(255,255,255,0.05)"}`, color: showInterBranchPanel ? COPPER : "#64748B", cursor: "pointer" }}>
+                        {showInterBranchPanel ? "Close" : "+ Transfer"}
+                      </button>
+                    </div>
+                    {showInterBranchPanel && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Destination Branch</label>
+                            <select value={ibDest} onChange={(e) => setIbDest(e.target.value)}
+                              className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white focus:outline-none appearance-none"
+                              style={{ background: "rgba(255,255,255,0.03)", borderColor: `${COPPER}20` }}>
+                              <option value="" style={{ background: theme.selectOptionBg }}>Select Branch...</option>
+                              {groupBranches.map((b) => (
+                                <option key={b.code} value={b.code} style={{ background: theme.selectOptionBg }}>{b.code} — {b.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Department</label>
+                            <select value={ibDept} onChange={(e) => setIbDept(e.target.value)}
+                              className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white focus:outline-none appearance-none"
+                              style={{ background: "rgba(255,255,255,0.03)", borderColor: `${COPPER}20` }}>
+                              <option value="" style={{ background: theme.selectOptionBg }}>Select Department...</option>
+                              {["Doctor", "Lab", "Pharmacy", "CT/Radiology", "Ultrasound", "Ward", "ICU", "Maternity", "Blood Bank", "Emergency"].map((d) => (
+                                <option key={d} value={d} style={{ background: theme.selectOptionBg }}>{d}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Type</label>
+                            <div style={{ display: "flex", gap: 4 }}>
+                              {(["OUTPATIENT", "ADMISSION", "EMERGENCY", "BLOOD_REQUEST"] as const).map((t) => (
+                                <button key={t} type="button" onClick={() => setIbType(t)}
+                                  style={{
+                                    flex: 1, padding: "5px 0", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", cursor: "pointer",
+                                    background: ibType === t ? `${COPPER}10` : "rgba(255,255,255,0.02)",
+                                    border: `1px solid ${ibType === t ? COPPER + "30" : "rgba(255,255,255,0.05)"}`,
+                                    color: ibType === t ? COPPER : "#64748B",
+                                  }}>
+                                  {t.replace("_", " ")}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Priority</label>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              {(["ROUTINE", "URGENT", "CRITICAL"] as const).map((p) => (
+                                <button key={p} type="button" onClick={() => setIbPriority(p)}
+                                  style={{
+                                    flex: 1, padding: "5px 0", borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: "uppercase", cursor: "pointer",
+                                    background: ibPriority === p ? (p === "CRITICAL" ? "rgba(220,38,38,0.1)" : p === "URGENT" ? "rgba(245,158,11,0.1)" : "rgba(34,197,94,0.1)") : "rgba(255,255,255,0.02)",
+                                    border: `1px solid ${ibPriority === p ? (p === "CRITICAL" ? "rgba(220,38,38,0.3)" : p === "URGENT" ? "rgba(245,158,11,0.3)" : "rgba(34,197,94,0.3)") : "rgba(255,255,255,0.05)"}`,
+                                    color: ibPriority === p ? (p === "CRITICAL" ? "#F87171" : p === "URGENT" ? "#F59E0B" : "#22C55E") : "#64748B",
+                                  }}>
+                                  {p}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <DInput label="Clinical Reason" placeholder="e.g. Requires CT scan not available at this branch" required
+                          value={ibReason} onChange={(e) => setIbReason(e.target.value)} />
+                        <textarea rows={2} placeholder="Additional notes..."
+                          className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white placeholder:text-[#3D4D78] focus:outline-none resize-none"
+                          style={{ background: "rgba(255,255,255,0.03)", borderColor: `${COPPER}20` }}
+                          value={ibNotes} onChange={(e) => setIbNotes(e.target.value)} />
+                        {ibPriority === "CRITICAL" && (
+                          <div style={{ fontSize: 10, color: "#F87171", padding: "6px 10px", borderRadius: 6, background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.15)" }}>
+                            CRITICAL priority will auto-accept at the receiving branch — no waiting for approval.
+                          </div>
+                        )}
+                        <button type="button" onClick={sendInterBranchReferral} disabled={ibSending || !ibDest || !ibDept || !ibReason.trim()}
+                          style={{
+                            padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white",
+                            cursor: (!ibDest || !ibDept || !ibReason.trim() || ibSending) ? "not-allowed" : "pointer",
+                            background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none",
+                            opacity: (!ibDest || !ibDept || !ibReason.trim() || ibSending) ? 0.4 : 1,
+                          }}>
+                          {ibSending ? "Sending..." : "Transfer To Branch"}
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
 
                 {/* Session actions — two paths */}
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}

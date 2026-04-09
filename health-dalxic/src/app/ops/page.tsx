@@ -300,7 +300,7 @@ function EncryptedGate({ onUnlock }: { onUnlock: () => void }) {
    OPERATING PLATFORM — Master Control
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-type OpsView = "command" | "hospitals" | "operators" | "tiers" | "audit" | "modules";
+type OpsView = "command" | "hospitals" | "operators" | "tiers" | "audit" | "modules" | "groups";
 
 interface HospitalItem {
   id: string; code: string; name: string; subdomain: string;
@@ -507,13 +507,25 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const grouped = groupHospitals(hospitals);
 
   // New hospital form
-  const [newHospital, setNewHospital] = useState({ code: "", name: "", subdomain: "", tier: "T1" as string, tagline: "" });
+  const [newHospital, setNewHospital] = useState({ code: "", name: "", subdomain: "", tier: "T1" as string, tagline: "", groupCode: "" });
   const [addingHospital, setAddingHospital] = useState(false);
 
   // New operator form
   const [newOp, setNewOp] = useState({ name: "", phone: "", pin: "", role: "front_desk" });
   const [addingOp, setAddingOp] = useState(false);
   const [opMsg, setOpMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  // Group management
+  interface GroupDetail { id: string; groupCode: string; name: string; ownerName: string; subscriptionTier: string; isActive: boolean; hospitals: { id: string; code: string; name: string; tier: string; active: boolean; activeModules: string[]; _count: { patientRecords: number; devices: number } }[] }
+  interface GroupDashboard { group: { groupCode: string; name: string; ownerName: string; subscriptionTier: string }; branches: { code: string; name: string; tier: string; modules: number; totalPatients: number; todayPatients: number; operators: number; revenue: number }[]; totals: { patients: number; todayPatients: number; operators: number; revenue: number; branches: number }; activeReferrals: { id: string; fromHospitalCode: string; toHospitalCode: string; department: string; priority: string; status: string; patientName: string; createdAt: string }[] }
+  const [allGroups, setAllGroups] = useState<{ groupCode: string; name: string; hospitals: { code: string; name: string }[] }[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<string>("");
+  const [groupDetail, setGroupDetail] = useState<GroupDetail | null>(null);
+  const [groupDashboard, setGroupDashboard] = useState<GroupDashboard | null>(null);
+  const [newGroup, setNewGroup] = useState({ groupCode: "", name: "", ownerName: "", ownerPin: "" });
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  const [groupMsg, setGroupMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [linkHospitalCode, setLinkHospitalCode] = useState("");
 
   const loadHospitals = useCallback(async () => {
     try {
@@ -533,7 +545,26 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     } catch { /* */ }
   }, []);
 
-  useEffect(() => { loadHospitals(); }, [loadHospitals]);
+  const loadGroups = useCallback(async () => {
+    try {
+      const res = await fetch("/api/groups");
+      if (res.ok) setAllGroups(await res.json());
+    } catch { /* */ }
+  }, []);
+
+  const loadGroupDetail = useCallback(async (groupCode: string) => {
+    if (!groupCode) { setGroupDetail(null); setGroupDashboard(null); return; }
+    try {
+      const [detailRes, dashRes] = await Promise.all([
+        fetch(`/api/groups?groupCode=${groupCode}`),
+        fetch(`/api/groups/dashboard?groupCode=${groupCode}`),
+      ]);
+      if (detailRes.ok) setGroupDetail(await detailRes.json());
+      if (dashRes.ok) setGroupDashboard(await dashRes.json());
+    } catch { /* */ }
+  }, []);
+
+  useEffect(() => { loadHospitals(); loadGroups(); }, [loadHospitals, loadGroups]);
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(t);
@@ -544,6 +575,11 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     if (selectedHospital) loadOperators(selectedHospital);
   }, [selectedHospital, loadOperators]);
 
+  // When group changes, load detail + dashboard
+  useEffect(() => {
+    if (selectedGroup) loadGroupDetail(selectedGroup);
+  }, [selectedGroup, loadGroupDetail]);
+
   const handleAddHospital = async () => {
     const { code, name, subdomain } = newHospital;
     if (!code || !name || !subdomain) return;
@@ -552,11 +588,74 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
       await fetch("/api/hospitals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newHospital, actorId: "dalxic_ops" }),
+        body: JSON.stringify({ code, name, subdomain, tier: newHospital.tier, tagline: newHospital.tagline, actorId: "dalxic_ops" }),
       });
-      setNewHospital({ code: "", name: "", subdomain: "", tier: "T1", tagline: "" });
-      loadHospitals();
+      // If groupCode selected, link hospital to group
+      if (newHospital.groupCode) {
+        await fetch("/api/groups", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "link_hospital", groupCode: newHospital.groupCode, hospitalCode: code, actorId: "dalxic_ops" }),
+        });
+      }
+      setNewHospital({ code: "", name: "", subdomain: "", tier: "T1", tagline: "", groupCode: "" });
+      loadHospitals(); loadGroups();
     } finally { setAddingHospital(false); }
+  };
+
+  const handleCreateGroup = async () => {
+    const { groupCode, name, ownerName, ownerPin } = newGroup;
+    if (!groupCode || !name || !ownerName || ownerPin.length !== 4) return;
+    setCreatingGroup(true); setGroupMsg(null);
+    try {
+      const res = await fetch("/api/groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create", groupCode, name, ownerName, ownerPin, actorId: "dalxic_ops" }),
+      });
+      if (res.ok) {
+        setGroupMsg({ type: "ok", text: `Group ${groupCode} created` });
+        setNewGroup({ groupCode: "", name: "", ownerName: "", ownerPin: "" });
+        loadGroups();
+      } else {
+        const err = await res.json();
+        setGroupMsg({ type: "err", text: err.error || "Failed" });
+      }
+    } catch { setGroupMsg({ type: "err", text: "Network error" }); }
+    finally { setCreatingGroup(false); }
+  };
+
+  const handleLinkHospital = async (groupCode: string, hospitalCode: string) => {
+    setGroupMsg(null);
+    const res = await fetch("/api/groups", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "link_hospital", groupCode, hospitalCode, actorId: "dalxic_ops" }),
+    });
+    if (res.ok) {
+      setGroupMsg({ type: "ok", text: `${hospitalCode} linked to ${groupCode}` });
+      loadHospitals(); loadGroups(); loadGroupDetail(groupCode);
+      setLinkHospitalCode("");
+    } else {
+      const err = await res.json();
+      setGroupMsg({ type: "err", text: err.error || "Failed" });
+    }
+  };
+
+  const handleUnlinkHospital = async (hospitalCode: string) => {
+    setGroupMsg(null);
+    const res = await fetch("/api/groups", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "unlink_hospital", hospitalCode, actorId: "dalxic_ops" }),
+    });
+    if (res.ok) {
+      setGroupMsg({ type: "ok", text: `${hospitalCode} removed from group` });
+      loadHospitals(); loadGroups(); if (selectedGroup) loadGroupDetail(selectedGroup);
+    } else {
+      const err = await res.json();
+      setGroupMsg({ type: "err", text: err.error || "Failed" });
+    }
   };
 
   const handleAddOperator = async () => {
@@ -665,6 +764,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
           <div style={{ display: "flex", gap: 2 }}>
             <NavPill icon="⚡" label="Command" active={view === "command"} onClick={() => setView("command")} />
             <NavPill icon="🏥" label="Hospitals" active={view === "hospitals"} onClick={() => setView("hospitals")} />
+            <NavPill icon="📂" label="Groups" active={view === "groups"} onClick={() => setView("groups")} />
             <NavPill icon="👥" label="Operators" active={view === "operators"} onClick={() => setView("operators")} />
             <NavPill icon="📦" label="Tiers" active={view === "tiers"} onClick={() => setView("tiers")} />
             <NavPill icon="🧩" label="Modules" active={view === "modules"} onClick={() => setView("modules")} />
@@ -1000,7 +1100,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                     />
                   ))}
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
                   <select
                     value={newHospital.tier}
                     onChange={e => setNewHospital(h => ({ ...h, tier: e.target.value }))}
@@ -1012,6 +1112,20 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   >
                     {(["T1", "T2", "T3", "T4"] as const).map(t => (
                       <option key={t} value={t} style={{ background: "#0a0a14" }}>{t} — {TIER_DEFAULTS[t].label}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={newHospital.groupCode}
+                    onChange={e => setNewHospital(h => ({ ...h, groupCode: e.target.value }))}
+                    style={{
+                      width: "100%", padding: "13px 16px", borderRadius: 12, fontSize: 13,
+                      background: "rgba(255,255,255,0.03)", border: `1px solid ${COPPER}12`,
+                      color: "#E2E8F0", outline: "none", appearance: "none",
+                    }}
+                  >
+                    <option value="" style={{ background: "#0a0a14" }}>No Group (Standalone)</option>
+                    {allGroups.map(g => (
+                      <option key={g.groupCode} value={g.groupCode} style={{ background: "#0a0a14" }}>{g.groupCode} — {g.name}</option>
                     ))}
                   </select>
                   <input
@@ -1521,6 +1635,235 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   ))}
                 </div>
               </div>
+            </motion.div>
+          )}
+
+          {/* ═══ GROUPS ═══ */}
+          {view === "groups" && (
+            <motion.div key="groups" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Multi-Branch Management</div>
+                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Hospital Groups</h2>
+                <p style={{ fontSize: 13, color: "#64748B", marginTop: 8 }}>Create groups, link branches, and view consolidated dashboards.</p>
+              </div>
+
+              {/* Create group form */}
+              <div style={{
+                padding: "28px 24px", borderRadius: 20, marginBottom: 28,
+                background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}12`,
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 20 }}>
+                  Create New Group
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 100px auto", gap: 12, alignItems: "end" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 6 }}>Group Code</label>
+                    <input placeholder="e.g. NYAHO" value={newGroup.groupCode} onChange={e => setNewGroup(g => ({ ...g, groupCode: e.target.value.toUpperCase() }))}
+                      style={{ width: "100%", padding: "12px 14px", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.03)", border: `1px solid ${COPPER}12`, color: "#E2E8F0", outline: "none", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 6 }}>Group Name</label>
+                    <input placeholder="e.g. Nyaho Medical Centre" value={newGroup.name} onChange={e => setNewGroup(g => ({ ...g, name: e.target.value }))}
+                      style={{ width: "100%", padding: "12px 14px", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.03)", border: `1px solid ${COPPER}12`, color: "#E2E8F0", outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 6 }}>Owner Name</label>
+                    <input placeholder="e.g. Dr. Nyaho" value={newGroup.ownerName} onChange={e => setNewGroup(g => ({ ...g, ownerName: e.target.value }))}
+                      style={{ width: "100%", padding: "12px 14px", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.03)", border: `1px solid ${COPPER}12`, color: "#E2E8F0", outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 6 }}>Owner PIN</label>
+                    <input placeholder="4 digits" type="password" maxLength={4} value={newGroup.ownerPin}
+                      onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setNewGroup(g => ({ ...g, ownerPin: e.target.value })); }}
+                      style={{ width: "100%", padding: "12px 14px", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.03)", border: `1px solid ${COPPER}12`, color: "#E2E8F0", outline: "none", textAlign: "center", letterSpacing: "0.3em", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+                  </div>
+                  <motion.button onClick={handleCreateGroup} disabled={creatingGroup || !newGroup.groupCode || !newGroup.name || !newGroup.ownerName || newGroup.ownerPin.length !== 4}
+                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                    style={{ padding: "12px 20px", borderRadius: 10, cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 12, opacity: creatingGroup || !newGroup.groupCode ? 0.4 : 1, whiteSpace: "nowrap" }}>
+                    {creatingGroup ? "Creating..." : "Create"}
+                  </motion.button>
+                </div>
+                <AnimatePresence>
+                  {groupMsg && (
+                    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      style={{ marginTop: 14, fontSize: 11, fontWeight: 600, padding: "8px 14px", borderRadius: 8, background: groupMsg.type === "ok" ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.06)", border: `1px solid ${groupMsg.type === "ok" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)"}`, color: groupMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>
+                      {groupMsg.text}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Group selector */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>Select Group</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {allGroups.map(g => (
+                    <motion.button key={g.groupCode} onClick={() => setSelectedGroup(g.groupCode)} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                      style={{
+                        padding: "10px 18px", borderRadius: 10, cursor: "pointer",
+                        background: selectedGroup === g.groupCode ? `${COPPER}12` : "rgba(255,255,255,0.02)",
+                        border: `1px solid ${selectedGroup === g.groupCode ? COPPER + "30" : "rgba(255,255,255,0.05)"}`,
+                        color: selectedGroup === g.groupCode ? COPPER_LIGHT : "#64748B",
+                        fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", transition: "all 0.2s",
+                      }}>
+                      {g.groupCode} — {g.name} ({g.hospitals.length})
+                    </motion.button>
+                  ))}
+                  {allGroups.length === 0 && <span style={{ fontSize: 12, color: "#475569" }}>No groups yet. Create one above.</span>}
+                </div>
+              </div>
+
+              {/* Selected group detail + dashboard */}
+              {selectedGroup && groupDetail && (
+                <>
+                  {/* Dashboard stats */}
+                  {groupDashboard && (
+                    <div style={{ marginBottom: 28 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 14 }}>
+                        {groupDashboard.group.name} — Dashboard
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 20 }}>
+                        <StatCard icon="🏥" label="Branches" value={groupDashboard.totals.branches} color={COPPER} />
+                        <StatCard icon="👤" label="Total Patients" value={groupDashboard.totals.patients} color={BLUE} />
+                        <StatCard icon="📅" label="Today" value={groupDashboard.totals.todayPatients} color="#22C55E" />
+                        <StatCard icon="👥" label="Operators" value={groupDashboard.totals.operators} color="#A855F7" />
+                        <StatCard icon="💰" label="Revenue (GHS)" value={groupDashboard.totals.revenue.toLocaleString()} color={COPPER_LIGHT} />
+                      </div>
+
+                      {/* Branch breakdown */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
+                        {groupDashboard.branches.map(b => (
+                          <div key={b.code} style={{
+                            padding: "14px 18px", borderRadius: 12,
+                            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)",
+                            display: "flex", alignItems: "center", justifyContent: "space-between",
+                          }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <div style={{ width: 12, borderBottom: `1px solid ${COPPER}20` }} />
+                              <div style={{
+                                minWidth: 50, padding: "4px 8px", borderRadius: 6, textAlign: "center",
+                                background: `${COPPER}06`, border: `1px solid ${COPPER}12`,
+                                fontSize: 10, fontWeight: 800, color: COPPER,
+                                fontFamily: "var(--font-jetbrains-mono), monospace",
+                              }}>{b.code}</div>
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: "#E2E8F0" }}>{b.name}</div>
+                                <div style={{ fontSize: 10, color: "#475569" }}>{b.tier} &middot; {b.modules} modules</div>
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", gap: 20 }}>
+                              <div style={{ textAlign: "center" }}>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: BLUE }}>{b.totalPatients}</div>
+                                <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.08em" }}>PATIENTS</div>
+                              </div>
+                              <div style={{ textAlign: "center" }}>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: "#22C55E" }}>{b.todayPatients}</div>
+                                <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.08em" }}>TODAY</div>
+                              </div>
+                              <div style={{ textAlign: "center" }}>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: "#A855F7" }}>{b.operators}</div>
+                                <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.08em" }}>OPS</div>
+                              </div>
+                              <div style={{ textAlign: "center" }}>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: COPPER_LIGHT }}>{b.revenue.toLocaleString()}</div>
+                                <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.08em" }}>GHS</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Active referrals */}
+                      {groupDashboard.activeReferrals.length > 0 && (
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B", marginBottom: 10 }}>
+                            Active Inter-Branch Referrals ({groupDashboard.activeReferrals.length})
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            {groupDashboard.activeReferrals.map(r => {
+                              const pColor = r.priority === "CRITICAL" ? "#EF4444" : r.priority === "URGENT" ? "#F59E0B" : "#22C55E";
+                              return (
+                                <div key={r.id} style={{
+                                  padding: "10px 16px", borderRadius: 10,
+                                  background: `${pColor}04`, border: `1px solid ${pColor}15`,
+                                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                                  fontSize: 11,
+                                }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                    <span style={{ padding: "2px 6px", borderRadius: 4, background: `${pColor}15`, color: pColor, fontWeight: 800, fontSize: 9, letterSpacing: "0.06em" }}>{r.priority}</span>
+                                    <span style={{ color: "#E2E8F0", fontWeight: 600 }}>{r.patientName}</span>
+                                    <span style={{ color: "#475569" }}>&rarr; {r.department}</span>
+                                  </div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                    <span style={{ color: "#64748B", fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 10 }}>{r.fromHospitalCode} &rarr; {r.toHospitalCode}</span>
+                                    <span style={{ padding: "2px 6px", borderRadius: 4, background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.15)", color: BLUE, fontWeight: 700, fontSize: 9 }}>{r.status}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Link hospital form */}
+                  <div style={{
+                    padding: "20px 24px", borderRadius: 16, marginBottom: 20,
+                    background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10`,
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 14 }}>
+                      Link Hospital To {selectedGroup}
+                    </div>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <select value={linkHospitalCode} onChange={e => setLinkHospitalCode(e.target.value)}
+                        style={{ flex: 1, padding: "12px 14px", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.03)", border: `1px solid ${COPPER}12`, color: "#E2E8F0", outline: "none", appearance: "none" }}>
+                        <option value="" style={{ background: "#0a0a14" }}>Select A Standalone Hospital...</option>
+                        {hospitals.filter(h => !h.groupCode).map(h => (
+                          <option key={h.code} value={h.code} style={{ background: "#0a0a14" }}>{h.code} — {h.name}</option>
+                        ))}
+                      </select>
+                      <motion.button onClick={() => linkHospitalCode && handleLinkHospital(selectedGroup, linkHospitalCode)}
+                        disabled={!linkHospitalCode} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                        style={{ padding: "12px 20px", borderRadius: 10, cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 12, opacity: !linkHospitalCode ? 0.4 : 1, whiteSpace: "nowrap" }}>
+                        Link
+                      </motion.button>
+                    </div>
+                  </div>
+
+                  {/* Group branch list with unlink */}
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B", marginBottom: 10 }}>
+                    {groupDetail.hospitals.length} Branches In {selectedGroup}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {groupDetail.hospitals.map(h => (
+                      <div key={h.id} style={{
+                        padding: "14px 18px", borderRadius: 12,
+                        background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)",
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{
+                            minWidth: 50, padding: "4px 8px", borderRadius: 8, textAlign: "center",
+                            background: `${COPPER}06`, border: `1px solid ${COPPER}12`,
+                            fontSize: 10, fontWeight: 800, color: COPPER,
+                            fontFamily: "var(--font-jetbrains-mono), monospace",
+                          }}>{h.code}</div>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#E2E8F0" }}>{h.name}</div>
+                            <div style={{ fontSize: 10, color: "#475569" }}>{h.tier} &middot; {h._count.patientRecords} patients &middot; {h._count.devices} devices</div>
+                          </div>
+                        </div>
+                        <motion.button onClick={() => handleUnlinkHospital(h.code)}
+                          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                          style={{ padding: "5px 12px", borderRadius: 6, cursor: "pointer", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", color: "#EF4444", fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                          Unlink
+                        </motion.button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </motion.div>
           )}
 
