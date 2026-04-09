@@ -64,9 +64,10 @@ export async function GET(request: Request) {
   ]);
 
   // Bill totals — bills table may not exist yet, graceful fallback
-  let billTotals: { hospitalId: string; _sum: { total: number | null } }[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let billTotals: any[] = [];
   try {
-    billTotals = await db.bill.groupBy({
+    billTotals = await (db.bill as any).groupBy({
       by: ["hospitalId"],
       where: { hospitalId: { in: hospitalIds }, status: { in: ["PAID", "PART_PAID"] } },
       _sum: { total: true },
