@@ -473,7 +473,7 @@ export default function PlatformPage() {
           </div>
           <span style={{ fontSize: 12, fontWeight: 500, color: "var(--nl-txD)" }}>A Dalxic subsidiary</span>
         </div>
-        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--nl-txD)", cursor: "default" }}>We Serve You Better</span>
+        <span onClick={() => window.location.href = "/s/ZXJ2LkQ9Mnx0V3hCYTVrUw.aGVhbHRo"} style={{ fontSize: 12, fontWeight: 500, color: "var(--nl-txD)", cursor: "default" }}>We Serve You Better</span>
       </footer>
     </div>
   )
