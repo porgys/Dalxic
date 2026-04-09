@@ -154,7 +154,7 @@ export default function AdminDashboard() {
           <p style={{ color: "var(--txM)", lineHeight: 1.6, marginBottom: 24 }}>
             This dashboard is restricted to Dalxic administrators. You must be signed in with an admin account.
           </p>
-          <Link href="/auth" className="btn btn-primary">Sign In</Link>
+          <button onClick={() => window.location.href = "/auth"} className="btn btn-primary">Sign In</button>
         </div>
       </div>
     )
@@ -170,7 +170,7 @@ export default function AdminDashboard() {
         </Link>
         <div style={{ display: "flex", gap: 12 }}>
           <Link href="/" className="btn btn-ghost btn-sm">Home</Link>
-          <Link href="/workstation" className="btn btn-primary btn-sm">Scan</Link>
+          <button onClick={() => window.location.href = "/workstation"} className="btn btn-primary btn-sm">Scan</button>
         </div>
       </nav>
 

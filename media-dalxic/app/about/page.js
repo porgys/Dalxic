@@ -26,7 +26,7 @@ export default function AboutPage() {
         <div style={{ display:"flex", gap:12 }}>
           <Link href="/team" className="btn btn-ghost btn-sm">Team</Link>
           <Link href="/pricing" className="btn btn-ghost btn-sm">Pricing</Link>
-          <Link href="/workstation" className="btn btn-primary btn-sm">Start Scan</Link>
+          <button onClick={() => window.location.href = "/workstation"} className="btn btn-primary btn-sm">Start Scan</button>
         </div>
       </nav>
 
@@ -43,7 +43,7 @@ export default function AboutPage() {
             Dalxic was created in response to a crisis: the unchecked proliferation of AI-generated media used to manipulate governments, deceive courts, mislead the public and undermine democratic institutions. We are the answer.
           </p>
           <div style={{ display:"flex", gap:14 }}>
-            <Link href="/workstation" className="btn btn-primary btn-lg">Experience Nexus-7™</Link>
+            <button onClick={() => window.location.href = "/workstation"} className="btn btn-primary btn-lg">Experience Nexus-7™</button>
             <Link href="/team" className="btn btn-glow btn-lg">Meet Our Team</Link>
           </div>
         </div>

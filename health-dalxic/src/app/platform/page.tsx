@@ -373,7 +373,7 @@ export default function PlatformPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
           {STATIONS.map((s, i) => (
             <Reveal key={s.href} delay={i * 0.06} style={{ height: "100%" }}>
-              <Link href={s.href} style={{ textDecoration: "none", color: "inherit", display: "flex", height: "100%" }}>
+              <div onClick={() => window.location.href = s.href} style={{ cursor: "pointer", color: "inherit", display: "flex", height: "100%" }}>
                 <div className={`glass ${isDayMode ? "l-glow-day" : ""}`} style={{
                   padding: "28px 24px", cursor: "pointer", width: "100%",
                   display: "flex", flexDirection: "column",
@@ -412,7 +412,7 @@ export default function PlatformPage() {
                   <p style={{ fontSize: 14.5, fontWeight: 500, color: "var(--nl-txM)", lineHeight: 1.6, flex: 1 }}>{s.desc}</p>
                   <div style={{ marginTop: 20, height: 2, background: isDayMode ? `linear-gradient(90deg, #8B5A2BA0, #B8733360, transparent)` : `linear-gradient(90deg, ${COPPER}90, ${COPPER}30, transparent)`, borderRadius: 1, transition: "background 0.4s ease" }} />
                 </div>
-              </Link>
+              </div>
             </Reveal>
           ))}
         </div>
@@ -423,7 +423,7 @@ export default function PlatformPage() {
             <div className="section-label-copper" style={{ marginBottom: 0 }}>Privileged Access</div>
           </div>
           {/* ORIGINAL emergency card: borderColor COPPER+"25", no default boxShadow */}
-          <Link href="/w/Dk7_xQ3nXv0T~sF6bW2mYr8hLa" style={{ textDecoration: "none", color: "inherit", display: "block", maxWidth: 680, margin: "0 auto" }}>
+          <div onClick={() => window.location.href = "/w/Dk7_xQ3nXv0T~sF6bW2mYr8hLa"} style={{ cursor: "pointer", color: "inherit", display: "block", maxWidth: 680, margin: "0 auto" }}>
             <div className={`glass ${isDayMode ? "l-glow-day" : ""}`} style={{
               padding: "32px 32px", cursor: "pointer",
               display: "flex", flexDirection: "column",
@@ -461,7 +461,7 @@ export default function PlatformPage() {
               <p style={{ fontSize: 14.5, fontWeight: 500, color: "var(--nl-txM)", lineHeight: 1.7, flex: 1 }}>CMO Read-Only Emergency Access — All Actions Permanently Logged With Uneditable Audit Trail</p>
               <div style={{ marginTop: 20, height: 2, background: isDayMode ? `linear-gradient(90deg, #8B5A2BA0, #B8733360, transparent)` : `linear-gradient(90deg, ${COPPER}90, ${COPPER}30, transparent)`, borderRadius: 1, transition: "background 0.4s ease" }} />
             </div>
-          </Link>
+          </div>
         </Reveal>
       </main>
 
@@ -473,7 +473,7 @@ export default function PlatformPage() {
           </div>
           <span style={{ fontSize: 12, fontWeight: 500, color: "var(--nl-txD)" }}>A Dalxic subsidiary</span>
         </div>
-        <Link href="/s/ZXJ2LkQ9Mnx0V3hCYTVrUw.aGVhbHRo" style={{ fontSize: 12, fontWeight: 500, color: "var(--nl-txD)", textDecoration: "none", cursor: "default" }}>We Serve You Better</Link>
+        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--nl-txD)", cursor: "default" }}>We Serve You Better</span>
       </footer>
     </div>
   )

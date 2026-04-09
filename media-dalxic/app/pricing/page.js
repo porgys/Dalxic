@@ -313,7 +313,7 @@ export default function PricingPage() {
         <div style={{ display: "flex", gap: 12 }}>
           <Link href="/" className="btn btn-ghost btn-sm">Home</Link>
           <Link href="/team" className="btn btn-ghost btn-sm">Team</Link>
-          <Link href="/workstation" className="btn btn-primary btn-sm">Begin Verification</Link>
+          <button onClick={() => window.location.href = "/workstation"} className="btn btn-primary btn-sm">Begin Verification</button>
         </div>
       </nav>
 

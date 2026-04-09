@@ -168,22 +168,22 @@ export default function ChatPage() {
 
         {/* ── Nav Menus ── */}
         <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:12, marginBottom:24, animation:"fadeUp 0.5s ease 0.05s both", flexShrink:0 }}>
-          <a href="/workstation" style={{ textDecoration:"none", display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 20px", minWidth:160, borderRadius:12, background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)", color:"#818CF8", fontSize:13, fontWeight:500, letterSpacing:"0.3px", fontFamily:"'DM Sans', sans-serif", transition:"all 0.25s ease", cursor:"pointer" }}
+          <span onClick={() => window.location.href = "/workstation"} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 20px", minWidth:160, borderRadius:12, background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)", color:"#818CF8", fontSize:13, fontWeight:500, letterSpacing:"0.3px", fontFamily:"'DM Sans', sans-serif", transition:"all 0.25s ease", cursor:"pointer" }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(99,102,241,0.18)"; e.currentTarget.style.borderColor = "rgba(99,102,241,0.4)"; e.currentTarget.style.transform = "translateY(-2px)" }}
             onMouseLeave={e => { e.currentTarget.style.background = "rgba(99,102,241,0.1)"; e.currentTarget.style.borderColor = "rgba(99,102,241,0.2)"; e.currentTarget.style.transform = "" }}>
             <span style={{ fontSize:15 }}>📈</span>
             Workstation
-          </a>
-          <a href="/reports" style={{ textDecoration:"none", display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 20px", minWidth:160, borderRadius:12, background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)", color:"#818CF8", fontSize:13, fontWeight:500, letterSpacing:"0.3px", fontFamily:"'DM Sans', sans-serif", transition:"all 0.25s ease", cursor:"pointer" }}
+          </span>
+          <span onClick={() => window.location.href = "/reports"} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 20px", minWidth:160, borderRadius:12, background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)", color:"#818CF8", fontSize:13, fontWeight:500, letterSpacing:"0.3px", fontFamily:"'DM Sans', sans-serif", transition:"all 0.25s ease", cursor:"pointer" }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(99,102,241,0.18)"; e.currentTarget.style.borderColor = "rgba(99,102,241,0.4)"; e.currentTarget.style.transform = "translateY(-2px)" }}
             onMouseLeave={e => { e.currentTarget.style.background = "rgba(99,102,241,0.1)"; e.currentTarget.style.borderColor = "rgba(99,102,241,0.2)"; e.currentTarget.style.transform = "" }}>
             <span style={{ fontSize:15 }}>🗂️</span>
             Reports
-          </a>
-          <a href="/chat" style={{ textDecoration:"none", display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 20px", minWidth:160, borderRadius:12, background:"linear-gradient(135deg, #6366F1, #7C3AED)", border:"1px solid rgba(124,58,237,0.5)", color:"#fff", fontSize:13, fontWeight:600, letterSpacing:"0.3px", fontFamily:"'DM Sans', sans-serif", cursor:"default", boxShadow:"0 4px 20px rgba(99,102,241,0.3)" }}>
+          </span>
+          <span onClick={() => window.location.href = "/chat"} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 20px", minWidth:160, borderRadius:12, background:"linear-gradient(135deg, #6366F1, #7C3AED)", border:"1px solid rgba(124,58,237,0.5)", color:"#fff", fontSize:13, fontWeight:600, letterSpacing:"0.3px", fontFamily:"'DM Sans', sans-serif", cursor:"default", boxShadow:"0 4px 20px rgba(99,102,241,0.3)" }}>
             <span style={{ fontSize:15 }}>💬</span>
             DalxicChat
-          </a>
+          </span>
         </div>
 
         {/* ── Chat Container (compact glass card) ── */}

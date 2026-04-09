@@ -153,7 +153,7 @@ export default function TeamPage() {
         <div style={{ display:"flex", gap:12 }}>
           <Link href="/" className="btn btn-ghost btn-sm">Home</Link>
           <Link href="/pricing" className="btn btn-ghost btn-sm">Pricing</Link>
-          <Link href="/workstation" className="btn btn-primary btn-sm">Start Scan</Link>
+          <button onClick={() => window.location.href = "/workstation"} className="btn btn-primary btn-sm">Start Scan</button>
         </div>
       </nav>
 

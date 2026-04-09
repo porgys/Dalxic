@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import { calloutNumber } from "@/lib/voice-callout";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider } from "@/hooks/use-station-theme";
@@ -383,10 +382,10 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         borderBottom: theme.headerBorder, background: theme.headerBg, transition: "background 0.5s ease",
         backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
       }}>
-        <Link href="/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
+        <div onClick={() => window.location.href = "/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh"} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontWeight: 300, fontSize: 13, color: theme.textSecondary, letterSpacing: "0.08em", textTransform: "uppercase", transition: "color 0.4s ease" }}>Dalxic</span>
           <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
-        </Link>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Doctor Station</span>
           {/* Doctor Status Indicator */}

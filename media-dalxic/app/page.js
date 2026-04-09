@@ -84,7 +84,7 @@ function Nav({ onContact }) {
           {links.map(l => <a key={l.label} href={l.href} className="nav-link">{l.label}</a>)}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }} className="hidden-mobile">
-          <Link href="/auth" className="btn btn-ghost btn-sm">Sign In</Link>
+          <button onClick={() => window.location.href = "/auth"} className="btn btn-ghost btn-sm">Sign In</button>
           <button onClick={onContact} className="btn btn-primary btn-sm">Request Access</button>
         </div>
         <button onClick={() => setMenuOpen(o => !o)}
@@ -105,7 +105,7 @@ function Nav({ onContact }) {
             style={{ fontSize: 28, fontWeight: 700, color: "var(--tx)", textDecoration: "none", letterSpacing: -1 }}>{l.label}</a>
         ))}
         <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "80%" }}>
-          <Link href="/auth" className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }}>Sign In</Link>
+          <button onClick={() => window.location.href = "/auth"} className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }}>Sign In</button>
           <button onClick={() => { setMenuOpen(false); onContact() }} className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }}>Request Access</button>
         </div>
       </div>
@@ -456,10 +456,10 @@ function HomeInner() {
 
               {/* CTAs */}
               <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", animation: "fadeUp 0.6s ease 0.65s both" }}>
-                <Link href="/workstation" className="btn btn-primary btn-lg">
+                <button onClick={() => window.location.href = "/workstation"} className="btn btn-primary btn-lg">
                   <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><circle cx={11} cy={11} r={8} /><path d="m21 21-4.35-4.35" /></svg>
                   Start Forensic Analysis
-                </Link>
+                </button>
                 <button onClick={() => setContactOpen(true)} className="btn btn-glow btn-lg">Request Enterprise Demo</button>
               </div>
 
@@ -730,7 +730,7 @@ function HomeInner() {
                     </div>
                   </Reveal>
                 ))}
-                <Link href="/workstation" className="btn btn-primary" style={{ marginTop: 24 }}>Try a Scan</Link>
+                <button onClick={() => window.location.href = "/workstation"} className="btn btn-primary" style={{ marginTop: 24 }}>Try a Scan</button>
               </Reveal>
             </div>
           </div>
@@ -775,7 +775,7 @@ function HomeInner() {
                 Join the world's most security-conscious organisations who rely on Dalxic to protect the truth.
               </p>
               <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-                <Link href="/workstation" className="btn btn-primary btn-lg">Begin Free Analysis</Link>
+                <button onClick={() => window.location.href = "/workstation"} className="btn btn-primary btn-lg">Begin Free Analysis</button>
                 <button onClick={() => setContactOpen(true)} className="btn btn-glow btn-lg">Contact Enterprise Sales</button>
               </div>
             </Reveal>
@@ -804,14 +804,24 @@ function HomeInner() {
               ].map(col => (
                 <div key={col.title}>
                   <div style={{ fontWeight: 700, fontSize: 13, letterSpacing: 1, textTransform: "uppercase", marginBottom: 16, color: "var(--txM)" }}>{col.title}</div>
-                  {col.links.map(([label, href]) => (
-                    <div key={label} style={{ marginBottom: 10 }}>
-                      <Link href={href} style={{ fontSize: 13.5, color: "var(--txD)", textDecoration: "none", transition: "color 0.2s" }}
-                        onMouseEnter={e => e.target.style.color = "var(--tx)"} onMouseLeave={e => e.target.style.color = "var(--txD)"}>
-                        {label}
-                      </Link>
-                    </div>
-                  ))}
+                  {col.links.map(([label, href]) => {
+                    const isInternal = ["/workstation", "/reports", "/chat", "/auth", "/admin", "/settings"].includes(href)
+                    return (
+                      <div key={label} style={{ marginBottom: 10 }}>
+                        {isInternal ? (
+                          <span onClick={() => window.location.href = href} style={{ fontSize: 13.5, color: "var(--txD)", cursor: "pointer", transition: "color 0.2s" }}
+                            onMouseEnter={e => e.target.style.color = "var(--tx)"} onMouseLeave={e => e.target.style.color = "var(--txD)"}>
+                            {label}
+                          </span>
+                        ) : (
+                          <Link href={href} style={{ fontSize: 13.5, color: "var(--txD)", textDecoration: "none", transition: "color 0.2s" }}
+                            onMouseEnter={e => e.target.style.color = "var(--tx)"} onMouseLeave={e => e.target.style.color = "var(--txD)"}>
+                            {label}
+                          </Link>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               ))}
             </div>

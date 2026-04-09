@@ -458,7 +458,7 @@ export default function PricingPage() {
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Link href="/" style={{ fontSize: 13, color: "#94A3B8", textDecoration: "none", padding: "6px 12px", borderRadius: 8 }}>Home</Link>
-          <Link href="/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh" style={{ fontSize: 13, color: "#94A3B8", textDecoration: "none", padding: "6px 12px", borderRadius: 8 }}>Platform</Link>
+          <span onClick={() => window.location.href = "/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh"} style={{ fontSize: 13, color: "#94A3B8", cursor: "pointer", padding: "6px 12px", borderRadius: 8 }}>Platform</span>
           <button
             onClick={() => openContact("DalxicHealth")}
             style={{
