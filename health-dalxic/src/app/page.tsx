@@ -595,7 +595,7 @@ export default function HomePage() {
                 Total Hospital{" "}<span className="text-gradient-blue">Visibility.</span>
               </h2>
               <p style={{ fontSize: 15, color: "var(--nl-txM)", lineHeight: 1.8, marginBottom: 28 }}>
-                A command centre where administrators see everything — live patient flow, department loads, queue lengths, billing throughput, and emergency alerts — all on one wall. This is not a dashboard. This is hospital-wide consciousness.
+                Digital interconnectivity that breathes — live patient flow, department loads, queue lengths, billing, and emergency alerts — all in one system. This is not a dashboard. This is hospital-wide consciousness.
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {[
