@@ -904,7 +904,7 @@ export default function Home() {
             </div>
           </Reveal>
 
-          {/* Scroll indicator */}
+          {/* Scroll indicator — glowing, always visible */}
           <div
             style={{
               position: "absolute",
@@ -914,28 +914,44 @@ export default function Home() {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: "var(--sp-sm)",
-              opacity: 0.4,
+              gap: "10px",
+              animation: "scrollPulse 2.5s ease-in-out infinite",
             }}
           >
             <span
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "var(--fs-xs)",
-                letterSpacing: "2px",
+                fontWeight: 600,
+                letterSpacing: "3px",
                 textTransform: "uppercase",
-                color: "var(--txD)",
+                color: "var(--copper-light)",
+                textShadow: "0 0 12px rgba(184,115,51,0.6), 0 0 24px rgba(184,115,51,0.3)",
               }}
             >
               Scroll
             </span>
             <div
               style={{
-                width: "1px",
-                height: "32px",
-                background: "linear-gradient(to bottom, var(--txD), transparent)",
+                width: "2px",
+                height: "36px",
+                background: "linear-gradient(to bottom, var(--copper), rgba(184,115,51,0.2), transparent)",
+                borderRadius: "1px",
+                boxShadow: "0 0 8px rgba(184,115,51,0.4)",
               }}
             />
+            <div
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRight: "2px solid var(--copper-light)",
+                borderBottom: "2px solid var(--copper-light)",
+                transform: "rotate(45deg)",
+                filter: "drop-shadow(0 0 6px rgba(184,115,51,0.5))",
+                marginTop: "-6px",
+              }}
+            />
+            <style>{`@keyframes scrollPulse { 0%,100% { opacity: 0.7; transform: translateX(-50%) translateY(0); } 50% { opacity: 1; transform: translateX(-50%) translateY(6px); } }`}</style>
           </div>
         </section>
 
