@@ -290,7 +290,7 @@ const WORKSTATIONS = [
 
 const STATS = [
   { value: 30, suffix: "s", prefix: "<", decimals: 0, label: "FlowEngine™ Registration" },
-  { display: "100%", label: "AuditVault™ Coverage" },
+  { display: "100%", label: "AuditVault™ Compliance" },
   { value: 46, suffix: "+", decimals: 0, label: "Connected Workstations" },
   { display: "Real-time", label: "LiveQueue™ Updates" },
 ]
