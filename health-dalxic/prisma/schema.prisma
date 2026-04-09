@@ -7,6 +7,23 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Hospital Group (Multi-Branch) ───
+
+model HospitalGroup {
+  id               String   @id @default(cuid())
+  groupCode        String   @unique @map("group_code")
+  name             String
+  ownerName        String   @map("owner_name")
+  ownerPin         String   @map("owner_pin") // 4-digit PIN for group owner dashboard
+  subscriptionTier String   @default("GROUP_STANDARD") @map("subscription_tier")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  hospitals Hospital[]
+
+  @@map("hospital_groups")
+}
+
 // ─── Hospital & Tenancy ───
 
 model Hospital {
@@ -22,6 +39,11 @@ model Hospital {
   whatsappBundle  Int      @default(500) @map("whatsapp_bundle")
   active          Boolean  @default(true)
   createdAt       DateTime @default(now()) @map("created_at")
+
+  // Multi-branch group (nullable — standalone hospitals have no group)
+  groupId         String?  @map("group_id")
+  groupCode       String?  @map("group_code")
+  group           HospitalGroup? @relation(fields: [groupId], references: [id])
 
   monthlyBooks             MonthlyBook[]
   patientRecords           PatientRecord[]

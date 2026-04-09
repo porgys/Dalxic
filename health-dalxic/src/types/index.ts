@@ -1,5 +1,43 @@
 // DalxicHealth — Shared TypeScript Types
 
+// ─── Hospital Group (Multi-Branch) ───
+
+export interface HospitalGroup {
+  id: string;
+  groupCode: string;
+  name: string;
+  ownerName: string;
+  subscriptionTier: string;
+  isActive: boolean;
+  createdAt: Date;
+}
+
+export type InterBranchReferralType = "OUTPATIENT" | "ADMISSION" | "EMERGENCY" | "BLOOD_REQUEST";
+export type InterBranchReferralPriority = "ROUTINE" | "URGENT" | "CRITICAL";
+export type InterBranchReferralStatus = "PENDING" | "ACCEPTED" | "IN_TRANSIT" | "COMPLETED" | "REJECTED" | "CANCELLED";
+
+export interface InterBranchReferral {
+  id: string;
+  groupCode: string;
+  fromHospitalCode: string;
+  fromHospitalName: string;
+  toHospitalCode: string;
+  toHospitalName: string;
+  patientRecordId: string;
+  patientName: string;
+  referringDoctorName: string;
+  referralType: InterBranchReferralType;
+  department: string;
+  clinicalReason: string;
+  priority: InterBranchReferralPriority;
+  status: InterBranchReferralStatus;
+  acceptedBy: string | null;
+  rejectedReason: string | null;
+  completedAt: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
 // ─── Hospital & Tenancy ───
 
 export type HospitalTier = "T1" | "T2" | "T3" | "T4";
@@ -13,6 +51,8 @@ export interface Hospital {
   subdomain: string;
   tier: HospitalTier;
   active: boolean;
+  groupId?: string | null;
+  groupCode?: string | null;
 }
 
 // ─── Monthly Book System ───

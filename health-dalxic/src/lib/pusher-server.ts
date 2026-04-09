@@ -20,3 +20,8 @@ export function getPusher(): Pusher {
 export function hospitalChannel(hospitalCode: string, suffix: string) {
   return `private-hospital-${hospitalCode}-${suffix}`;
 }
+
+// Group-level channels for multi-branch events
+export function groupChannel(groupCode: string, suffix?: string) {
+  return suffix ? `private-group-${groupCode}-${suffix}` : `private-group-${groupCode}`;
+}

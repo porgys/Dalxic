@@ -10,15 +10,22 @@ export async function GET(request: Request) {
   if (code) {
     const hospital = await db.hospital.findUnique({
       where: { code },
-      include: { _count: { select: { devices: true, monthlyBooks: true, patientRecords: true } } },
+      include: {
+        group: { select: { groupCode: true, name: true, ownerName: true } },
+        _count: { select: { devices: true, monthlyBooks: true, patientRecords: true } },
+      },
     });
     if (!hospital) return Response.json({ error: "Hospital not found" }, { status: 404 });
     return Response.json(hospital);
   }
 
+  const groupCode = searchParams.get("groupCode");
+
   const hospitals = await db.hospital.findMany({
+    where: groupCode ? { groupCode } : undefined,
     orderBy: { name: "asc" },
     include: {
+      group: { select: { groupCode: true, name: true } },
       _count: { select: { devices: true, monthlyBooks: true, patientRecords: true } },
     },
   });
