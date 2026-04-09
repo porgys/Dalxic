@@ -299,7 +299,7 @@ const FEATURES_LEFT = [
   { title: "Nexus-7™ Clinical Intelligence", desc: "Proprietary engine that transforms patient data into structured, searchable records — instantly.", color: "#0EA5E9" },
   { title: "FlowEngine™ Patient Orchestration", desc: "End-to-end visit lifecycle from intake to discharge. Every step tracked, every handoff seamless.", color: "#38BDF8" },
   { title: "RedLine™ Emergency Protocol", desc: "Severity-based fast-track admission with priority escalation. Zero paperwork delays in critical moments.", color: "#EF4444" },
-  { title: "AuditVault™ Compliance Trail", desc: "Every action permanently logged with operator identity. Uneditable, exportable, DPA-compliant.", color: "#B87333" },
+  { title: "AuditVault™ Compliance Trail", desc: "Automatic compliance documentation. Exportable records, DPA-compliant, always available when you need them.", color: "#B87333" },
 ]
 
 const FEATURES_RIGHT = [
@@ -310,7 +310,7 @@ const FEATURES_RIGHT = [
 ]
 
 const ROUTES_SPECIAL = [
-  { href: "/emergency-override", label: "RedLine™ Emergency Access", desc: "Authorised read-only emergency access — every action permanently logged in AuditVault™ with uneditable trail", role: "CMO / Medical Director" },
+  { href: "/emergency-override", label: "RedLine™ Emergency Access", desc: "Authorised read-only emergency access — full compliance documentation maintained automatically in AuditVault™", role: "CMO / Medical Director" },
 ]
 
 /* ═══════════════════ NAV ═══════════════════ */
@@ -419,7 +419,7 @@ export default function HomePage() {
 
             {/* Sub-copy */}
             <p style={{ fontSize: "clamp(0.95rem, 1.5vw, 1.1rem)", color: "var(--nl-txM)", lineHeight: 1.8, maxWidth: 580, margin: "0 auto 44px", animation: "fadeUp 0.6s ease 0.5s both" }}>
-              From patient intake to pharmacy dispensing — every workstation connected in real-time. Eight proprietary systems, one seamless platform.
+              From patient intake to pharmacy dispensing — every workstation connected in real-time. Fifteen integrated stations, one seamless platform.
             </p>
 
             {/* CTAs */}
@@ -600,7 +600,7 @@ export default function HomePage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {[
                   { label: "Real-Time Facility Map", desc: "Every workstation, every queue, every bed — live on screen with auto-refresh", accent: "#0EA5E9" },
-                  { label: "AuditVault™ Oversight", desc: "Complete audit trail visibility — who did what, when, from which station", accent: COPPER },
+                  { label: "AuditVault™ Compliance", desc: "Full documentation trail — accessible, exportable, DPA-compliant when needed", accent: COPPER },
                   { label: "RedLine™ Alert Feed", desc: "Emergency escalations surface instantly with severity classification and routing", accent: "#EF4444" },
                 ].map(f => (
                   <div key={f.label} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
@@ -616,7 +616,7 @@ export default function HomePage() {
             {/* Image */}
             <Reveal delay={0.15}>
               <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", border: "1px solid rgba(14,165,233,0.15)", boxShadow: "0 24px 80px rgba(0,0,0,0.4), 0 0 60px rgba(14,165,233,0.08)" }}>
-                <Image src="/images/command-center.jpg" alt="Hospital command centre with live dashboard monitoring all departments" width={600} height={400} style={{ width: "100%", height: "auto", display: "block" }} />
+                <Image src="/images/command-center.jpg" alt="Hospital connectivity dashboard with integrated department workflows" width={600} height={400} style={{ width: "100%", height: "auto", display: "block" }} />
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 60%, rgba(3,5,15,0.6) 100%)", pointerEvents: "none" }} />
               </div>
             </Reveal>
