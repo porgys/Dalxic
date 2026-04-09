@@ -1323,7 +1323,7 @@ export default function Home() {
                   lineHeight: 1.6,
                 }}
               >
-                &ldquo;Technology That Solves Problems And Brings Productivity&rdquo;
+                &ldquo;Technology That Solves Problems And Brings About Productivity&rdquo;
               </span>
             </div>
           </Reveal>
