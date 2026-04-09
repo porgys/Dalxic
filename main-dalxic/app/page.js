@@ -523,42 +523,58 @@ export default function Home() {
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
-  /* ── Banner crossfade: image glides up, text fades down, then reverses ── */
+  /* ── Banner crossfade: one-shot sequence ──
+     0–10s:  Let visitors read — text full, image hidden
+     10–13s: Text dissolves to 0, image rises to 1
+     13–18s: Image holds at full visibility
+     18–21s: Image dissolves to 0
+     21s+:   Both gone — stage clear for future content
+  ── */
+  const [textOp, setTextOp] = useState(1)
+
   useEffect(() => {
     let raf
-    const CYCLE = 12000   // full cycle in ms (up + hold + down + hold)
-    const RISE = 3500     // time to glide up
-    const HOLD = 2500     // time at peak
-    const FALL = 3500     // time to dissolve back
-    const PEAK = 0.35     // max image opacity
     const start = performance.now()
+    const READ    = 10000  // reading time
+    const FADE    = 3000   // crossfade duration
+    const HOLD    = 5000   // image holds
+    const DISSOLVE = 3000  // image dissolves out
 
     function tick(now) {
-      const elapsed = (now - start) % CYCLE
-      let opacity = 0
-      if (elapsed < RISE) {
-        // Glide up
-        const t = elapsed / RISE
-        opacity = PEAK * (1 - Math.pow(1 - t, 2)) // ease-out
-      } else if (elapsed < RISE + HOLD) {
-        // Hold at peak
-        opacity = PEAK
-      } else if (elapsed < RISE + HOLD + FALL) {
-        // Dissolve back
-        const t = (elapsed - RISE - HOLD) / FALL
-        opacity = PEAK * (1 - t * t) // ease-in
+      const t = now - start
+
+      if (t < READ) {
+        // Reading phase — everything stays put
+        setBannerOpacity(0)
+        setTextOp(1)
+      } else if (t < READ + FADE) {
+        // Crossfade — text out, image in
+        const p = (t - READ) / FADE
+        const ease = p * p // ease-in for text fade, feels natural
+        setTextOp(1 - ease)
+        setBannerOpacity(ease)
+      } else if (t < READ + FADE + HOLD) {
+        // Image at full, text gone
+        setTextOp(0)
+        setBannerOpacity(1)
+      } else if (t < READ + FADE + HOLD + DISSOLVE) {
+        // Image dissolves
+        const p = (t - READ - FADE - HOLD) / DISSOLVE
+        const ease = p * p
+        setTextOp(0)
+        setBannerOpacity(1 - ease)
+      } else {
+        // Stage clear
+        setTextOp(0)
+        setBannerOpacity(0)
+        return // stop the loop
       }
-      // else: rest period, opacity stays 0
-      setBannerOpacity(opacity)
+
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [])
-
-  // Text opacity is inverse of banner — fades as image rises
-  const textOpacity = 1 - bannerOpacity * 1.8 // goes from 1 → ~0.37 at peak
-  const textOpacityClamped = Math.max(0.35, Math.min(1, textOpacity))
 
   return (
     <>
@@ -569,13 +585,12 @@ export default function Home() {
         backgroundSize: "cover",
         backgroundPosition: "center 40%",
         opacity: bannerOpacity,
-        transition: "opacity 0.1s linear",
         pointerEvents: "none",
       }}>
-        {/* Dark vignette overlay to blend with galaxy theme */}
+        {/* Edge vignette — fades edges into dark, center stays clear */}
         <div style={{
           position: "absolute", inset: 0,
-          background: "radial-gradient(ellipse at 50% 50%, rgba(3,5,15,0.3) 0%, rgba(3,5,15,0.7) 70%, rgba(3,5,15,0.9) 100%)",
+          background: "radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(3,5,15,0.4) 70%, rgba(3,5,15,0.85) 100%)",
         }} />
       </div>
 
@@ -669,8 +684,7 @@ export default function Home() {
             textAlign: "center",
             padding: "var(--sp-3xl) var(--sp-xl) var(--sp-3xl)",
             position: "relative",
-            opacity: textOpacityClamped,
-            transition: "opacity 0.1s linear",
+            opacity: textOp,
           }}
         >
           {/* Nexus-7 badge */}
