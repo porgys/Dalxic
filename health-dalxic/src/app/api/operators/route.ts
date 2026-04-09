@@ -49,7 +49,9 @@ export async function GET(request: Request) {
 
 // POST: Create operator, login, or logout
 export async function POST(request: Request) {
-  const blocked = rateLimit(request, AUTH_RATE_LIMIT); if (blocked) return blocked;  const body = await request.json();
+  const blocked = rateLimit(request, AUTH_RATE_LIMIT); if (blocked) return blocked;
+  try {
+  const body = await request.json();
   const { hospitalCode, action } = body;
 
   if (!hospitalCode || !action) {
@@ -193,6 +195,11 @@ export async function POST(request: Request) {
   }
 
   return Response.json({ error: "Invalid action. Use: create, login, logout" }, { status: 400 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown server error";
+    console.error("[operators] POST error:", message);
+    return Response.json({ error: message }, { status: 500 });
+  }
 }
 
 // PATCH: Update operator details (name, phone, role, active status, PIN reset)
