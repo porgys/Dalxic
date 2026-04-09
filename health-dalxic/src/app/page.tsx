@@ -590,9 +590,9 @@ export default function HomePage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
             {/* Text (left this time — alternating layout) */}
             <Reveal>
-              <div className="section-label-copper" style={{ marginBottom: 14 }}>Central Intelligence</div>
+              <div className="section-label-copper" style={{ marginBottom: 14 }}>Available On Demand</div>
               <h2 style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.6rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 20, lineHeight: 1.1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
-                Total Hospital{" "}<span className="text-gradient-blue">Visibility.</span>
+                Total Hospital{" "}<span className="text-gradient-blue">Connectivity.</span>
               </h2>
               <p style={{ fontSize: 15, color: "var(--nl-txM)", lineHeight: 1.8, marginBottom: 28 }}>
                 Digital interconnectivity that breathes — live patient flow, department loads, queue lengths, billing, and emergency alerts — all in one system. This is not a dashboard. This is hospital-wide consciousness.
