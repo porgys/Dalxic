@@ -961,6 +961,16 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── Content backdrop — blocks banner bleed-through ── */}
+        <div style={{
+          position: "relative",
+          zIndex: 2,
+          backgroundImage: "url(/wallpaper-dark.jpg)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        }}>
+
         {/* ── TICKER ───────────────────────────────────── */}
         <section style={{ padding: "var(--sp-xl) 0", borderTop: "1px solid rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
           <Ticker
@@ -1397,6 +1407,7 @@ export default function Home() {
             </span>
           </div>
         </footer>
+        </div>{/* end content backdrop */}
       </main>
     </>
   )
