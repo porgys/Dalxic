@@ -821,7 +821,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   <StatCard icon="📂" label="Groups" value={grouped.groups.length} color={COPPER_LIGHT} />
                 )}
                 <StatCard icon="👤" label="Total Patients" value={totalPatients.toLocaleString()} color={BLUE} />
-                <StatCard icon="📱" label="Active Devices" value={totalDevices} color="#22C55E" />
+                <StatCard icon="📱" label="Registered Terminals" value={totalDevices} color="#22C55E" />
                 <StatCard icon="📦" label="Tier Templates" value="4" color="#A855F7" />
               </div>
 
