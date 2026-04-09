@@ -310,7 +310,7 @@ const FEATURES_RIGHT = [
 ]
 
 const ROUTES_SPECIAL = [
-  { href: "/emergency-override", label: "RedLine™ Emergency Access", desc: "Authorised read-only emergency access — full compliance documentation maintained automatically in AuditVault™", role: "CMO / Medical Director" },
+  { label: "RedLine™ Emergency Access", desc: "Authorised read-only emergency access — full compliance documentation maintained automatically in AuditVault™", role: "CMO / Medical Director" },
 ]
 
 /* ═══════════════════ NAV ═══════════════════ */
@@ -874,10 +874,9 @@ export default function HomePage() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20, maxWidth: 600, margin: "0 auto" }}>
             {ROUTES_SPECIAL.map((route, i) => (
-              <Reveal key={route.href} delay={i * 0.1}>
-                <Link href={route.href} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+              <Reveal key={route.label} delay={i * 0.1}>
                   <div className="glass-copper" style={{
-                    padding: "36px 32px", cursor: "pointer",
+                    padding: "36px 32px", cursor: "default",
                     transition: "all 0.35s ease",
                   }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,115,51,0.4)"; e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 20px 60px rgba(184,115,51,0.12)" }}
@@ -887,7 +886,6 @@ export default function HomePage() {
                     <p style={{ fontSize: 14, color: "var(--nl-txM)", lineHeight: 1.7 }}>{route.desc}</p>
                     <div style={{ marginTop: 20, height: 2, background: "linear-gradient(90deg, rgba(184,115,51,0.6), transparent)", borderRadius: 1 }} />
                   </div>
-                </Link>
               </Reveal>
             ))}
           </div>
