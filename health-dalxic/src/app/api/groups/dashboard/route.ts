@@ -83,8 +83,6 @@ export async function GET(request: Request) {
 
   // Extract active inter-branch referrals
   const activeReferrals: Array<Record<string, unknown>> = [];
-  const hospitalNameMap = Object.fromEntries(hospitals.map(h => [h.id, h]));
-
   for (const record of todayRecords) {
     const visit = record.visit as Record<string, unknown>;
     const ibRefs = (visit?.interBranchReferrals || []) as Array<Record<string, unknown>>;

@@ -209,7 +209,6 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [ibNotes, setIbNotes] = useState("");
   const [ibSending, setIbSending] = useState(false);
   const [ibIncoming, setIbIncoming] = useState<{ id: string; fromHospitalCode: string; fromHospitalName: string; toHospitalCode: string; department: string; priority: string; status: string; clinicalReason: string; referringDoctorName: string; patientName: string; patientRecordId: string; createdAt: string }[]>([]);
-  const [ibCount, setIbCount] = useState(0);
 
   // Check group membership + load branches
   useEffect(() => {
@@ -242,7 +241,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
           const data = await res.json();
           const incoming = (data.referrals || []).filter((r: { toHospitalCode: string; status: string }) => r.toHospitalCode === HOSPITAL_CODE && (r.status === "PENDING" || r.status === "ACCEPTED"));
           setIbIncoming(incoming);
-          setIbCount(incoming.filter((r: { status: string }) => r.status === "PENDING").length);
+          // ibIncoming count is derived from ibIncoming.length in the UI
         }
       } catch { /* */ }
     };
