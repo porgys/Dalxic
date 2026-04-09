@@ -515,7 +515,16 @@ function StatBlock({ value, suffix, label, delay }) {
    ═══════════════════════════════════════════════════════════ */
 export default function Home() {
   const [scrolled, setScrolled] = useState(false)
-  const [bannerOpacity, setBannerOpacity] = useState(0)
+  const BANNER_IMAGES = [
+    "/dalxic-city.jpg",
+    "/banner-corridor.jpg",
+    "/banner-dataflow.jpg",
+    "/banner-careplan.jpg",
+  ]
+
+  const [activeImage, setActiveImage] = useState(0)
+  const [imageOpacities, setImageOpacities] = useState(BANNER_IMAGES.map(() => 0))
+  const [textOp, setTextOp] = useState(1)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
@@ -523,76 +532,127 @@ export default function Home() {
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
-  /* ── Banner crossfade: one-shot sequence ──
-     0–10s:  Let visitors read — text full, image hidden
-     10–13s: Text dissolves to 0, image rises to 1
-     13–18s: Image holds at full visibility
-     18–21s: Image dissolves to 0
-     21s+:   Both gone — stage clear for future content
+  /* ── Banner slideshow sequence ──
+     0–10s:   Reading time — text visible, no images
+     10–13s:  Text dissolves, first image rises to 100%
+     13–18s:  First image holds
+     18–20s:  First image cross-dissolves into second
+     20–25s:  Second image holds
+     25–27s:  Cross-dissolve into third
+     27–32s:  Third holds
+     32–34s:  Cross-dissolve into fourth
+     34–39s:  Fourth holds
+     39–42s:  Fourth dissolves out
+     42s+:    Loop — first image fades back in
   ── */
-  const [textOp, setTextOp] = useState(1)
-
   useEffect(() => {
     let raf
     const start = performance.now()
-    const READ    = 10000  // reading time
-    const FADE    = 3000   // crossfade duration
-    const HOLD    = 5000   // image holds
-    const DISSOLVE = 3000  // image dissolves out
+
+    const READ     = 10000  // initial reading time
+    const FADE_IN  = 3000   // text out / first image in
+    const HOLD     = 5000   // each image holds
+    const CROSS    = 2000   // cross-dissolve between images
+    const FADE_OUT = 3000   // last image dissolves
+    const PAUSE    = 2000   // gap before loop restarts
+
+    // Per-image segment: HOLD + CROSS (except last: HOLD + FADE_OUT)
+    const N = BANNER_IMAGES.length
+    const SEGMENT = HOLD + CROSS
+    const LOOP_BODY = (N - 1) * SEGMENT + HOLD + FADE_OUT + PAUSE
+    // Total first pass: READ + FADE_IN + LOOP_BODY
+    // Subsequent loops: just LOOP_BODY (no reading time, text stays gone)
 
     function tick(now) {
-      const t = now - start
+      const elapsed = now - start
 
-      if (t < READ) {
-        // Reading phase — everything stays put
-        setBannerOpacity(0)
+      // Phase 1: Reading time
+      if (elapsed < READ) {
         setTextOp(1)
-      } else if (t < READ + FADE) {
-        // Crossfade — text out, image in
-        const p = (t - READ) / FADE
-        const ease = p * p // ease-in for text fade, feels natural
-        setTextOp(1 - ease)
-        setBannerOpacity(ease)
-      } else if (t < READ + FADE + HOLD) {
-        // Image at full, text gone
-        setTextOp(0)
-        setBannerOpacity(1)
-      } else if (t < READ + FADE + HOLD + DISSOLVE) {
-        // Image dissolves
-        const p = (t - READ - FADE - HOLD) / DISSOLVE
-        const ease = p * p
-        setTextOp(0)
-        setBannerOpacity(1 - ease)
-      } else {
-        // Stage clear
-        setTextOp(0)
-        setBannerOpacity(0)
-        return // stop the loop
+        setImageOpacities(BANNER_IMAGES.map(() => 0))
+        raf = requestAnimationFrame(tick)
+        return
       }
 
+      // Phase 2: Text dissolves, first image rises
+      if (elapsed < READ + FADE_IN) {
+        const p = (elapsed - READ) / FADE_IN
+        const ease = p * p
+        setTextOp(1 - ease)
+        setImageOpacities(BANNER_IMAGES.map((_, i) => i === 0 ? ease : 0))
+        raf = requestAnimationFrame(tick)
+        return
+      }
+
+      // Phase 3+: Image slideshow (loops)
+      setTextOp(0)
+      const loopTime = (elapsed - READ - FADE_IN) % LOOP_BODY
+
+      // Calculate which image segment we're in
+      const opacities = BANNER_IMAGES.map(() => 0)
+      let t = loopTime
+
+      for (let i = 0; i < N; i++) {
+        if (i < N - 1) {
+          // Normal image: HOLD then CROSS into next
+          if (t < HOLD) {
+            opacities[i] = 1
+            setActiveImage(i)
+            break
+          }
+          t -= HOLD
+          if (t < CROSS) {
+            // Cross-dissolve: current fades out, next fades in
+            const p = t / CROSS
+            const ease = p * p
+            opacities[i] = 1 - ease
+            opacities[i + 1] = ease
+            break
+          }
+          t -= CROSS
+        } else {
+          // Last image: HOLD then FADE_OUT then PAUSE
+          if (t < HOLD) {
+            opacities[i] = 1
+            setActiveImage(i)
+            break
+          }
+          t -= HOLD
+          if (t < FADE_OUT) {
+            const p = t / FADE_OUT
+            opacities[i] = 1 - p * p
+            break
+          }
+          // PAUSE: all zeros, loop will restart
+        }
+      }
+
+      setImageOpacities(opacities)
       raf = requestAnimationFrame(tick)
     }
+
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [])
 
   return (
     <>
-      {/* ── Banner image — behind galaxy particles ── */}
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 0,
-        backgroundImage: "url(/dalxic-city.jpg)",
-        backgroundSize: "cover",
-        backgroundPosition: "center 40%",
-        opacity: bannerOpacity,
-        pointerEvents: "none",
-      }}>
-        {/* Edge vignette — fades edges into dark, center stays clear */}
-        <div style={{
-          position: "absolute", inset: 0,
-          background: "radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(3,5,15,0.4) 70%, rgba(3,5,15,0.85) 100%)",
-        }} />
-      </div>
+      {/* ── Banner images — stacked behind galaxy particles ── */}
+      {BANNER_IMAGES.map((src, i) => (
+        <div key={src} style={{
+          position: "fixed", inset: 0, zIndex: 0,
+          backgroundImage: `url(${src})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center 40%",
+          opacity: imageOpacities[i],
+          pointerEvents: "none",
+        }}>
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(3,5,15,0.4) 70%, rgba(3,5,15,0.85) 100%)",
+          }} />
+        </div>
+      ))}
 
       <GalaxyCanvas />
 
