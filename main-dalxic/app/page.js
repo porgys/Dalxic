@@ -517,9 +517,9 @@ export default function Home() {
   const [scrolled, setScrolled] = useState(false)
   const BANNER_IMAGES = [
     "/dalxic-city.jpg",
-    "/banner-dataflow.jpg",
-    "/banner-corridor.jpg",
     "/banner-careplan.jpg",
+    "/banner-corridor.jpg",
+    "/banner-dataflow.jpg",
   ]
 
   const [activeImage, setActiveImage] = useState(0)
