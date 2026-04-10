@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { calloutNumber } from "@/lib/voice-callout";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider } from "@/hooks/use-station-theme";
+import { getPusherClient } from "@/lib/pusher-client";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
@@ -484,7 +485,25 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
     } catch { /* retry */ }
   }, []);
 
-  useEffect(() => { loadQueue(); loadReferrals(); const i = setInterval(() => { loadQueue(); loadReferrals(); }, 5000); return () => clearInterval(i); }, [loadQueue, loadReferrals]);
+  useEffect(() => {
+    loadQueue(); loadReferrals();
+    const i = setInterval(() => { loadQueue(); loadReferrals(); }, 5000);
+    // Pusher: instant refresh on queue, referral, and lab-results events
+    const pusher = getPusherClient();
+    const qCh = pusher?.subscribe(`hospital-${HOSPITAL_CODE}-queue`);
+    const rCh = pusher?.subscribe(`hospital-${HOSPITAL_CODE}-referrals`);
+    const lCh = pusher?.subscribe(`hospital-${HOSPITAL_CODE}-lab-results`);
+    qCh?.bind("patient-added", () => loadQueue());
+    qCh?.bind("patient-requeued", () => loadQueue());
+    rCh?.bind("new-referral", () => loadReferrals());
+    lCh?.bind("results-ready", () => loadQueue());
+    return () => {
+      clearInterval(i);
+      qCh?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-queue`);
+      rCh?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-referrals`);
+      lCh?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-lab-results`);
+    };
+  }, [loadQueue, loadReferrals]);
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
 
   const updateDoctorStatus = async (newStatus: string) => {

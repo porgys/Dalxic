@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { BulkPaste } from "@/components/intake/bulk-paste";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { getPusherClient } from "@/lib/pusher-client";
 import type { ParsedPatientEntry, OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
@@ -516,6 +517,18 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
 
   useEffect(() => {
     if (activeNav === "queue") { loadQueue(); }
+    // Pusher: instant refresh on queue events
+    const pusher = getPusherClient();
+    const ch = pusher?.subscribe(`hospital-${HOSPITAL_CODE}-queue`);
+    ch?.bind("patient-added", () => loadQueue());
+    ch?.bind("patient-requeued", () => loadQueue());
+    const erCh = pusher?.subscribe(`hospital-${HOSPITAL_CODE}-emergency`);
+    erCh?.bind("emergency-admission", () => loadQueue());
+    erCh?.bind("emergency-escalation", () => loadQueue());
+    return () => {
+      ch?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-queue`);
+      erCh?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-emergency`);
+    };
   }, [activeNav, loadQueue]);
 
   const handleSearch = async () => {

@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { StationGate } from "@/components/station-gate";
+import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
@@ -117,6 +119,14 @@ const WARD_TYPES = [
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 
 export default function BedManagementPage() {
+  return (
+    <StationGate hospitalCode={HOSPITAL_CODE} stationName="Bed Management" stationIcon="🛏️" allowedRoles={["nurse", "doctor", "admin", "super_admin"]}>
+      {() => <BedManagementContent />}
+    </StationGate>
+  );
+}
+
+function BedManagementContent() {
   const [activeNav, setActiveNav] = useState<"dashboard" | "manage" | "transitions">("dashboard");
   const [wards, setWards] = useState<Ward[]>([]);
   const [summary, setSummary] = useState({ totalBeds: 0, totalAvailable: 0, totalOccupied: 0 });

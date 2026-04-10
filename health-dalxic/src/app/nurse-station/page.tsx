@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { getPusherClient } from "@/lib/pusher-client";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
@@ -177,7 +178,15 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
     } catch { /* retry */ }
   }, []);
 
-  useEffect(() => { loadPatients(); }, [loadPatients]);
+  useEffect(() => {
+    loadPatients();
+    // Pusher: instant refresh on queue events
+    const pusher = getPusherClient();
+    const ch = pusher?.subscribe(`hospital-${HOSPITAL_CODE}-queue`);
+    ch?.bind("patient-added", () => loadPatients());
+    ch?.bind("patient-requeued", () => loadPatients());
+    return () => { ch?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-queue`); };
+  }, [loadPatients]);
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
   useEffect(() => { const t = setInterval(loadPatients, 20000); return () => clearInterval(t); }, [loadPatients]);
 

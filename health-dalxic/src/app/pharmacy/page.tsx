@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { getPusherClient } from "@/lib/pusher-client";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
@@ -150,7 +151,11 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
   useEffect(() => {
     loadQueue();
     const interval = setInterval(loadQueue, 8000);
-    return () => clearInterval(interval);
+    // Pusher: instant refresh when queue changes
+    const pusher = getPusherClient();
+    const ch = pusher?.subscribe(`hospital-${HOSPITAL_CODE}-queue`);
+    ch?.bind("patient-added", () => loadQueue());
+    return () => { clearInterval(interval); ch?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-queue`); };
   }, [loadQueue]);
 
   useEffect(() => {

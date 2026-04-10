@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { getPusherClient } from "@/lib/pusher-client";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
@@ -193,7 +194,11 @@ function LabContent({ operator }: { operator: OperatorSession }) {
   useEffect(() => {
     loadOrders();
     const interval = setInterval(loadOrders, 8000);
-    return () => clearInterval(interval);
+    // Pusher: instant refresh on new lab orders
+    const pusher = getPusherClient();
+    const ch = pusher?.subscribe(`hospital-${HOSPITAL_CODE}-lab`);
+    ch?.bind("new-order", () => loadOrders());
+    return () => { clearInterval(interval); ch?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-lab`); };
   }, [loadOrders]);
 
   useEffect(() => {

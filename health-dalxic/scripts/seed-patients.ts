@@ -175,12 +175,33 @@ async function main() {
       };
     }
 
-    // Ward/ICU data
-    if (spec.type === "ward" || spec.type === "icu") {
+    // Ward admission data (matches ward-ipd API: visit.admission.admitted)
+    if (spec.type === "ward") {
       visit.admission = {
+        admitted: true,
         admittedAt: new Date().toISOString(),
-        wardType: spec.type === "icu" ? "icu" : "general",
-        reason: complaint,
+        admittedBy: "seed_script",
+        wardType: "general",
+        wardName: pick(["Male Ward","Female Ward","Surgical Ward","Pediatric Ward"]),
+        bedLabel: `B-${1 + Math.floor(Math.random() * 20)}`,
+        admissionReason: complaint,
+        discharged: false,
+        dailyRounds: [],
+      };
+    }
+
+    // ICU admission data (matches icu API: visit.icuAdmission.admitted)
+    if (spec.type === "icu") {
+      visit.icuAdmission = {
+        admitted: true,
+        admittedAt: new Date().toISOString(),
+        admittedBy: "seed_script",
+        bedLabel: `ICU-${1 + Math.floor(Math.random() * 8)}`,
+        diagnosis: complaint,
+        ventilator: Math.random() > 0.5,
+        ventilatorMode: pick(["SIMV","CPAP","BiPAP","none"]),
+        discharged: false,
+        hourlyObs: [],
       };
     }
 
