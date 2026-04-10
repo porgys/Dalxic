@@ -1379,11 +1379,9 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                           border: `1px solid ${popupColor}20`, position: "relative",
                           boxShadow: `0 32px 100px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.03)`,
                         }}>
-                        {/* Top accent glow — pricing card style */}
-                        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, borderRadius: "28px 28px 0 0", background: `linear-gradient(90deg, ${COPPER}, ${popupColor}, ${COPPER}40)` }} />
-                        {/* Side accent strips */}
-                        <div style={{ position: "absolute", top: 20, left: 0, width: 3, height: 60, borderRadius: "0 3px 3px 0", background: `linear-gradient(180deg, ${COPPER}, transparent)` }} />
-                        <div style={{ position: "absolute", top: 20, right: 0, width: 3, height: 60, borderRadius: "3px 0 0 3px", background: `linear-gradient(180deg, ${COPPER}, transparent)` }} />
+                        {/* Side accent strips — full height, even on both sides */}
+                        <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: `linear-gradient(180deg, ${COPPER}, ${popupColor}60, ${COPPER}20)`, borderRadius: "28px 0 0 28px" }} />
+                        <div style={{ position: "absolute", top: 0, right: 0, width: 3, height: "100%", background: `linear-gradient(180deg, ${COPPER}, ${popupColor}60, ${COPPER}20)`, borderRadius: "0 28px 28px 0" }} />
 
                         <div style={{ padding: "32px 28px 28px" }}>
                           {/* Close button */}
