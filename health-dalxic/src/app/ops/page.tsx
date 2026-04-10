@@ -1394,7 +1394,9 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                           </div>
                         </div>
                         {detailHospital.tagline && <p style={{ fontSize: 13, color: "#94A3B8", marginTop: 8, fontStyle: "italic" }}>{detailHospital.tagline}</p>}
-                        <p onClick={() => window.open(window.location.origin, "_blank")} style={{ fontSize: 11, color: "#475569", marginTop: 6, fontFamily: "var(--font-jetbrains-mono), monospace", cursor: "text" }}>{detailHospital.subdomain}.health.dalxic.com</p>
+                        <p style={{ fontSize: 11, color: "#475569", marginTop: 6, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                          <span style={{ cursor: "text" }} onClick={() => window.open(`${window.location.origin}/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh`, "_blank")}>ID {detailHospital.id?.slice(0, 8) || detailHospital.code.toLowerCase()}</span>
+                        </p>
                       </>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 420 }}>
