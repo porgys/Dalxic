@@ -703,7 +703,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 whileTap={{ scale: 0.99 }}
                 onClick={() => selectTier("MASTER" as TierKey)}
                 style={{
-                  width: "75%", margin: "14px auto 0", textAlign: "left", cursor: "pointer", padding: "28px 32px", borderRadius: 22,
+                  width: "65%", margin: "14px auto 0", display: "block", textAlign: "left", cursor: "pointer", padding: "28px 32px", borderRadius: 22,
                   background: `linear-gradient(135deg, ${COPPER}06, rgba(168,85,247,0.03), transparent)`,
                   border: `1.5px solid ${COPPER}25`,
                   backdropFilter: "blur(12px)", position: "relative", overflow: "hidden",
