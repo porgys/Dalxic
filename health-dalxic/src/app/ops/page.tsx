@@ -264,6 +264,9 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailEditOpMsg, setDetailEditOpMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
+  // ─── Module Filter (hospital-detail) ───
+  const [moduleFilter, setModuleFilter] = useState<"all" | "active" | "inactive">("all");
+
   // ─── Module Popup (hospital-detail inline config) ───
   const [modulePopup, setModulePopup] = useState<string | null>(null);
   const [popupOp, setPopupOp] = useState({ name: "", phone: "", pin: "" });
@@ -1300,17 +1303,20 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   </div>
                   <p style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>{(detailHospital.activeModules || []).length} modules active. Click any module to configure operators and access.</p>
                 </div>
-                <div style={{ display: "flex", gap: 10 }}>
-                  <motion.button whileHover={{ scale: 1.04 }}
-                    onClick={() => handleDetailToggleModule("__select_all__")}
-                    style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, color: COPPER_LIGHT, background: `${COPPER}08`, border: `1px solid ${COPPER}18`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Select All
-                  </motion.button>
-                  <motion.button whileHover={{ scale: 1.04 }}
-                    onClick={() => handleDetailToggleModule("__deselect_all__")}
-                    style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, color: "#64748B", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Deselect All
-                  </motion.button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {([
+                    { key: "active" as const, label: "Active", color: "#22C55E" },
+                    { key: "inactive" as const, label: "Inactive", color: "#64748B" },
+                  ]).map(f => {
+                    const isSelected = moduleFilter === f.key;
+                    return (
+                      <motion.button key={f.key} whileHover={{ scale: 1.04 }}
+                        onClick={() => setModuleFilter(isSelected ? "all" : f.key)}
+                        style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, color: isSelected ? f.color : "#475569", background: isSelected ? `${f.color}12` : "rgba(255,255,255,0.03)", border: `1px solid ${isSelected ? f.color + "30" : "rgba(255,255,255,0.06)"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        {f.label}
+                      </motion.button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1318,7 +1324,11 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
                 {(() => {
                   const hospitalModules = (detailHospital.activeModules || []) as string[];
-                  return [...ALL_WORKSTATIONS, ...UTILITY_STATIONS].map((ws, i) => {
+                  const allWs = [...ALL_WORKSTATIONS, ...UTILITY_STATIONS];
+                  const filtered = moduleFilter === "active" ? allWs.filter(ws => hospitalModules.includes(ws.key))
+                    : moduleFilter === "inactive" ? allWs.filter(ws => !hospitalModules.includes(ws.key))
+                    : allWs;
+                  return filtered.map((ws, i) => {
                     const isActive = hospitalModules.includes(ws.key);
                     return (
                       <motion.button key={ws.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
