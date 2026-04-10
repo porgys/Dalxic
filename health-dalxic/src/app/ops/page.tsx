@@ -1394,10 +1394,6 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                         <div style={{ position: "absolute", top: 0, right: 0, width: 3, height: "100%", background: "#4A3728", borderRadius: "0 28px 28px 0" }} />
 
                         <div style={{ padding: "32px 28px 28px" }}>
-                          {/* Close button */}
-                          <motion.button whileHover={{ scale: 1.1 }} onClick={() => setModulePopup(null)}
-                            style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#64748B", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>✕</motion.button>
-
                           {/* Module icon + title */}
                           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
                             <span style={{ fontSize: 36 }}>{popupWs.icon}</span>
