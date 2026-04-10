@@ -179,6 +179,12 @@ interface OperatorItem {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface GroupDashboard { group: { groupCode: string; name: string; ownerName: string; subscriptionTier: string }; branches: { code: string; name: string; tier: string; modules: number; totalPatients: number; todayPatients: number; operators: number; revenue: number }[]; totals: { patients: number; todayPatients: number; operators: number; revenue: number; branches: number }; activeReferrals: any[] }
 
+interface DeviceItem {
+  id: string; deviceCode: string; deviceName: string;
+  role: string; isActive: boolean; isLocked: boolean;
+  lastActiveAt: string | null;
+}
+
 interface AuditLog { id: string; actorType: string; actorId: string; action: string; metadata: Record<string, unknown>; ipAddress: string; timestamp: string; hospital?: { code: string; name: string } }
 
 interface AccessGrant { id: string; dalxicStaffId: string; grantedRole: string; grantedBy: string; reason: string; isActive: boolean; grantedAt: string; expiresAt: string; revokedAt: string | null; dalxicStaff?: { name: string; email: string }; hospital?: { code: string; name: string } }
@@ -187,7 +193,7 @@ interface AccessGrant { id: string; dalxicStaffId: string; grantedRole: string; 
    OPERATING PLATFORM — Hierarchical Drill-Down
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-type OpsScreen = "tiers" | "modules" | "module-config" | "hospitals" | "monitoring" | "audit" | "access";
+type OpsScreen = "tiers" | "modules" | "module-config" | "hospitals" | "hospital-detail" | "monitoring" | "audit" | "access";
 
 function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   // ─── Navigation ───
@@ -231,6 +237,21 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const [accessGrants, setAccessGrants] = useState<AccessGrant[]>([]);
   const [newGrant, setNewGrant] = useState({ staffId: "", hospitalId: "", role: "viewer", reason: "", hours: "24" });
   const [grantMsg, setGrantMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  // ─── Hospital Detail ───
+  const [detailHospital, setDetailHospital] = useState<HospitalItem | null>(null);
+  const [detailOperators, setDetailOperators] = useState<OperatorItem[]>([]);
+  const [detailDevices, setDetailDevices] = useState<DeviceItem[]>([]);
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [detailEditForm, setDetailEditForm] = useState({ name: "", tagline: "", subdomain: "" });
+  const [detailEditMsg, setDetailEditMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [changingTier, setChangingTier] = useState(false);
+  const [detailNewOp, setDetailNewOp] = useState({ name: "", phone: "", pin: "", role: "front_desk" });
+  const [detailAddingOp, setDetailAddingOp] = useState(false);
+  const [detailOpMsg, setDetailOpMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [detailEditOp, setDetailEditOp] = useState<OperatorItem | null>(null);
+  const [detailEditOpForm, setDetailEditOpForm] = useState({ name: "", phone: "", role: "", newPin: "" });
+  const [detailEditOpMsg, setDetailEditOpMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // ─── Collapsed groups for tree view ───
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -279,6 +300,34 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const loadAccessGrants = useCallback(async () => {
     try { const res = await fetch("/api/access-grants"); if (res.ok) setAccessGrants(await res.json()); } catch { /* */ }
   }, []);
+
+  const loadHospitalDetail = useCallback(async (hospitalCode: string) => {
+    try {
+      const [hospRes, opsRes] = await Promise.all([
+        fetch(`/api/hospitals?code=${hospitalCode}`),
+        fetch(`/api/operators?hospitalCode=${hospitalCode}&activeOnly=false`),
+      ]);
+      if (hospRes.ok) {
+        const hosp = await hospRes.json();
+        setDetailHospital(hosp);
+        try { const devRes = await fetch(`/api/devices?hospitalId=${hosp.id}`); if (devRes.ok) setDetailDevices(await devRes.json()); else setDetailDevices([]); } catch { setDetailDevices([]); }
+      }
+      if (opsRes.ok) { const data = await opsRes.json(); setDetailOperators(data.operators || []); }
+    } catch { /* */ }
+  }, []);
+
+  const enterHospitalDetail = useCallback((hospital: HospitalItem) => {
+    setDetailHospital(hospital);
+    setDetailOperators([]);
+    setDetailDevices([]);
+    setEditingDetails(false);
+    setChangingTier(false);
+    setDetailEditOp(null);
+    setDetailOpMsg(null);
+    setDetailEditMsg(null);
+    setScreen("hospital-detail");
+    loadHospitalDetail(hospital.code);
+  }, [loadHospitalDetail]);
 
   /* ─── Effects ─── */
   useEffect(() => { loadHospitals(); loadGroups(); }, [loadHospitals, loadGroups]);
@@ -409,6 +458,73 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     loadHospitals();
   };
 
+  /* ─── Hospital Detail Handlers ─── */
+  const handleDetailEditSave = async () => {
+    if (!detailHospital) return;
+    setDetailEditMsg(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const editFields: any = {};
+    if (detailEditForm.name && detailEditForm.name !== detailHospital.name) editFields.name = detailEditForm.name;
+    if (detailEditForm.tagline !== (detailHospital.tagline || "")) editFields.tagline = detailEditForm.tagline;
+    if (detailEditForm.subdomain && detailEditForm.subdomain !== detailHospital.subdomain) editFields.subdomain = detailEditForm.subdomain;
+    if (Object.keys(editFields).length === 0) { setEditingDetails(false); return; }
+    const res = await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, editFields, actorId: "ops-admin" }) });
+    if (res.ok) { setDetailEditMsg({ type: "ok", text: "Details Updated" }); setEditingDetails(false); loadHospitalDetail(detailHospital.code); loadHospitals(); }
+    else { const err = await res.json(); setDetailEditMsg({ type: "err", text: err.error || "Failed" }); }
+  };
+
+  const handleDetailToggleModule = async (moduleKey: string) => {
+    if (!detailHospital) return;
+    const res = await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, toggleModule: moduleKey, actorId: "ops-admin" }) });
+    if (res.ok) { loadHospitalDetail(detailHospital.code); loadHospitals(); }
+  };
+
+  const handleDetailChangeTier = async (newTier: TierKey) => {
+    if (!detailHospital) return;
+    const res = await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, newTier, actorId: "ops-admin" }) });
+    if (res.ok) { setChangingTier(false); loadHospitalDetail(detailHospital.code); loadHospitals(); }
+  };
+
+  const handleDetailToggleActive = async () => {
+    if (!detailHospital) return;
+    await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, editFields: { active: !detailHospital.active }, actorId: "ops-admin" }) });
+    loadHospitalDetail(detailHospital.code); loadHospitals();
+  };
+
+  const handleDetailAddOperator = async () => {
+    if (!detailHospital || !detailNewOp.name || !detailNewOp.pin || !detailNewOp.role) return;
+    setDetailAddingOp(true); setDetailOpMsg(null);
+    try {
+      const res = await fetch("/api/operators", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, action: "create", name: detailNewOp.name, phone: detailNewOp.phone, pin: detailNewOp.pin, role: detailNewOp.role }) });
+      if (res.ok) { setDetailOpMsg({ type: "ok", text: `${detailNewOp.name} Added` }); setDetailNewOp({ name: "", phone: "", pin: "", role: "front_desk" }); loadHospitalDetail(detailHospital.code); }
+      else { const err = await res.json(); setDetailOpMsg({ type: "err", text: err.error || "Failed" }); }
+    } catch { setDetailOpMsg({ type: "err", text: "Network Error" }); } finally { setDetailAddingOp(false); }
+  };
+
+  const handleDetailToggleOperator = async (op: OperatorItem) => {
+    if (!detailHospital) return;
+    await fetch("/api/operators", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, operatorId: op.id, isActive: !op.isActive }) });
+    loadHospitalDetail(detailHospital.code);
+  };
+
+  const handleDetailEditOperator = async () => {
+    if (!detailEditOp || !detailHospital) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload: any = { hospitalCode: detailHospital.code, operatorId: detailEditOp.id };
+    if (detailEditOpForm.name !== detailEditOp.name) payload.name = detailEditOpForm.name;
+    if (detailEditOpForm.phone !== (detailEditOp.phone || "")) payload.phone = detailEditOpForm.phone;
+    if (detailEditOpForm.role !== detailEditOp.role) payload.role = detailEditOpForm.role;
+    if (detailEditOpForm.newPin && detailEditOpForm.newPin.length === 4) payload.newPin = detailEditOpForm.newPin;
+    const res = await fetch("/api/operators", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    if (res.ok) { setDetailEditOpMsg({ type: "ok", text: "Updated" }); loadHospitalDetail(detailHospital.code); setTimeout(() => setDetailEditOp(null), 600); }
+    else { const err = await res.json(); setDetailEditOpMsg({ type: "err", text: err.error || "Failed" }); }
+  };
+
+  const handleDetailDeviceAction = async (deviceId: string, action: string) => {
+    await fetch("/api/devices", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceId, action, actorId: "ops-admin", actorType: "dalxic_super_admin" }) });
+    if (detailHospital) loadHospitalDetail(detailHospital.code);
+  };
+
   /* ─── Computed ─── */
   const totalPatients = hospitals.reduce((s, h) => s + h._count.patientRecords, 0);
   const totalDevices = hospitals.reduce((s, h) => s + h._count.devices, 0);
@@ -436,6 +552,10 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
       crumbs.push({ label: configWs.title });
     }
     if (screen === "hospitals") crumbs.push({ label: "Hospitals" });
+    if (screen === "hospital-detail" && detailHospital) {
+      crumbs.push({ label: "Hospitals", onClick: () => { setScreen("hospitals"); setDetailHospital(null); } });
+      crumbs.push({ label: `${detailHospital.code} — ${detailHospital.name}` });
+    }
     if (screen === "monitoring") crumbs.push({ label: "Monitoring" });
     if (screen === "audit") crumbs.push({ label: "Audit Trail" });
     if (screen === "access") crumbs.push({ label: "Access Grants" });
@@ -911,7 +1031,9 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}
                             style={{ overflow: "hidden", borderLeft: `1px solid ${COPPER}12`, borderRight: `1px solid ${COPPER}12`, borderBottom: `1px solid ${COPPER}12`, borderRadius: "0 0 14px 14px", background: "rgba(184,115,51,0.015)" }}>
                             {g.hospitals.map((h, i) => (
-                              <div key={h.id} style={{ padding: "14px 20px 14px 48px", borderTop: i > 0 ? "1px solid rgba(255,255,255,0.03)" : "none", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                              <div key={h.id} onClick={() => enterHospitalDetail(h)}
+                                style={{ padding: "14px 20px 14px 48px", borderTop: i > 0 ? "1px solid rgba(255,255,255,0.03)" : "none", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", transition: "background 0.2s" }}
+                                onMouseEnter={e => (e.currentTarget.style.background = "rgba(184,115,51,0.04)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                   <div style={{ minWidth: 44, padding: "4px 8px", borderRadius: 8, background: `${COPPER}06`, border: `1px solid ${COPPER}12`, fontSize: 11, fontWeight: 800, color: COPPER, textAlign: "center", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.code}</div>
                                   <div>
@@ -920,13 +1042,14 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                                   </div>
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                  <motion.button whileHover={{ scale: 1.08 }} onClick={() => handleUnlinkHospital(h.code)}
+                                  <motion.button whileHover={{ scale: 1.08 }} onClick={(e) => { e.stopPropagation(); handleUnlinkHospital(h.code); }}
                                     style={{ padding: "3px 8px", borderRadius: 5, fontSize: 9, fontWeight: 700, color: "#64748B", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer", textTransform: "uppercase" }}>Unlink</motion.button>
-                                  <motion.button whileHover={{ scale: 1.08 }} onClick={() => handleToggleHospitalActive(h)}
+                                  <motion.button whileHover={{ scale: 1.08 }} onClick={(e) => { e.stopPropagation(); handleToggleHospitalActive(h); }}
                                     style={{ padding: "3px 8px", borderRadius: 5, fontSize: 9, fontWeight: 700, color: h.active ? "#EF4444" : "#22C55E", background: h.active ? "rgba(239,68,68,0.06)" : "rgba(34,197,94,0.06)", border: `1px solid ${h.active ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)"}`, cursor: "pointer", textTransform: "uppercase" }}>
                                     {h.active ? "Suspend" : "Activate"}
                                   </motion.button>
                                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: h.active ? "#22C55E" : "#EF4444" }} />
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
                                 </div>
                               </div>
                             ))}
@@ -948,7 +1071,9 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 {/* Standalone hospitals */}
                 {grouped.standalone.map((h, i) => (
                   <motion.div key={h.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                    style={{ padding: "18px 20px", borderRadius: 14, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    whileHover={{ scale: 1.003, borderColor: `${COPPER}30` }}
+                    onClick={() => enterHospitalDetail(h)}
+                    style={{ padding: "18px 20px", borderRadius: 14, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", transition: "border-color 0.2s" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                       <div style={{ width: 44, height: 44, borderRadius: 12, background: `${COPPER}08`, border: `1px solid ${COPPER}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.code}</div>
                       <div>
@@ -957,14 +1082,302 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <motion.button whileHover={{ scale: 1.08 }} onClick={() => handleToggleHospitalActive(h)}
+                      <motion.button whileHover={{ scale: 1.08 }} onClick={(e) => { e.stopPropagation(); handleToggleHospitalActive(h); }}
                         style={{ padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, color: h.active ? "#EF4444" : "#22C55E", background: h.active ? "rgba(239,68,68,0.06)" : "rgba(34,197,94,0.06)", border: `1px solid ${h.active ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)"}`, cursor: "pointer", textTransform: "uppercase" }}>
                         {h.active ? "Suspend" : "Activate"}
                       </motion.button>
                       <div style={{ width: 8, height: 8, borderRadius: "50%", background: h.active ? "#22C55E" : "#EF4444" }} />
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
                     </div>
                   </motion.div>
                 ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ═══════════════════════════════════════ */}
+          {/* SCREEN: HOSPITAL DETAIL                */}
+          {/* ═══════════════════════════════════════ */}
+          {screen === "hospital-detail" && detailHospital && (
+            <motion.div key="hospital-detail" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+
+              {/* ── SECTION A: Hospital Header ── */}
+              <div style={{ padding: "32px 28px", borderRadius: 22, marginBottom: 24, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}12`, position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: 2, background: `linear-gradient(90deg, transparent, ${COPPER}30, transparent)` }} />
+
+                {!editingDetails ? (
+                  <>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                        <div style={{ width: 56, height: 56, borderRadius: 16, background: `${COPPER}08`, border: `1px solid ${COPPER}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{detailHospital.code}</div>
+                        <div>
+                          <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em", margin: 0 }}>{detailHospital.name}</h2>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
+                            <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: `${({ T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7" } as Record<string, string>)[detailHospital.tier] || COPPER}10`, border: `1px solid ${({ T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7" } as Record<string, string>)[detailHospital.tier] || COPPER}25`, color: ({ T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7" } as Record<string, string>)[detailHospital.tier] || COPPER, textTransform: "uppercase", letterSpacing: "0.06em" }}>{detailHospital.tier} — {TIER_DEFAULTS[detailHospital.tier as TierKey]?.label || detailHospital.tier}</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: detailHospital.active ? "#22C55E" : "#EF4444", boxShadow: detailHospital.active ? "0 0 8px rgba(34,197,94,0.4)" : "none" }} />
+                              <span style={{ fontSize: 10, fontWeight: 700, color: detailHospital.active ? "#22C55E" : "#EF4444", textTransform: "uppercase", letterSpacing: "0.08em" }}>{detailHospital.active ? "Active" : "Suspended"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <motion.button whileHover={{ scale: 1.04 }} onClick={() => { setEditingDetails(true); setDetailEditForm({ name: detailHospital.name, tagline: detailHospital.tagline || "", subdomain: detailHospital.subdomain }); setDetailEditMsg(null); }}
+                          style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, color: COPPER_LIGHT, background: `${COPPER}08`, border: `1px solid ${COPPER}18`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>Edit Details</motion.button>
+                        <motion.button whileHover={{ scale: 1.04 }} onClick={() => setChangingTier(!changingTier)}
+                          style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, color: BLUE, background: `${BLUE}08`, border: `1px solid ${BLUE}18`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>Change Tier</motion.button>
+                        <motion.button whileHover={{ scale: 1.04 }} onClick={handleDetailToggleActive}
+                          style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, color: detailHospital.active ? "#EF4444" : "#22C55E", background: detailHospital.active ? "rgba(239,68,68,0.06)" : "rgba(34,197,94,0.06)", border: `1px solid ${detailHospital.active ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                          {detailHospital.active ? "Suspend" : "Activate"}
+                        </motion.button>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 20, fontSize: 11, color: "#64748B" }}>
+                      <span style={{ fontFamily: "var(--font-jetbrains-mono), monospace" }}>{detailHospital.subdomain}.health.dalxic.com</span>
+                      {detailHospital.tagline && <span>· {detailHospital.tagline}</span>}
+                      <span>· Max {TIER_DEFAULTS[detailHospital.tier as TierKey]?.maxDevices || "?"} Devices</span>
+                      <span>· {TIER_DEFAULTS[detailHospital.tier as TierKey]?.whatsappBundlePerMonth?.toLocaleString() || "?"} WhatsApp/Mo</span>
+                    </div>
+                    {detailEditMsg && <div style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: detailEditMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{detailEditMsg.text}</div>}
+                  </>
+                ) : (
+                  /* Edit mode */
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 16 }}>Edit Hospital Details</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 14 }}>
+                      <div><label style={labelStyle}>Hospital Name</label><input value={detailEditForm.name} onChange={e => setDetailEditForm(f => ({ ...f, name: e.target.value }))} style={inputStyle} /></div>
+                      <div><label style={labelStyle}>Subdomain</label><input value={detailEditForm.subdomain} onChange={e => setDetailEditForm(f => ({ ...f, subdomain: e.target.value.toLowerCase() }))} style={inputStyle} /></div>
+                      <div><label style={labelStyle}>Tagline</label><input value={detailEditForm.tagline} onChange={e => setDetailEditForm(f => ({ ...f, tagline: e.target.value }))} style={inputStyle} /></div>
+                    </div>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <motion.button whileHover={{ scale: 1.03 }} onClick={handleDetailEditSave} style={{ padding: "10px 24px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none" }}>Save Changes</motion.button>
+                      <motion.button whileHover={{ scale: 1.03 }} onClick={() => setEditingDetails(false)} style={{ padding: "10px 20px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "#64748B", cursor: "pointer", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>Cancel</motion.button>
+                    </div>
+                    {detailEditMsg && <div style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: detailEditMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{detailEditMsg.text}</div>}
+                  </div>
+                )}
+
+                {/* Tier change panel */}
+                <AnimatePresence>
+                  {changingTier && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: "hidden", marginTop: 20 }}>
+                      <div style={{ padding: "16px 20px", borderRadius: 14, background: "rgba(14,165,233,0.03)", border: `1px solid ${BLUE}12` }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: BLUE, marginBottom: 4 }}>Change Tier</div>
+                        <div style={{ fontSize: 10, color: "#EF4444", marginBottom: 12, fontWeight: 600 }}>Warning: Changing Tier Will Reset All Modules To New Tier Defaults</div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          {(["T1", "T2", "T3", "T4"] as const).map(t => {
+                            const colors: Record<string, string> = { T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7" };
+                            const isCurrent = detailHospital.tier === t;
+                            return (
+                              <motion.button key={t} whileHover={{ scale: isCurrent ? 1 : 1.05 }} whileTap={{ scale: 0.95 }}
+                                onClick={() => !isCurrent && handleDetailChangeTier(t)}
+                                style={{ flex: 1, padding: "12px 0", borderRadius: 10, cursor: isCurrent ? "default" : "pointer", textAlign: "center", background: isCurrent ? `${colors[t]}15` : "rgba(255,255,255,0.02)", border: `1.5px solid ${isCurrent ? colors[t] + "40" : "rgba(255,255,255,0.05)"}`, opacity: isCurrent ? 1 : 0.7 }}>
+                                <div style={{ fontSize: 18, fontWeight: 800, color: colors[t] }}>{t}</div>
+                                <div style={{ fontSize: 9, color: "#64748B", marginTop: 2 }}>{TIER_DEFAULTS[t].label}</div>
+                                {isCurrent && <div style={{ fontSize: 8, color: colors[t], marginTop: 4, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Current</div>}
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* ── SECTION B: Stats Overview ── */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: "Patient Records", value: detailHospital._count.patientRecords.toLocaleString(), color: BLUE, icon: "👤" },
+                  { label: "Devices", value: detailDevices.length || detailHospital._count.devices, color: "#22C55E", icon: "📱" },
+                  { label: "Operators", value: detailOperators.length, color: COPPER, icon: "🧑‍⚕️" },
+                  { label: "Active Modules", value: `${(detailHospital.activeModules || []).length} / ${TIER_DEFAULTS[detailHospital.tier as TierKey]?.modules.length || "?"}`, color: COPPER_LIGHT, icon: "🧩" },
+                ].map(s => (
+                  <div key={s.label} style={{ padding: "20px 18px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: `1px solid ${s.color}12` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <span style={{ fontSize: 18 }}>{s.icon}</span>
+                      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#64748B" }}>{s.label}</span>
+                    </div>
+                    <div style={{ fontSize: 28, fontWeight: 800, color: s.color, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{s.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── SECTION C: Module Control ── */}
+              <div style={{ padding: "28px 24px", borderRadius: 20, marginBottom: 24, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10` }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 6 }}>Module Control</div>
+                    <div style={{ fontSize: 12, color: "#64748B" }}>
+                      {(detailHospital.activeModules || []).length} Of {TIER_DEFAULTS[detailHospital.tier as TierKey]?.modules.length || 0} Modules Active — Toggle Any Module On Or Off
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                  {(() => {
+                    const tierDef = TIER_DEFAULTS[detailHospital.tier as TierKey];
+                    if (!tierDef) return null;
+                    const tierModuleKeys = tierDef.modules as readonly string[];
+                    const hospitalModules = (detailHospital.activeModules || []) as string[];
+                    return [...ALL_WORKSTATIONS, ...UTILITY_STATIONS].filter(ws => tierModuleKeys.includes(ws.key)).map((ws, i) => {
+                      const isActive = hospitalModules.includes(ws.key);
+                      return (
+                        <motion.div key={ws.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
+                          style={{ padding: "16px 18px", borderRadius: 14, background: isActive ? "rgba(34,197,94,0.03)" : "rgba(255,255,255,0.01)", border: `1px solid ${isActive ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.04)"}`, display: "flex", alignItems: "center", justifyContent: "space-between", opacity: isActive ? 1 : 0.5 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "#22C55E" : "#334155", boxShadow: isActive ? "0 0 6px rgba(34,197,94,0.3)" : "none", flexShrink: 0 }} />
+                            <span style={{ fontSize: 20 }}>{ws.icon}</span>
+                            <div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: isActive ? "#E2E8F0" : "#475569" }}>{ws.title}</div>
+                              <div style={{ fontSize: 9, color: "#4A5568" }}>{ws.role}</div>
+                            </div>
+                          </div>
+                          <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
+                            onClick={() => handleDetailToggleModule(ws.key)}
+                            style={{ padding: "4px 12px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", cursor: "pointer", border: "none", background: isActive ? "rgba(239,68,68,0.08)" : "rgba(34,197,94,0.08)", color: isActive ? "#EF4444" : "#22C55E" }}>
+                            {isActive ? "Disable" : "Enable"}
+                          </motion.button>
+                        </motion.div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+
+              {/* ── SECTION D: Operators ── */}
+              <div style={{ padding: "28px 24px", borderRadius: 20, marginBottom: 24, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10` }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 18 }}>
+                  Operators — {detailOperators.length} Registered
+                </div>
+
+                {/* Add operator form */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 100px 1fr auto", gap: 12, alignItems: "end", marginBottom: 20, padding: "16px 18px", borderRadius: 14, background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                  <div>
+                    <label style={labelStyle}>Full Name</label>
+                    <input placeholder="e.g. Ama Mensah" value={detailNewOp.name} onChange={e => setDetailNewOp(o => ({ ...o, name: e.target.value }))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Phone (Optional)</label>
+                    <input placeholder="0244123456" value={detailNewOp.phone} onChange={e => setDetailNewOp(o => ({ ...o, phone: e.target.value }))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>PIN</label>
+                    <input placeholder="4 digits" type="password" maxLength={4} value={detailNewOp.pin}
+                      onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setDetailNewOp(o => ({ ...o, pin: e.target.value })); }}
+                      style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.3em", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Role</label>
+                    <select value={detailNewOp.role} onChange={e => setDetailNewOp(o => ({ ...o, role: e.target.value }))} style={{ ...inputStyle, appearance: "none" }}>
+                      {ROLE_OPTIONS.map(r => <option key={r.value} value={r.value} style={{ background: "#0a0a14" }}>{r.label}</option>)}
+                    </select>
+                  </div>
+                  <motion.button onClick={handleDetailAddOperator} disabled={detailAddingOp || !detailNewOp.name || detailNewOp.pin.length !== 4}
+                    whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+                    style={{ padding: "12px 20px", borderRadius: 10, cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 12, opacity: detailAddingOp || !detailNewOp.name || detailNewOp.pin.length !== 4 ? 0.4 : 1, whiteSpace: "nowrap" }}>
+                    {detailAddingOp ? "Adding..." : "Add"}
+                  </motion.button>
+                </div>
+                {detailOpMsg && <div style={{ marginBottom: 14, fontSize: 11, fontWeight: 600, color: detailOpMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{detailOpMsg.text}</div>}
+
+                {/* Operator list */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  {detailOperators.length === 0 && <div style={{ padding: 24, textAlign: "center", color: "#334155", fontSize: 12 }}>No Operators Registered Yet</div>}
+                  {detailOperators.map((op, i) => (
+                    <motion.div key={op.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
+                      style={{ padding: "12px 16px", borderRadius: 10, background: "rgba(255,255,255,0.015)", border: `1px solid ${op.isActive ? "rgba(255,255,255,0.04)" : "rgba(239,68,68,0.1)"}`, display: "flex", alignItems: "center", justifyContent: "space-between", opacity: op.isActive ? 1 : 0.5 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ width: 7, height: 7, borderRadius: "50%", background: op.isActive ? "#22C55E" : "#EF4444", boxShadow: op.isActive ? "0 0 5px rgba(34,197,94,0.3)" : "none" }} />
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#F0F4FF" }}>{op.name}</span>
+                        {op.phone && <span style={{ fontSize: 10, color: "#475569" }}>{op.phone}</span>}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ padding: "2px 8px", borderRadius: 5, background: `${BLUE}10`, border: `1px solid ${BLUE}18`, fontSize: 9, fontWeight: 700, color: BLUE, textTransform: "uppercase", letterSpacing: "0.04em" }}>{op.role.replace(/_/g, " ")}</span>
+                        {op.lastLoginAt && <span style={{ fontSize: 9, color: "#475569", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{new Date(op.lastLoginAt).toLocaleDateString("en-GB")}</span>}
+                        <motion.button whileHover={{ scale: 1.08 }} onClick={() => { setDetailEditOp(op); setDetailEditOpForm({ name: op.name, phone: op.phone || "", role: op.role, newPin: "" }); setDetailEditOpMsg(null); }}
+                          style={{ padding: "3px 8px", borderRadius: 5, cursor: "pointer", background: `${COPPER}08`, border: `1px solid ${COPPER}15`, color: COPPER_LIGHT, fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>Edit</motion.button>
+                        <motion.button whileHover={{ scale: 1.08 }} onClick={() => handleDetailToggleOperator(op)}
+                          style={{ padding: "3px 8px", borderRadius: 5, cursor: "pointer", background: op.isActive ? "rgba(239,68,68,0.06)" : "rgba(34,197,94,0.06)", border: `1px solid ${op.isActive ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)"}`, color: op.isActive ? "#EF4444" : "#22C55E", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>
+                          {op.isActive ? "Deactivate" : "Activate"}
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Edit operator modal */}
+                <AnimatePresence>
+                  {detailEditOp && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDetailEditOp(null)}
+                      style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
+                        onClick={e => e.stopPropagation()}
+                        style={{ background: "rgba(10,10,20,0.95)", border: `1px solid ${COPPER}15`, borderRadius: 24, padding: "36px 40px", minWidth: 420, backdropFilter: "blur(24px)", boxShadow: "0 24px 80px rgba(0,0,0,0.6)" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 6 }}>Edit Operator</div>
+                            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", margin: 0 }}>{detailEditOp.name}</h3>
+                          </div>
+                          <motion.button whileHover={{ scale: 1.1 }} onClick={() => setDetailEditOp(null)} style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#64748B", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</motion.button>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                          <div><label style={labelStyle}>Full Name</label><input value={detailEditOpForm.name} onChange={e => setDetailEditOpForm(f => ({ ...f, name: e.target.value }))} style={inputStyle} /></div>
+                          <div><label style={labelStyle}>Phone</label><input value={detailEditOpForm.phone} onChange={e => setDetailEditOpForm(f => ({ ...f, phone: e.target.value }))} style={inputStyle} /></div>
+                          <div><label style={labelStyle}>Role</label><select value={detailEditOpForm.role} onChange={e => setDetailEditOpForm(f => ({ ...f, role: e.target.value }))} style={{ ...inputStyle, appearance: "none" }}>{ROLE_OPTIONS.map(r => <option key={r.value} value={r.value} style={{ background: "#0a0a14" }}>{r.label}</option>)}</select></div>
+                          <div><label style={{ ...labelStyle, color: "#EF4444" }}>Reset PIN (Leave Blank To Keep)</label><input value={detailEditOpForm.newPin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setDetailEditOpForm(f => ({ ...f, newPin: e.target.value })); }} placeholder="••••" type="password" maxLength={4} style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.3em", fontFamily: "var(--font-jetbrains-mono), monospace", background: "rgba(239,68,68,0.03)", border: "1px solid rgba(239,68,68,0.12)" }} /></div>
+                        </div>
+                        <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+                          <motion.button whileHover={{ scale: 1.02 }} onClick={handleDetailEditOperator} style={{ flex: 1, padding: "12px 0", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none" }}>Save Changes</motion.button>
+                          <motion.button whileHover={{ scale: 1.02 }} onClick={() => setDetailEditOp(null)} style={{ padding: "12px 20px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "#64748B", cursor: "pointer", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>Cancel</motion.button>
+                        </div>
+                        {detailEditOpMsg && <div style={{ marginTop: 12, fontSize: 11, fontWeight: 600, textAlign: "center", color: detailEditOpMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{detailEditOpMsg.text}</div>}
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* ── SECTION E: Devices ── */}
+              <div style={{ padding: "28px 24px", borderRadius: 20, marginBottom: 24, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10` }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 18 }}>
+                  Devices — {detailDevices.length} Registered
+                </div>
+                {detailDevices.length === 0 ? (
+                  <div style={{ padding: 24, textAlign: "center", color: "#334155", fontSize: 12 }}>No Devices Registered — Devices Are Created From The Hospital Admin Workstation</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    {detailDevices.map((dev, i) => (
+                      <motion.div key={dev.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
+                        style={{ padding: "12px 16px", borderRadius: 10, background: "rgba(255,255,255,0.015)", border: `1px solid ${dev.isActive ? (dev.isLocked ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.04)") : "rgba(239,68,68,0.1)"}`, display: "flex", alignItems: "center", justifyContent: "space-between", opacity: dev.isActive ? 1 : 0.5 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ width: 7, height: 7, borderRadius: "50%", background: !dev.isActive ? "#EF4444" : dev.isLocked ? "#F59E0B" : "#22C55E", boxShadow: dev.isActive && !dev.isLocked ? "0 0 5px rgba(34,197,94,0.3)" : "none" }} />
+                          <span style={{ fontSize: 12, fontWeight: 800, color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{dev.deviceCode}</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#E2E8F0" }}>{dev.deviceName}</span>
+                          <span style={{ padding: "2px 8px", borderRadius: 5, background: `${BLUE}10`, border: `1px solid ${BLUE}18`, fontSize: 9, fontWeight: 700, color: BLUE, textTransform: "uppercase" }}>{dev.role.replace(/_/g, " ")}</span>
+                          {dev.isLocked && <span style={{ padding: "2px 6px", borderRadius: 4, background: "rgba(245,158,11,0.1)", fontSize: 8, fontWeight: 700, color: "#F59E0B", textTransform: "uppercase", letterSpacing: "0.08em" }}>Locked</span>}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <motion.button whileHover={{ scale: 1.08 }} onClick={() => handleDetailDeviceAction(dev.id, dev.isLocked ? "unlock" : "lock")}
+                            style={{ padding: "3px 8px", borderRadius: 5, cursor: "pointer", fontSize: 9, fontWeight: 700, textTransform: "uppercase", background: dev.isLocked ? "rgba(34,197,94,0.06)" : "rgba(245,158,11,0.06)", border: `1px solid ${dev.isLocked ? "rgba(34,197,94,0.15)" : "rgba(245,158,11,0.15)"}`, color: dev.isLocked ? "#22C55E" : "#F59E0B" }}>
+                            {dev.isLocked ? "Unlock" : "Lock"}
+                          </motion.button>
+                          <motion.button whileHover={{ scale: 1.08 }} onClick={() => handleDetailDeviceAction(dev.id, dev.isActive ? "deactivate" : "activate")}
+                            style={{ padding: "3px 8px", borderRadius: 5, cursor: "pointer", fontSize: 9, fontWeight: 700, textTransform: "uppercase", background: dev.isActive ? "rgba(239,68,68,0.06)" : "rgba(34,197,94,0.06)", border: `1px solid ${dev.isActive ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)"}`, color: dev.isActive ? "#EF4444" : "#22C55E" }}>
+                            {dev.isActive ? "Deactivate" : "Activate"}
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Back Button ── */}
+              <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
+                <motion.button whileHover={{ scale: 1.03 }} onClick={() => { setScreen("hospitals"); setDetailHospital(null); }}
+                  style={{ padding: "12px 32px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "#64748B", cursor: "pointer", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  ← Back To Hospitals
+                </motion.button>
               </div>
             </motion.div>
           )}
