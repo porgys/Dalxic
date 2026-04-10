@@ -453,10 +453,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     window.open(`/api/audit?${params.toString()}`, "_blank");
   };
 
-  const handleToggleHospitalActive = async (h: HospitalItem) => {
-    await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: h.code, editFields: { active: !h.active }, actorId: "ops-admin" }) });
-    loadHospitals();
-  };
+  // handleToggleHospitalActive moved to detail view as handleDetailToggleActive
 
   /* ─── Hospital Detail Handlers ─── */
   const handleDetailEditSave = async () => {
@@ -999,98 +996,152 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 {groupMsg && <div style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: groupMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{groupMsg.text}</div>}
               </div>
 
-              {/* Hospital tree view */}
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B", marginBottom: 14 }}>
+              {/* Hospital card grid */}
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B", marginBottom: 18 }}>
                 {hospitals.length} Registered Hospital{hospitals.length !== 1 ? "s" : ""}
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {/* Group folders */}
-                {grouped.groups.map(g => {
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+                {/* Group cluster cards */}
+                {grouped.groups.map((g, gi) => {
                   const isOpen = !collapsedGroups.has(g.groupCode);
+                  const totalPatientsInGroup = g.hospitals.reduce((s, h) => s + h._count.patientRecords, 0);
+                  const totalModulesInGroup = g.hospitals.reduce((s, h) => s + (h.activeModules || []).length, 0);
+                  const allActive = g.hospitals.every(h => h.active);
                   return (
-                    <div key={g.groupCode}>
-                      <motion.div onClick={() => setCollapsedGroups(prev => { const next = new Set(prev); if (next.has(g.groupCode)) next.delete(g.groupCode); else next.add(g.groupCode); return next; })}
-                        whileHover={{ scale: 1.003 }}
-                        style={{ padding: "16px 20px", borderRadius: isOpen ? "14px 14px 0 0" : 14, background: "rgba(184,115,51,0.04)", border: `1px solid ${COPPER}18`, borderBottom: isOpen ? `1px solid ${COPPER}10` : `1px solid ${COPPER}18`, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <motion.div animate={{ rotate: isOpen ? 90 : 0 }} transition={{ duration: 0.2 }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={COPPER} strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
-                          </motion.div>
-                          <span style={{ fontSize: 14, fontWeight: 800, color: COPPER_LIGHT }}>{g.groupName}</span>
-                          <span style={{ fontSize: 10, color: "#64748B" }}>{g.groupCode} · {g.hospitals.length} Branch{g.hospitals.length > 1 ? "es" : ""}</span>
+                    <motion.div key={g.groupCode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: gi * 0.06 }}
+                      style={{ gridColumn: isOpen ? "1 / -1" : undefined, borderRadius: 20, background: "rgba(255,255,255,0.02)", border: `1.5px solid ${COPPER}18`, overflow: "hidden", position: "relative" }}>
+                      {/* Accent line */}
+                      <div style={{ position: "absolute", bottom: 0, left: "8%", right: "8%", height: 3, borderRadius: "3px 3px 0 0", background: `linear-gradient(90deg, ${COPPER}, ${COPPER_LIGHT})` }} />
+
+                      {/* Cluster header — clickable to expand */}
+                      <motion.div whileHover={{ backgroundColor: "rgba(184,115,51,0.04)" }}
+                        onClick={() => setCollapsedGroups(prev => { const next = new Set(prev); if (next.has(g.groupCode)) next.delete(g.groupCode); else next.add(g.groupCode); return next; })}
+                        style={{ padding: "24px 24px 20px", cursor: "pointer" }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+                          <div>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={COPPER} strokeWidth="1.5" style={{ marginBottom: 10 }}>
+                              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                            </svg>
+                          </div>
+                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT }}>Cluster · {g.hospitals.length} Branch{g.hospitals.length > 1 ? "es" : ""}</span>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <motion.button whileHover={{ scale: 1.08 }} onClick={e => { e.stopPropagation(); setSelectedGroup(g.groupCode); setScreen("monitoring"); }}
-                            style={{ padding: "3px 8px", borderRadius: 5, fontSize: 9, fontWeight: 700, color: BLUE, background: `${BLUE}08`, border: `1px solid ${BLUE}15`, cursor: "pointer", textTransform: "uppercase" }}>View Stats</motion.button>
-                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 8px rgba(34,197,94,0.4)" }} />
+                        <div style={{ fontSize: 18, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", marginBottom: 4 }}>{g.groupName}</div>
+                        <div style={{ fontSize: 11, color: "#64748B", marginBottom: 16 }}>{g.groupCode} · {totalPatientsInGroup.toLocaleString()} Total Patients · {totalModulesInGroup} Modules</div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                          {g.hospitals.map(h => (
+                            <div key={h.code} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <div style={{ width: 6, height: 6, borderRadius: "50%", background: h.active ? "#22C55E" : "#EF4444" }} />
+                              <span style={{ fontSize: 9, fontWeight: 700, color: "#4A5568", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.code}</span>
+                            </div>
+                          ))}
+                          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: allActive ? "#22C55E" : "#F59E0B", boxShadow: allActive ? "0 0 6px rgba(34,197,94,0.3)" : "none" }} />
+                            <motion.div animate={{ rotate: isOpen ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
+                            </motion.div>
+                          </div>
                         </div>
                       </motion.div>
+
+                      {/* Expanded branch cards */}
                       <AnimatePresence>
                         {isOpen && (
-                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}
-                            style={{ overflow: "hidden", borderLeft: `1px solid ${COPPER}12`, borderRight: `1px solid ${COPPER}12`, borderBottom: `1px solid ${COPPER}12`, borderRadius: "0 0 14px 14px", background: "rgba(184,115,51,0.015)" }}>
-                            {g.hospitals.map((h, i) => (
-                              <div key={h.id} onClick={() => enterHospitalDetail(h)}
-                                style={{ padding: "14px 20px 14px 48px", borderTop: i > 0 ? "1px solid rgba(255,255,255,0.03)" : "none", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", transition: "background 0.2s" }}
-                                onMouseEnter={e => (e.currentTarget.style.background = "rgba(184,115,51,0.04)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                  <div style={{ minWidth: 44, padding: "4px 8px", borderRadius: 8, background: `${COPPER}06`, border: `1px solid ${COPPER}12`, fontSize: 11, fontWeight: 800, color: COPPER, textAlign: "center", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.code}</div>
-                                  <div>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: "#E2E8F0" }}>{h.name}</div>
-                                    <div style={{ fontSize: 10, color: "#4A5568", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.tier} · {h._count.patientRecords} patients</div>
-                                  </div>
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                  <motion.button whileHover={{ scale: 1.08 }} onClick={(e) => { e.stopPropagation(); handleUnlinkHospital(h.code); }}
-                                    style={{ padding: "3px 8px", borderRadius: 5, fontSize: 9, fontWeight: 700, color: "#64748B", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer", textTransform: "uppercase" }}>Unlink</motion.button>
-                                  <motion.button whileHover={{ scale: 1.08 }} onClick={(e) => { e.stopPropagation(); handleToggleHospitalActive(h); }}
-                                    style={{ padding: "3px 8px", borderRadius: 5, fontSize: 9, fontWeight: 700, color: h.active ? "#EF4444" : "#22C55E", background: h.active ? "rgba(239,68,68,0.06)" : "rgba(34,197,94,0.06)", border: `1px solid ${h.active ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)"}`, cursor: "pointer", textTransform: "uppercase" }}>
-                                    {h.active ? "Suspend" : "Activate"}
-                                  </motion.button>
-                                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: h.active ? "#22C55E" : "#EF4444" }} />
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
-                                </div>
-                              </div>
-                            ))}
+                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }}
+                            style={{ overflow: "hidden", borderTop: `1px solid ${COPPER}10` }}>
+                            <div style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+                              {g.hospitals.map((h, i) => {
+                                const hTierColor = ({ T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7" } as Record<string, string>)[h.tier] || COPPER;
+                                return (
+                                  <motion.div key={h.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                                    whileHover={{ scale: 1.01, borderColor: `${hTierColor}40` }}
+                                    onClick={() => enterHospitalDetail(h)}
+                                    style={{ padding: "20px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: `1px solid rgba(255,255,255,0.05)`, cursor: "pointer", position: "relative", overflow: "hidden" }}>
+                                    <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: 2, borderRadius: "2px 2px 0 0", background: hTierColor, opacity: 0.5 }} />
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                                      <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, color: COPPER, background: `${COPPER}08`, border: `1px solid ${COPPER}12`, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.code}</span>
+                                      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: hTierColor }}>{h.tier} — {TIER_DEFAULTS[h.tier as TierKey]?.label || h.tier}</span>
+                                    </div>
+                                    <div style={{ fontSize: 15, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", marginBottom: 4 }}>{h.name}</div>
+                                    <div style={{ fontSize: 10, color: "#4A5568", marginBottom: 12 }}>{h._count.patientRecords} Patients · {(h.activeModules || []).length} Modules · {h._count.devices} Devices</div>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                        <div style={{ width: 7, height: 7, borderRadius: "50%", background: h.active ? "#22C55E" : "#EF4444", boxShadow: h.active ? "0 0 5px rgba(34,197,94,0.3)" : "none" }} />
+                                        <span style={{ fontSize: 9, fontWeight: 700, color: h.active ? "#22C55E" : "#EF4444", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h.active ? "Active" : "Suspended"}</span>
+                                      </div>
+                                      <motion.button whileHover={{ scale: 1.1 }} onClick={(e) => { e.stopPropagation(); handleUnlinkHospital(h.code); }}
+                                        style={{ padding: "2px 6px", borderRadius: 4, fontSize: 8, fontWeight: 700, color: "#475569", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer", textTransform: "uppercase" }}>Unlink</motion.button>
+                                    </div>
+                                  </motion.div>
+                                );
+                              })}
+                            </div>
                             {/* Link hospital to group */}
-                            <div style={{ padding: "10px 20px 14px 48px", borderTop: "1px solid rgba(255,255,255,0.03)", display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ padding: "8px 20px 14px", display: "flex", alignItems: "center", gap: 8 }}>
                               <select onChange={e => { if (e.target.value) handleLinkHospital(g.groupCode, e.target.value); e.target.value = ""; }}
-                                style={{ ...inputStyle, padding: "6px 10px", fontSize: 10 }}>
-                                <option value="">+ Add Hospital To Group</option>
+                                style={{ ...inputStyle, padding: "6px 10px", fontSize: 10, maxWidth: 300 }}>
+                                <option value="">+ Add Hospital To Cluster</option>
                                 {grouped.standalone.map(h => <option key={h.code} value={h.code} style={{ background: "#0a0a14" }}>{h.code} — {h.name}</option>)}
                               </select>
                             </div>
                           </motion.div>
                         )}
                       </AnimatePresence>
-                    </div>
+                    </motion.div>
                   );
                 })}
 
-                {/* Standalone hospitals */}
-                {grouped.standalone.map((h, i) => (
-                  <motion.div key={h.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                    whileHover={{ scale: 1.003, borderColor: `${COPPER}30` }}
-                    onClick={() => enterHospitalDetail(h)}
-                    style={{ padding: "18px 20px", borderRadius: 14, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", transition: "border-color 0.2s" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 12, background: `${COPPER}08`, border: `1px solid ${COPPER}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.code}</div>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#F0F4FF" }}>{h.name}</div>
-                        <div style={{ fontSize: 11, color: "#4A5568", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.subdomain}.health.dalxic.com · {h.tier} · {h._count.patientRecords} patients</div>
+                {/* Standalone hospital cards */}
+                {grouped.standalone.map((h, i) => {
+                  const tierColor = ({ T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7" } as Record<string, string>)[h.tier] || COPPER;
+                  return (
+                    <motion.div key={h.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (grouped.groups.length + i) * 0.06 }}
+                      whileHover={{ scale: 1.01, borderColor: `${tierColor}35` }}
+                      onClick={() => enterHospitalDetail(h)}
+                      style={{ padding: "24px", borderRadius: 20, background: "rgba(255,255,255,0.02)", border: `1.5px solid rgba(255,255,255,0.05)`, cursor: "pointer", position: "relative", overflow: "hidden", transition: "border-color 0.25s" }}>
+                      {/* Accent line */}
+                      <div style={{ position: "absolute", bottom: 0, left: "8%", right: "8%", height: 3, borderRadius: "3px 3px 0 0", background: tierColor, opacity: 0.6 }} />
+
+                      {/* Top: code badge + tier label */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 800, color: COPPER, background: `${COPPER}08`, border: `1px solid ${COPPER}15`, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.code}</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: tierColor }}>{h.tier} — {TIER_DEFAULTS[h.tier as TierKey]?.label || h.tier}</span>
                       </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <motion.button whileHover={{ scale: 1.08 }} onClick={(e) => { e.stopPropagation(); handleToggleHospitalActive(h); }}
-                        style={{ padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, color: h.active ? "#EF4444" : "#22C55E", background: h.active ? "rgba(239,68,68,0.06)" : "rgba(34,197,94,0.06)", border: `1px solid ${h.active ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)"}`, cursor: "pointer", textTransform: "uppercase" }}>
-                        {h.active ? "Suspend" : "Activate"}
-                      </motion.button>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: h.active ? "#22C55E" : "#EF4444" }} />
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
-                    </div>
-                  </motion.div>
-                ))}
+
+                      {/* Name */}
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", marginBottom: 4 }}>{h.name}</div>
+
+                      {/* Description line */}
+                      <div style={{ fontSize: 11, color: "#64748B", marginBottom: 18 }}>
+                        {h.tagline || `${h.subdomain}.health.dalxic.com`}
+                      </div>
+
+                      {/* Stats row */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 14 }}>
+                        {[
+                          { label: "Patients", value: h._count.patientRecords, color: BLUE },
+                          { label: "Modules", value: (h.activeModules || []).length, color: COPPER_LIGHT },
+                          { label: "Devices", value: h._count.devices, color: "#22C55E" },
+                        ].map(stat => (
+                          <div key={stat.label} style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                            <span style={{ fontSize: 18, fontWeight: 800, color: stat.color, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{stat.value}</span>
+                            <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A5568" }}>{stat.label}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Status + action */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: h.active ? "#22C55E" : "#EF4444", boxShadow: h.active ? "0 0 6px rgba(34,197,94,0.3)" : "none" }} />
+                          <span style={{ fontSize: 10, fontWeight: 700, color: h.active ? "#22C55E" : "#EF4444", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h.active ? "Active" : "Suspended"}</span>
+                        </div>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </motion.div>
           )}
