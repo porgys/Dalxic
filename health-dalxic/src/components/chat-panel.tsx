@@ -44,8 +44,8 @@ const MODULE_ICONS: Record<string, string> = {
   ct_radiology: "📡", ward_ipd: "🛏️", ultrasound: "🫧", emergency: "🚨",
   icu: "❤️‍🩹", maternity: "🤱", blood_bank: "🩸", bookkeeping: "📊",
   admin: "⚙️", broadcast: "📢",
-  // Role names
-  pharmacist: "💊", front_desk: "🏥", lab_tech: "🔬",
+  // Role name aliases (only keys not already above)
+  pharmacist: "💊", lab_tech: "🔬",
   nurse: "👩‍⚕️", radiologist: "📡", super_admin: "⚙️",
   accountant: "📊",
 };
@@ -58,11 +58,10 @@ const MODULE_LABELS: Record<string, string> = {
   emergency: "Emergency", icu: "ICU", maternity: "Maternity",
   blood_bank: "Blood Bank", bookkeeping: "Bookkeeping", admin: "Admin",
   broadcast: "All Stations",
-  // Role names that don't match module keys
-  pharmacist: "Pharmacy", front_desk: "Front Desk",
-  lab_tech: "Laboratory", nurse: "Nursing",
-  radiologist: "Radiology", super_admin: "Admin",
-  accountant: "Bookkeeping",
+  // Role name aliases (only keys not already above)
+  pharmacist: "Pharmacy", lab_tech: "Laboratory",
+  nurse: "Nursing", radiologist: "Radiology",
+  super_admin: "Admin", accountant: "Bookkeeping",
 };
 
 function formatTime(iso: string): string {
