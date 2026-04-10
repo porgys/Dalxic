@@ -1,0 +1,22 @@
+{
+  "hospitalIds": {
+    "KBH": "hosp_kbh_1775860060896",
+    "RH": "hosp_rh_1775860061050",
+    "LKC": "hosp_lkc_1775860061198",
+    "MPC": "hosp_mpc_1775860061349",
+    "TDC": "hosp_tdc_1775860061497",
+    "KSI": "hosp_ksi_1775860061665",
+    "TAH": "hosp_tah_1775860061821",
+    "CCH": "hosp_cch_1775860061960"
+  },
+  "bookIds": {
+    "KBH": "book_kbh_1775860071446",
+    "RH": "book_rh_1775860071589",
+    "LKC": "book_lkc_1775860071725",
+    "MPC": "book_mpc_1775860071876",
+    "TDC": "book_tdc_1775860072011",
+    "KSI": "book_ksi_1775860072158",
+    "TAH": "book_tah_1775860072286",
+    "CCH": "book_cch_1775860072415"
+  }
+}
