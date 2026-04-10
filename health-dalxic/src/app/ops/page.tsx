@@ -558,14 +558,105 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     }
   };
 
-  // Audit logs
+  // Operator edit modal
+  const [editOp, setEditOp] = useState<OperatorItem | null>(null);
+  const [editOpForm, setEditOpForm] = useState({ name: "", phone: "", role: "", newPin: "" });
+  const [editOpMsg, setEditOpMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  const openEditOp = (op: OperatorItem) => {
+    setEditOp(op);
+    setEditOpForm({ name: op.name, phone: op.phone || "", role: op.role, newPin: "" });
+    setEditOpMsg(null);
+  };
+
+  const handleEditOperator = async () => {
+    if (!editOp || !selectedHospital) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload: any = { hospitalCode: selectedHospital, operatorId: editOp.id };
+    if (editOpForm.name !== editOp.name) payload.name = editOpForm.name;
+    if (editOpForm.phone !== (editOp.phone || "")) payload.phone = editOpForm.phone;
+    if (editOpForm.role !== editOp.role) payload.role = editOpForm.role;
+    if (editOpForm.newPin && editOpForm.newPin.length === 4) payload.newPin = editOpForm.newPin;
+
+    const res = await fetch("/api/operators", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      setEditOpMsg({ type: "ok", text: "Operator updated" });
+      loadOperators(selectedHospital);
+      setTimeout(() => setEditOp(null), 800);
+    } else {
+      const err = await res.json();
+      setEditOpMsg({ type: "err", text: err.error || "Update failed" });
+    }
+  };
+
+  // Hospital edit
+  const [editHospital, setEditHospital] = useState<HospitalItem | null>(null);
+  const [editHForm, setEditHForm] = useState({ name: "", tagline: "", subdomain: "" });
+  const [editHMsg, setEditHMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  const openEditHospital = (h: HospitalItem) => {
+    setEditHospital(h);
+    setEditHForm({ name: h.name, tagline: "", subdomain: h.subdomain });
+    setEditHMsg(null);
+  };
+
+  const handleEditHospital = async () => {
+    if (!editHospital) return;
+    const res = await fetch("/api/hospitals", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hospitalCode: editHospital.code, editFields: editHForm, actorId: "ops-admin" }),
+    });
+    if (res.ok) {
+      setEditHMsg({ type: "ok", text: "Hospital updated" });
+      loadHospitals();
+      setTimeout(() => setEditHospital(null), 800);
+    } else {
+      const err = await res.json();
+      setEditHMsg({ type: "err", text: err.error || "Update failed" });
+    }
+  };
+
+  const handleToggleHospitalActive = async (h: HospitalItem) => {
+    await fetch("/api/hospitals", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hospitalCode: h.code, editFields: { active: !h.active }, actorId: "ops-admin" }),
+    });
+    loadHospitals();
+  };
+
+  // Audit logs with filters
   const [auditLogs, setAuditLogs] = useState<{ id: string; actorType: string; actorId: string; action: string; metadata: Record<string, unknown>; ipAddress: string; timestamp: string; hospital?: { code: string; name: string } }[]>([]);
-  const loadAuditLogs = useCallback(async () => {
+  const [auditFilter, setAuditFilter] = useState({ hospitalCode: "", actorType: "", action: "", startDate: "", endDate: "" });
+
+  const loadAuditLogs = useCallback(async (filters?: typeof auditFilter) => {
     try {
-      const res = await fetch("/api/audit?limit=100");
+      const f = filters || auditFilter;
+      const params = new URLSearchParams({ limit: "200" });
+      if (f.hospitalCode) params.set("hospitalCode", f.hospitalCode);
+      if (f.actorType) params.set("actorType", f.actorType);
+      if (f.action) params.set("action", f.action);
+      if (f.startDate) params.set("startDate", f.startDate);
+      if (f.endDate) params.set("endDate", f.endDate);
+      const res = await fetch(`/api/audit?${params.toString()}`);
       if (res.ok) setAuditLogs(await res.json());
     } catch { /* */ }
-  }, []);
+  }, [auditFilter]);
+
+  const handleExportAuditCSV = () => {
+    const params = new URLSearchParams({ limit: "500", format: "csv" });
+    if (auditFilter.hospitalCode) params.set("hospitalCode", auditFilter.hospitalCode);
+    if (auditFilter.actorType) params.set("actorType", auditFilter.actorType);
+    if (auditFilter.action) params.set("action", auditFilter.action);
+    if (auditFilter.startDate) params.set("startDate", auditFilter.startDate);
+    if (auditFilter.endDate) params.set("endDate", auditFilter.endDate);
+    window.open(`/api/audit?${params.toString()}`, "_blank");
+  };
 
   const loadAccessGrants = useCallback(async () => {
     try {
@@ -1420,11 +1511,17 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                                     </div>
                                   </div>
                                 </div>
-                                <div style={{
-                                  width: 8, height: 8, borderRadius: "50%",
-                                  background: h.active ? "#22C55E" : "#EF4444",
-                                  boxShadow: h.active ? "0 0 6px rgba(34,197,94,0.3)" : "0 0 6px rgba(239,68,68,0.3)",
-                                }} />
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }} onClick={() => openEditHospital(h)}
+                                    style={{ padding: "3px 8px", borderRadius: 5, fontSize: 9, fontWeight: 700, color: COPPER_LIGHT, background: `${COPPER}08`, border: `1px solid ${COPPER}15`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                                    Edit
+                                  </motion.button>
+                                  <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }} onClick={() => handleToggleHospitalActive(h)}
+                                    style={{ padding: "3px 8px", borderRadius: 5, fontSize: 9, fontWeight: 700, color: h.active ? "#EF4444" : "#22C55E", background: h.active ? "rgba(239,68,68,0.06)" : "rgba(34,197,94,0.06)", border: `1px solid ${h.active ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                                    {h.active ? "Suspend" : "Activate"}
+                                  </motion.button>
+                                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: h.active ? "#22C55E" : "#EF4444", boxShadow: h.active ? "0 0 6px rgba(34,197,94,0.3)" : "none" }} />
+                                </div>
                               </div>
                             ))}
                           </motion.div>
@@ -1464,14 +1561,78 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                         </div>
                       </div>
                     </div>
-                    <div style={{
-                      width: 8, height: 8, borderRadius: "50%",
-                      background: h.active ? "#22C55E" : "#EF4444",
-                      boxShadow: h.active ? "0 0 8px rgba(34,197,94,0.4)" : "0 0 8px rgba(239,68,68,0.4)",
-                    }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }} onClick={() => openEditHospital(h)}
+                        style={{ padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, color: COPPER_LIGHT, background: `${COPPER}08`, border: `1px solid ${COPPER}15`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        Edit
+                      </motion.button>
+                      <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }} onClick={() => handleToggleHospitalActive(h)}
+                        style={{ padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, color: h.active ? "#EF4444" : "#22C55E", background: h.active ? "rgba(239,68,68,0.06)" : "rgba(34,197,94,0.06)", border: `1px solid ${h.active ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        {h.active ? "Suspend" : "Activate"}
+                      </motion.button>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: h.active ? "#22C55E" : "#EF4444", boxShadow: h.active ? "0 0 8px rgba(34,197,94,0.4)" : "none" }} />
+                    </div>
                   </motion.div>
                 ))}
               </div>
+
+              {/* Hospital Edit Modal */}
+              <AnimatePresence>
+                {editHospital && (
+                  <motion.div
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    onClick={() => setEditHospital(null)}
+                    style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
+                      onClick={e => e.stopPropagation()}
+                      style={{ background: "rgba(10,10,20,0.95)", border: `1px solid ${COPPER}15`, borderRadius: 24, padding: "36px 40px", minWidth: 420, backdropFilter: "blur(24px)", boxShadow: "0 24px 80px rgba(0,0,0,0.6)" }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 6 }}>Edit Hospital</div>
+                          <h3 style={{ fontSize: 20, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", margin: 0 }}>{editHospital.code}</h3>
+                        </div>
+                        <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setEditHospital(null)}
+                          style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#64748B", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          ✕
+                        </motion.button>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 6 }}>Hospital Name</label>
+                          <input value={editHForm.name} onChange={e => setEditHForm(f => ({ ...f, name: e.target.value }))}
+                            style={{ width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.03)", border: `1px solid ${COPPER}12`, color: "#E2E8F0", outline: "none" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 6 }}>Subdomain</label>
+                          <input value={editHForm.subdomain} onChange={e => setEditHForm(f => ({ ...f, subdomain: e.target.value.toLowerCase() }))}
+                            style={{ width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.03)", border: `1px solid ${COPPER}12`, color: "#E2E8F0", outline: "none" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 6 }}>Tagline</label>
+                          <input value={editHForm.tagline} onChange={e => setEditHForm(f => ({ ...f, tagline: e.target.value }))} placeholder="Optional tagline"
+                            style={{ width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.03)", border: `1px solid ${COPPER}12`, color: "#E2E8F0", outline: "none" }} />
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 24 }}>
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleEditHospital}
+                          style={{ flex: 1, padding: "12px 0", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none" }}>
+                          Save Changes
+                        </motion.button>
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => setEditHospital(null)}
+                          style={{ padding: "12px 20px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "#64748B", cursor: "pointer", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                          Cancel
+                        </motion.button>
+                      </div>
+                      {editHMsg && <div style={{ marginTop: 12, fontSize: 11, fontWeight: 600, textAlign: "center", color: editHMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{editHMsg.text}</div>}
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 
@@ -1655,7 +1816,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                             {op.phone && <span style={{ fontSize: 11, color: "#475569", marginLeft: 8 }}>{op.phone}</span>}
                           </div>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{
                             padding: "3px 10px", borderRadius: 6,
                             background: `${BLUE}10`, border: `1px solid ${BLUE}20`,
@@ -1666,9 +1827,22 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                           </span>
                           {op.lastLoginAt && (
                             <span style={{ fontSize: 10, color: "#475569", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
-                              Last: {new Date(op.lastLoginAt).toLocaleDateString("en-GB")}
+                              {new Date(op.lastLoginAt).toLocaleDateString("en-GB")}
                             </span>
                           )}
+                          <motion.button
+                            onClick={() => openEditOp(op)}
+                            whileHover={{ scale: 1.08 }}
+                            whileTap={{ scale: 0.92 }}
+                            style={{
+                              padding: "4px 10px", borderRadius: 6, cursor: "pointer",
+                              background: `${COPPER}08`, border: `1px solid ${COPPER}15`,
+                              color: COPPER_LIGHT, fontSize: 10, fontWeight: 700,
+                              letterSpacing: "0.06em", textTransform: "uppercase",
+                            }}
+                          >
+                            Edit
+                          </motion.button>
                           <motion.button
                             onClick={() => handleToggleOperator(op)}
                             whileHover={{ scale: 1.08 }}
@@ -1693,6 +1867,72 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                       </div>
                     )}
                   </div>
+
+                  {/* ── Operator Edit Modal ── */}
+                  <AnimatePresence>
+                    {editOp && (
+                      <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        onClick={() => setEditOp(null)}
+                        style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}
+                      >
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
+                          onClick={e => e.stopPropagation()}
+                          style={{ background: "rgba(10,10,20,0.95)", border: `1px solid ${COPPER}15`, borderRadius: 24, padding: "36px 40px", minWidth: 420, backdropFilter: "blur(24px)", boxShadow: "0 24px 80px rgba(0,0,0,0.6)" }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
+                            <div>
+                              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 6 }}>Edit Operator</div>
+                              <h3 style={{ fontSize: 20, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", margin: 0 }}>{editOp.name}</h3>
+                            </div>
+                            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setEditOp(null)}
+                              style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#64748B", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              ✕
+                            </motion.button>
+                          </div>
+
+                          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 6 }}>Full Name</label>
+                              <input value={editOpForm.name} onChange={e => setEditOpForm(f => ({ ...f, name: e.target.value }))}
+                                style={{ width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.03)", border: `1px solid ${COPPER}12`, color: "#E2E8F0", outline: "none" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 6 }}>Phone</label>
+                              <input value={editOpForm.phone} onChange={e => setEditOpForm(f => ({ ...f, phone: e.target.value }))}
+                                style={{ width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.03)", border: `1px solid ${COPPER}12`, color: "#E2E8F0", outline: "none" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 6 }}>Role</label>
+                              <select value={editOpForm.role} onChange={e => setEditOpForm(f => ({ ...f, role: e.target.value }))}
+                                style={{ width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.03)", border: `1px solid ${COPPER}12`, color: "#E2E8F0", outline: "none", appearance: "none" }}>
+                                {ROLE_OPTIONS.map(r => <option key={r.value} value={r.value} style={{ background: "#0a0a14" }}>{r.label}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#EF4444", marginBottom: 6 }}>Reset PIN (Leave Blank To Keep Current)</label>
+                              <input value={editOpForm.newPin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setEditOpForm(f => ({ ...f, newPin: e.target.value })); }}
+                                placeholder="••••" type="password" maxLength={4}
+                                style={{ width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 13, background: "rgba(239,68,68,0.03)", border: "1px solid rgba(239,68,68,0.12)", color: "#E2E8F0", outline: "none", textAlign: "center", letterSpacing: "0.3em", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 24 }}>
+                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleEditOperator}
+                              style={{ flex: 1, padding: "12px 0", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", letterSpacing: "0.06em" }}>
+                              Save Changes
+                            </motion.button>
+                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => setEditOp(null)}
+                              style={{ padding: "12px 20px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "#64748B", cursor: "pointer", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                              Cancel
+                            </motion.button>
+                          </div>
+                          {editOpMsg && <div style={{ marginTop: 12, fontSize: 11, fontWeight: 600, textAlign: "center", color: editOpMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{editOpMsg.text}</div>}
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </>
               )}
 
@@ -2178,15 +2418,71 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
           {/* ═══ AUDIT ═══ */}
           {view === "audit" && (
             <motion.div key="audit" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
-              <div style={{ marginBottom: 32 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>System Records</div>
-                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Audit Trail</h2>
-                <p style={{ fontSize: 12, color: "#475569", marginTop: 6 }}>Immutable log. Cannot be edited or deleted by any user level.</p>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>System Records</div>
+                  <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Audit Trail</h2>
+                  <p style={{ fontSize: 12, color: "#475569", marginTop: 6 }}>Immutable log. Cannot be edited or deleted by any user level.</p>
+                </div>
+                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleExportAuditCSV}
+                  style={{ padding: "10px 20px", borderRadius: 10, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: COPPER_LIGHT, background: `${COPPER}08`, border: `1px solid ${COPPER}15`, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  Export CSV
+                </motion.button>
+              </div>
+
+              {/* Filter bar */}
+              <div style={{
+                padding: "16px 20px", borderRadius: 14, marginBottom: 20,
+                background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)",
+                display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr auto", gap: 10, alignItems: "end",
+              }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Hospital</label>
+                  <select value={auditFilter.hospitalCode} onChange={e => setAuditFilter(f => ({ ...f, hospitalCode: e.target.value }))}
+                    style={{ width: "100%", padding: "8px 10px", borderRadius: 8, fontSize: 11, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#E2E8F0", outline: "none" }}>
+                    <option value="" style={{ background: "#0a0a14" }}>All</option>
+                    {hospitals.map(h => <option key={h.code} value={h.code} style={{ background: "#0a0a14" }}>{h.code}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Actor Type</label>
+                  <select value={auditFilter.actorType} onChange={e => setAuditFilter(f => ({ ...f, actorType: e.target.value }))}
+                    style={{ width: "100%", padding: "8px 10px", borderRadius: 8, fontSize: 11, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#E2E8F0", outline: "none" }}>
+                    <option value="" style={{ background: "#0a0a14" }}>All</option>
+                    <option value="operator" style={{ background: "#0a0a14" }}>Operator</option>
+                    <option value="dalxic_super_admin" style={{ background: "#0a0a14" }}>Super Admin</option>
+                    <option value="system" style={{ background: "#0a0a14" }}>System</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Action</label>
+                  <input value={auditFilter.action} onChange={e => setAuditFilter(f => ({ ...f, action: e.target.value }))} placeholder="e.g. login"
+                    style={{ width: "100%", padding: "8px 10px", borderRadius: 8, fontSize: 11, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#E2E8F0", outline: "none" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>From</label>
+                  <input type="date" value={auditFilter.startDate} onChange={e => setAuditFilter(f => ({ ...f, startDate: e.target.value }))}
+                    style={{ width: "100%", padding: "8px 10px", borderRadius: 8, fontSize: 11, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#E2E8F0", outline: "none", colorScheme: "dark" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>To</label>
+                  <input type="date" value={auditFilter.endDate} onChange={e => setAuditFilter(f => ({ ...f, endDate: e.target.value }))}
+                    style={{ width: "100%", padding: "8px 10px", borderRadius: 8, fontSize: 11, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#E2E8F0", outline: "none", colorScheme: "dark" }} />
+                </div>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => loadAuditLogs()}
+                  style={{ padding: "8px 16px", borderRadius: 8, fontSize: 11, fontWeight: 700, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none" }}>
+                  Search
+                </motion.button>
+              </div>
+
+              {/* Results count */}
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", marginBottom: 10 }}>
+                {auditLogs.length} Record{auditLogs.length !== 1 ? "s" : ""}
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {auditLogs.length === 0 && (
-                  <div style={{ padding: 32, textAlign: "center", color: "#475569", fontSize: 13 }}>No audit logs recorded yet</div>
+                  <div style={{ padding: 32, textAlign: "center", color: "#475569", fontSize: 13 }}>No audit logs match your filters</div>
                 )}
                 {auditLogs.map((log) => {
                   const isEmergency = log.action.includes("emergency");

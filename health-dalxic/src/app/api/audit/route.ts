@@ -11,6 +11,11 @@ export async function GET(request: Request) {
   const action = searchParams.get("action");
   const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 500);
 
+  const startDate = searchParams.get("startDate");
+  const endDate = searchParams.get("endDate");
+  const actorId = searchParams.get("actorId");
+  const format = searchParams.get("format"); // "csv" for export
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {};
 
@@ -20,7 +25,13 @@ export async function GET(request: Request) {
     where.hospitalId = hospital.id;
   }
   if (actorType) where.actorType = actorType;
+  if (actorId) where.actorId = actorId;
   if (action) where.action = { contains: action };
+  if (startDate || endDate) {
+    where.timestamp = {};
+    if (startDate) where.timestamp.gte = new Date(startDate);
+    if (endDate) where.timestamp.lte = new Date(endDate);
+  }
 
   const logs = await db.auditLog.findMany({
     where,
@@ -28,6 +39,20 @@ export async function GET(request: Request) {
     take: limit,
     include: { hospital: { select: { code: true, name: true } } },
   });
+
+  // CSV export
+  if (format === "csv") {
+    const header = "Timestamp,Action,Actor Type,Actor ID,Hospital,IP Address,Metadata";
+    const rows = logs.map(l => {
+      const h = l.hospital as { code: string; name: string } | null;
+      const meta = l.metadata ? JSON.stringify(l.metadata).replace(/"/g, '""') : "";
+      return `${l.timestamp.toISOString()},${l.action},${l.actorType},${l.actorId || ""},${h?.code || ""},${l.ipAddress || ""},"${meta}"`;
+    });
+    const csv = [header, ...rows].join("\n");
+    return new Response(csv, {
+      headers: { "Content-Type": "text/csv", "Content-Disposition": `attachment; filename="audit-${new Date().toISOString().slice(0, 10)}.csv"` },
+    });
+  }
 
   return Response.json(logs);
 }

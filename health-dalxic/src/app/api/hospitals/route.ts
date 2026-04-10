@@ -88,8 +88,34 @@ export async function PATCH(request: Request) {
   const hospital = await db.hospital.findUnique({ where: { code: hospitalCode } });
   if (!hospital) return Response.json({ error: "Hospital not found" }, { status: 404 });
 
+  // ── Edit hospital details ──
+  const { editFields, toggleModule } = body;
+  if (editFields) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data: any = {};
+    if (editFields.name) data.name = editFields.name;
+    if (editFields.tagline !== undefined) data.tagline = editFields.tagline;
+    if (editFields.subdomain) data.subdomain = editFields.subdomain;
+    if (typeof editFields.active === "boolean") data.active = editFields.active;
+    if (editFields.groupCode !== undefined) data.groupCode = editFields.groupCode || null;
+
+    const updated = await db.hospital.update({ where: { code: hospitalCode }, data });
+
+    await logAudit({
+      actorType: "dalxic_super_admin",
+      actorId: actorId || "admin",
+      hospitalId: hospital.id,
+      action: typeof editFields.active === "boolean"
+        ? (editFields.active ? "hospital.activated" : "hospital.deactivated")
+        : "hospital.details_updated",
+      metadata: editFields,
+      ipAddress: getClientIP(request),
+    });
+
+    return Response.json(updated);
+  }
+
   // ── Toggle individual module ──
-  const { toggleModule } = body;
   if (toggleModule) {
     const currentModules = (hospital.activeModules as string[]) || [];
     const tierDefaults = getTierDefaults(hospital.tier);
