@@ -198,7 +198,7 @@ type OpsScreen = "tiers" | "modules" | "module-config" | "hospitals" | "hospital
 
 function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   // ─── Navigation ───
-  const [screen, setScreen] = useState<OpsScreen>("tiers");
+  const [screen, setScreen] = useState<OpsScreen>("hospitals");
   const [selectedTier, setSelectedTier] = useState<TierKey | null>(null);
   const [activeModules, setActiveModules] = useState<string[]>([]);
   const [configModule, setConfigModule] = useState<string | null>(null);
