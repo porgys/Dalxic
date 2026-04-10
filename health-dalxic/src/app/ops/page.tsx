@@ -573,7 +573,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     // Load operators for this hospital filtered by module role
     try {
       const res = await fetch(`/api/operators?hospitalCode=${detailHospital.code}&activeOnly=false`);
-      if (res.ok) { const data = await res.json(); setPopupOperators(data); }
+      if (res.ok) { const data = await res.json(); setPopupOperators(data.operators || []); }
     } catch { /* ignore */ }
   };
 
@@ -591,7 +591,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
         setPopupOp({ name: "", phone: "", pin: "" });
         // Refresh operator list
         const opRes = await fetch(`/api/operators?hospitalCode=${detailHospital.code}&activeOnly=false`);
-        if (opRes.ok) setPopupOperators(await opRes.json());
+        if (opRes.ok) { const d = await opRes.json(); setPopupOperators(d.operators || []); }
       } else { const err = await res.json(); setPopupMsg({ type: "err", text: err.error || "Failed" }); }
     } catch { setPopupMsg({ type: "err", text: "Network Error" }); }
     finally { setPopupAdding(false); }
