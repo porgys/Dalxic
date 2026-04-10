@@ -269,6 +269,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const [popupOp, setPopupOp] = useState({ name: "", phone: "", pin: "" });
   const [popupAdding, setPopupAdding] = useState(false);
   const [popupMsg, setPopupMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [popupOperators, setPopupOperators] = useState<OperatorItem[]>([]);
 
   // ─── Collapsed groups for tree view ───
@@ -1435,24 +1436,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                             {popupMsg && <div style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: popupMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{popupMsg.text}</div>}
                           </div>
 
-                          {/* Operator list */}
-                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B", marginBottom: 10 }}>
-                            {popupOperators.length} Operator{popupOperators.length !== 1 ? "s" : ""} At {detailHospital.code}
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                            {popupOperators.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#334155", fontSize: 12 }}>No Operators Registered Yet</div>}
-                            {popupOperators.map((op, i) => (
-                              <motion.div key={op.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
-                                style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: `1px solid ${op.isActive ? "rgba(255,255,255,0.04)" : "rgba(239,68,68,0.1)"}`, display: "flex", alignItems: "center", justifyContent: "space-between", opacity: op.isActive ? 1 : 0.5 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: op.isActive ? "#22C55E" : "#EF4444" }} />
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: "#F0F4FF" }}>{op.name}</span>
-                                  {op.phone && <span style={{ fontSize: 10, color: "#475569" }}>{op.phone}</span>}
-                                </div>
-                                <span style={{ padding: "2px 8px", borderRadius: 5, background: `${BLUE}10`, border: `1px solid ${BLUE}18`, fontSize: 9, fontWeight: 700, color: BLUE, textTransform: "uppercase" }}>{op.role.replace(/_/g, " ")}</span>
-                              </motion.div>
-                            ))}
-                          </div>
+                          {/* Operator list — removed from popup, will be shown in dedicated hospital operators view */}
                         </div>
                       </motion.div>
                     </motion.div>
