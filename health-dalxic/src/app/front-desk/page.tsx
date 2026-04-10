@@ -326,6 +326,14 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
   const [closeLoading, setCloseLoading] = useState(false);
   const [closeSuccess, setCloseSuccess] = useState<{ token: string; duration: number } | null>(null);
 
+  // Card lookup & auto-fill
+  const [cardLookup, setCardLookup] = useState("");
+  const [cardFound, setCardFound] = useState<{ cardNumber: string; patientName: string; dateOfBirth?: string; phone?: string; gender?: string; insuranceProvider?: string; insuranceId?: string; emergencyContact?: string; emergencyContactPhone?: string; bloodType?: string; allergies?: string } | null>(null);
+  const [cardSearching, setCardSearching] = useState(false);
+  const [showCreateCard, setShowCreateCard] = useState(false);
+  const [newCardNumber, setNewCardNumber] = useState<string | null>(null);
+  const [creatingCard, setCreatingCard] = useState(false);
+
   // Cross-branch search (group-aware)
   const [hospitalGroup, setHospitalGroup] = useState<{ groupCode: string; name: string } | null>(null);
   const [crossSearchQuery, setCrossSearchQuery] = useState("");
@@ -384,6 +392,67 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
     return () => clearInterval(t);
   }, []);
 
+  const handleCardLookup = async (q: string) => {
+    setCardLookup(q);
+    setCardFound(null);
+    if (q.length < 3) return;
+    setCardSearching(true);
+    try {
+      const res = await fetch(`/api/cards?hospitalCode=${HOSPITAL_CODE}&q=${encodeURIComponent(q)}`);
+      if (res.ok) {
+        const cards = await res.json();
+        if (cards.length > 0) {
+          const c = cards[0];
+          setCardFound(c);
+          // Auto-fill form
+          setForm((p) => ({
+            ...p,
+            fullName: c.patientName || p.fullName,
+            dateOfBirth: c.dateOfBirth || p.dateOfBirth,
+            phone: c.phone || p.phone,
+            gender: c.gender || p.gender,
+            insuranceProvider: c.insuranceProvider || p.insuranceProvider,
+            insuranceId: c.insuranceId || p.insuranceId,
+            emergencyContactName: c.emergencyContact || p.emergencyContactName,
+            emergencyContactPhone: c.emergencyContactPhone || p.emergencyContactPhone,
+            bloodType: c.bloodType || p.bloodType,
+            allergies: c.allergies || p.allergies,
+          }));
+        }
+      }
+    } catch { /* */ }
+    finally { setCardSearching(false); }
+  };
+
+  const handleCreateCard = async () => {
+    setCreatingCard(true);
+    try {
+      const res = await fetch("/api/cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hospitalCode: HOSPITAL_CODE,
+          patientName: form.fullName,
+          dateOfBirth: form.dateOfBirth || null,
+          phone: form.phone || null,
+          gender: form.gender || null,
+          bloodType: form.bloodType || null,
+          allergies: form.allergies || null,
+          insuranceProvider: form.insuranceProvider || null,
+          insuranceId: form.insuranceId || null,
+          emergencyContact: form.emergencyContactName || null,
+          emergencyContactPhone: form.emergencyContactPhone || null,
+          createdBy: operator.operatorId,
+        }),
+      });
+      if (res.ok) {
+        const card = await res.json();
+        setNewCardNumber(card.cardNumber);
+      }
+    } catch { /* */ }
+    finally { setCreatingCard(false); }
+  };
+
   const handleSubmit = async () => {
     if (!form.fullName.trim() || !form.chiefComplaint.trim() || !form.department) return;
     setLoading(true);
@@ -393,6 +462,8 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           hospitalCode: HOSPITAL_CODE,
+          operatorId: operator.operatorId,
+          operatorName: operator.operatorName,
           patient: {
             fullName: form.fullName, dateOfBirth: form.dateOfBirth || null,
             gender: form.gender || null, phone: form.phone || null,
@@ -408,6 +479,9 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
         setRecentToken(result.queueToken);
         setRecentPin(result.checkoutPin ?? null);
         setRecentEmergency(result.emergencyFlag ?? false);
+        // Offer card creation if patient doesn't have one
+        if (!cardFound) { setShowCreateCard(true); setNewCardNumber(null); }
+        setCardLookup(""); setCardFound(null);
         // Auto-route patient to best-fit doctor
         if (result.recordId && form.department) {
           fetch("/api/doctors/route-patient", {
@@ -696,6 +770,40 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
           {/* ═══════ REGISTRATION VIEW ═══════ */}
           {activeNav === "register" && (
             <motion.div key="register" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              {/* Card Lookup Bar */}
+              <div style={{ marginBottom: 16 }}>
+                <WorkshopBox title="Card Lookup" icon="💳" delay={0}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <DInput
+                        label="Card Number Or Phone"
+                        placeholder="DH-XXXXXX Or 0XX-XXX-XXXX"
+                        value={cardLookup}
+                        onChange={(e) => handleCardLookup(e.target.value)}
+                      />
+                    </div>
+                    {cardSearching && (
+                      <span style={{ fontSize: 11, color: "#94A3B8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Searching...</span>
+                    )}
+                    {cardFound && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 8,
+                          padding: "6px 14px", borderRadius: 10,
+                          background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)",
+                        }}
+                      >
+                        <span style={{ fontSize: 12, color: "#22C55E", fontWeight: 700 }}>Card Member Found</span>
+                        <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{cardFound.cardNumber}</span>
+                        <span style={{ fontSize: 10, color: "#64748B" }}>— Details Auto-Filled</span>
+                      </motion.div>
+                    )}
+                  </div>
+                </WorkshopBox>
+              </div>
+
               {/* Row 1: Identity + Photo */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: 16, marginBottom: 16 }}>
                 <WorkshopBox title="Patient Identity" icon="👤" delay={0.05}>
@@ -1490,6 +1598,59 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
                   </div>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══════ CREATE MEMBERSHIP CARD POPUP ═══════ */}
+      <AnimatePresence>
+        {showCreateCard && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)" }}
+              onClick={() => { setShowCreateCard(false); setNewCardNumber(null); }} />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              style={{
+                position: "relative", zIndex: 1, width: 420, padding: 32, borderRadius: 20,
+                background: "rgba(12,8,18,0.95)", border: `1px solid ${COPPER}25`,
+                boxShadow: `0 24px 80px rgba(0,0,0,0.5), 0 0 60px ${COPPER}08`,
+                backdropFilter: "blur(16px)",
+              }}
+            >
+              {newCardNumber ? (
+                <div style={{ textAlign: "center" }}>
+                  <p style={{ fontSize: 12, color: "#22C55E", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12 }}>Card Created</p>
+                  <p style={{ fontSize: 36, fontFamily: "var(--font-jetbrains-mono), monospace", fontWeight: 800, color: "#D4956B", letterSpacing: "0.08em" }}>{newCardNumber}</p>
+                  <p style={{ fontSize: 11, color: "#94A3B8", marginTop: 8 }}>Write This Number On The Patient Card</p>
+                  <button type="button" onClick={() => { setShowCreateCard(false); setNewCardNumber(null); }}
+                    style={{ marginTop: 20, padding: "8px 24px", borderRadius: 10, background: `${COPPER}15`, border: `1px solid ${COPPER}30`, color: "#D4956B", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <h3 style={{ fontSize: 14, fontWeight: 800, color: "#D4956B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Create Membership Card</h3>
+                  <p style={{ fontSize: 11, color: "#94A3B8", marginBottom: 20 }}>Generate A Unique Card Number For This Patient</p>
+                  <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", marginBottom: 20 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "#E2E8F0" }}>{form.fullName || "—"}</p>
+                    <p style={{ fontSize: 11, color: "#64748B", marginTop: 4 }}>{form.phone || "No Phone"} &middot; {form.gender || "—"} &middot; {form.insuranceProvider || "No Insurance"}</p>
+                  </div>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button type="button" onClick={() => { setShowCreateCard(false); setNewCardNumber(null); }}
+                      style={{ flex: 1, padding: "10px 0", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                      Skip
+                    </button>
+                    <button type="button" onClick={handleCreateCard} disabled={creatingCard}
+                      style={{ flex: 1, padding: "10px 0", borderRadius: 10, background: `${COPPER}20`, border: `1px solid ${COPPER}40`, color: "#D4956B", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: creatingCard ? 0.5 : 1 }}>
+                      {creatingCard ? "Creating..." : "Create Card"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

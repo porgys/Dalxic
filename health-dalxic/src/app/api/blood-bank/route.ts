@@ -70,14 +70,17 @@ export async function GET(request: Request) {
     return Response.json({ requests: requests.filter((r) => r.status === "issued"), counts });
   }
 
-  // Default: inventory summary (blood group counts from issued transfusions)
+  // Default: inventory from BloodInventory table
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+  const invRows = await db.bloodInventory.findMany({ where: { hospitalId: hospital.id } });
+  const invMap = new Map(invRows.map((r) => [`${r.bloodType}:${r.component}`, r.units]));
+
   const inventory = bloodGroups.map((bg) => ({
     bloodGroup: bg,
-    wholeBlood: Math.floor(Math.random() * 10), // Placeholder — real inventory would be separate
-    packedRBC: Math.floor(Math.random() * 8),
-    platelets: Math.floor(Math.random() * 5),
-    ffp: Math.floor(Math.random() * 6),
+    wholeBlood: invMap.get(`${bg}:whole_blood`) ?? 0,
+    packedRBC: invMap.get(`${bg}:packed_rbc`) ?? 0,
+    platelets: invMap.get(`${bg}:platelets`) ?? 0,
+    ffp: invMap.get(`${bg}:ffp`) ?? 0,
   }));
 
   return Response.json({ inventory, requests, counts });
@@ -171,7 +174,32 @@ export async function POST(request: Request) {
       await createBillableItem({ hospitalId: hospital.id, patientId: recordId, bookId: book.id, serviceType: "PROCEDURE", description: `Blood: ${requests[idx].component} (${requests[idx].bloodGroup}) x${requests[idx].units}`, unitCost: 150, quantity: requests[idx].units, renderedBy: issuedBy || "blood_bank_officer" });
     }
 
+    // Decrement inventory
+    const compMap: Record<string, string> = { whole_blood: "whole_blood", packed_rbc: "packed_rbc", platelets: "platelets", ffp: "ffp" };
+    const comp = compMap[requests[idx].component] || requests[idx].component;
+    await db.bloodInventory.upsert({
+      where: { hospitalId_bloodType_component: { hospitalId: hospital.id, bloodType: requests[idx].bloodGroup, component: comp } },
+      update: { units: { decrement: requests[idx].units } },
+      create: { hospitalId: hospital.id, bloodType: requests[idx].bloodGroup, component: comp, units: 0 },
+    });
+
     await logAudit({ actorType: "device_operator", actorId: issuedBy || "blood_bank_officer", hospitalId: hospital.id, action: "blood_bank.issued", metadata: { recordId, requestId, component: requests[idx].component, bloodGroup: requests[idx].bloodGroup }, ipAddress: getClientIP(request) });
+
+    return Response.json({ success: true });
+  }
+
+  // Receive / donate blood
+  if (action === "receive") {
+    const { bloodGroup, component, units, receivedBy } = body;
+    if (!bloodGroup || !component || !units) return Response.json({ error: "bloodGroup, component, units required" }, { status: 400 });
+
+    await db.bloodInventory.upsert({
+      where: { hospitalId_bloodType_component: { hospitalId: hospital.id, bloodType: bloodGroup, component } },
+      update: { units: { increment: units } },
+      create: { hospitalId: hospital.id, bloodType: bloodGroup, component, units },
+    });
+
+    await logAudit({ actorType: "device_operator", actorId: receivedBy || "blood_bank_officer", hospitalId: hospital.id, action: "blood_bank.received", metadata: { bloodGroup, component, units }, ipAddress: getClientIP(request) });
 
     return Response.json({ success: true });
   }

@@ -8,13 +8,15 @@ import { rateLimit } from "@/lib/rate-limit";
 // POST: Register patient and assign queue token
 export async function POST(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
-  const { hospitalCode, patient, chiefComplaint, department, symptomSeverity, symptomDuration } = body as {
+  const { hospitalCode, patient, chiefComplaint, department, symptomSeverity, symptomDuration, operatorId, operatorName } = body as {
     hospitalCode: string;
     patient: Patient;
     chiefComplaint: string;
     department: string;
     symptomSeverity?: number;
     symptomDuration?: string;
+    operatorId?: string;
+    operatorName?: string;
   };
 
   if (!hospitalCode || !patient?.fullName || !chiefComplaint) {
@@ -78,7 +80,7 @@ export async function POST(request: Request) {
       diagnosis: JSON.parse(JSON.stringify({ primary: null, secondary: [], icdCodes: [], notes: null })),
       treatment: JSON.parse(JSON.stringify({ prescriptions: [], procedures: [], followUp: null, nextAppointment: null })),
       entryPoint: "manual",
-      createdBy: "device", // TODO: replace with actual device/operator ID
+      createdBy: operatorId || "device",
     },
   });
 
@@ -114,7 +116,7 @@ export async function POST(request: Request) {
 
   await logAudit({
     actorType: "device_operator",
-    actorId: "device",
+    actorId: operatorId || "device",
     hospitalId: hospital.id,
     action: emergencyFlag ? "patient.emergency_registered" : "patient.registered",
     metadata: { queueToken, patientName: patient.fullName, severity, emergencyFlag },

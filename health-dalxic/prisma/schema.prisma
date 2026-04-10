@@ -60,6 +60,8 @@ model Hospital {
   billableItems            BillableItem[]
   bills                    Bill[]
   servicePrices            ServicePrice[]
+  bloodInventory           BloodInventory[]
+  patientCards             PatientCard[]
 
   @@map("hospitals")
 }
@@ -464,6 +466,48 @@ model ChatMessage {
   @@index([hospitalId, toModule, isRead])
   @@index([hospitalId, createdAt])
   @@map("chat_messages")
+}
+
+// ─── Blood Bank Inventory ───
+
+model BloodInventory {
+  id         String   @id @default(cuid())
+  hospitalId String   @map("hospital_id")
+  bloodType  String   @map("blood_type") // A+, A-, B+, B-, AB+, AB-, O+, O-
+  component  String   // whole_blood | packed_rbc | platelets | ffp
+  units      Int      @default(0)
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id])
+
+  @@unique([hospitalId, bloodType, component])
+  @@map("blood_inventory")
+}
+
+// ─── Patient Card / Membership ───
+
+model PatientCard {
+  id                    String   @id @default(cuid())
+  cardNumber            String   @unique @map("card_number") // DH-XXXXXX
+  hospitalId            String   @map("hospital_id")
+  patientName           String   @map("patient_name")
+  dateOfBirth           String?  @map("date_of_birth")
+  phone                 String?
+  gender                String?
+  bloodType             String?  @map("blood_type")
+  allergies             String?
+  insuranceProvider     String?  @map("insurance_provider")
+  insuranceId           String?  @map("insurance_id")
+  emergencyContact      String?  @map("emergency_contact")
+  emergencyContactPhone String?  @map("emergency_contact_phone")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id])
+
+  @@index([hospitalId])
+  @@index([phone])
+  @@map("patient_cards")
 }
 
 // ─── Audit Trail ───
