@@ -10,25 +10,30 @@ const COPPER_LIGHT = "#D4956B";
 const BLUE = "#0EA5E9";
 const OPS_KEY = "dalxic_ops_session";
 
+/** Master role list — keyed to workstation modules where applicable */
 const ROLE_OPTIONS = [
-  { value: "front_desk", label: "Front Desk / Records" },
-  { value: "doctor", label: "Doctor" },
-  { value: "specialist", label: "Specialist / Consultant" },
-  { value: "surgeon", label: "Surgeon" },
-  { value: "pharmacist", label: "Pharmacist" },
-  { value: "lab_tech", label: "Lab Technician" },
-  { value: "nurse", label: "Nurse" },
-  { value: "midwife", label: "Midwife" },
-  { value: "radiologist", label: "Radiologist" },
-  { value: "sonographer", label: "Sonographer" },
-  { value: "anaesthetist", label: "Anaesthetist" },
-  { value: "physiotherapist", label: "Physiotherapist" },
-  { value: "billing", label: "Billing / Accounts" },
-  { value: "records", label: "Medical Records" },
-  { value: "porter", label: "Porter / Orderly" },
-  { value: "it_support", label: "IT Support" },
-  { value: "admin", label: "Hospital Admin" },
-  { value: "super_admin", label: "Super Admin (Dalxic)" },
+  { value: "front_desk", label: "Front Desk / Records", modules: ["front_desk"] },
+  { value: "doctor", label: "Doctor", modules: ["doctor"] },
+  { value: "specialist", label: "Specialist / Consultant", modules: ["doctor"] },
+  { value: "surgeon", label: "Surgeon", modules: ["doctor", "emergency", "icu"] },
+  { value: "pharmacist", label: "Pharmacist", modules: ["pharmacy"] },
+  { value: "lab_tech", label: "Lab Technician", modules: ["lab"] },
+  { value: "nurse", label: "Nurse", modules: ["nurse_station", "injection_room"] },
+  { value: "ward_nurse", label: "Ward Nurse", modules: ["ward_ipd"] },
+  { value: "emergency_nurse", label: "Emergency Nurse", modules: ["emergency"] },
+  { value: "icu_nurse", label: "ICU Nurse", modules: ["icu"] },
+  { value: "midwife", label: "Midwife", modules: ["maternity"] },
+  { value: "radiologist", label: "Radiologist", modules: ["ct_radiology"] },
+  { value: "sonographer", label: "Sonographer", modules: ["ultrasound"] },
+  { value: "anaesthetist", label: "Anaesthetist", modules: ["icu", "emergency"] },
+  { value: "physiotherapist", label: "Physiotherapist", modules: ["ward_ipd"] },
+  { value: "blood_bank_officer", label: "Blood Bank Officer", modules: ["blood_bank"] },
+  { value: "billing", label: "Billing / Accounts", modules: ["billing"] },
+  { value: "records", label: "Medical Records", modules: ["front_desk"] },
+  { value: "porter", label: "Porter / Orderly", modules: [] },
+  { value: "it_support", label: "IT Support", modules: [] },
+  { value: "admin", label: "Hospital Admin", modules: ["admin"] },
+  { value: "super_admin", label: "Super Admin (Dalxic)", modules: [] },
 ];
 
 /* ─── Galaxy Canvas ─── */
@@ -350,6 +355,9 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const enterModuleConfig = (moduleKey: string) => {
     setConfigModule(moduleKey);
     setScreen("module-config");
+    // Default role to the first relevant role for this module
+    const relevantRole = ROLE_OPTIONS.find(r => r.modules.includes(moduleKey));
+    if (relevantRole) setNewOp(o => ({ ...o, role: relevantRole.value }));
     // Auto-select hospital if one is assigned
     if (selectedHospital) loadOperators(selectedHospital);
   };
@@ -899,7 +907,15 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                       <div>
                         <label style={labelStyle}>Role</label>
                         <select value={newOp.role} onChange={e => setNewOp(o => ({ ...o, role: e.target.value }))} style={{ ...inputStyle, appearance: "none" }}>
-                          {ROLE_OPTIONS.map(r => <option key={r.value} value={r.value} style={{ background: "#0a0a14" }}>{r.label}</option>)}
+                          {(() => {
+                            const relevant = ROLE_OPTIONS.filter(r => configModule && r.modules.includes(configModule));
+                            const others = ROLE_OPTIONS.filter(r => !configModule || !r.modules.includes(configModule));
+                            return (<>
+                              {relevant.map(r => <option key={r.value} value={r.value} style={{ background: "#0a0a14" }}>{r.label}</option>)}
+                              {relevant.length > 0 && others.length > 0 && <option disabled style={{ background: "#0a0a14" }}>──────────</option>}
+                              {others.map(r => <option key={r.value} value={r.value} style={{ background: "#0a0a14" }}>{r.label}</option>)}
+                            </>);
+                          })()}
                         </select>
                       </div>
                       <motion.button onClick={handleAddOperator} disabled={addingOp || !newOp.name || newOp.pin.length !== 4}
