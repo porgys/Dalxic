@@ -622,14 +622,14 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
           {/* ═══════════════════════════════════════ */}
           {screen === "tiers" && (
             <motion.div key="tiers" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
-              <div style={{ textAlign: "center", marginBottom: 48 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.4em", textTransform: "uppercase", color: COPPER, marginBottom: 12 }}>Deployment Builder</div>
-                <h1 style={{ fontSize: 36, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em", marginBottom: 8 }}>Select A Tier Template</h1>
-                <p style={{ fontSize: 13, color: "#64748B", maxWidth: 500, margin: "0 auto" }}>Each tier is a starting point. Select one, then freely add or remove modules to build the exact deployment your hospital needs.</p>
+              <div style={{ textAlign: "center", marginBottom: 24 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.4em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Deployment Builder</div>
+                <h1 style={{ fontSize: 32, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em", marginBottom: 6 }}>Select A Tier Template</h1>
+                <p style={{ fontSize: 12, color: "#64748B", maxWidth: 480, margin: "0 auto" }}>Each tier is a starting point. Select one, then freely add or remove modules.</p>
               </div>
 
               {/* Summary bar */}
-              <div style={{ display: "flex", justifyContent: "center", gap: 32, marginBottom: 40 }}>
+              <div style={{ display: "flex", justifyContent: "center", gap: 28, marginBottom: 24 }}>
                 {[
                   { label: "Hospitals", value: hospitals.length, color: COPPER },
                   { label: "Operators Online", value: `${onlineOps} / ${totalDevices}`, color: onlineOps > 0 ? "#22C55E" : "#64748B" },
@@ -668,13 +668,13 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                     >
                       <div style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: 2, background: `linear-gradient(90deg, transparent, ${color}40, transparent)` }} />
 
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <div style={{ fontSize: 32, fontWeight: 800, color, fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em" }}>{tier}</div>
                         <div style={{ padding: "4px 10px", borderRadius: 8, background: `${color}10`, border: `1px solid ${color}20`, fontSize: 10, fontWeight: 700, color }}>{def.maxDevices === 999 ? "Unlimited" : `${def.maxDevices} Devices`}</div>
                       </div>
 
                       <div style={{ fontSize: 16, fontWeight: 700, color: "#F0F4FF", marginBottom: 4, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{def.label}</div>
-                      <div style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5, marginBottom: 16 }}>{def.description}</div>
+                      <div style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5, marginBottom: 10 }}>{def.description}</div>
 
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -699,7 +699,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 whileTap={{ scale: 0.99 }}
                 onClick={() => selectTier("MASTER" as TierKey)}
                 style={{
-                  width: "100%", textAlign: "left", cursor: "pointer", padding: "32px 32px", borderRadius: 22, marginTop: 20,
+                  width: "100%", textAlign: "left", cursor: "pointer", padding: "28px 32px", borderRadius: 22, marginTop: 14,
                   background: `linear-gradient(135deg, ${COPPER}06, rgba(168,85,247,0.03), transparent)`,
                   border: `1.5px solid ${COPPER}25`,
                   backdropFilter: "blur(12px)", position: "relative", overflow: "hidden",
@@ -733,7 +733,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
               </motion.button>
 
               {/* LEGO tagline */}
-              <div style={{ textAlign: "center", marginTop: 32 }}>
+              <div style={{ textAlign: "center", marginTop: 20 }}>
                 <div style={{ fontSize: 11, color: "#334155", fontWeight: 600, letterSpacing: "0.15em", textTransform: "uppercase" }}>Plug And Play — Lets LEGO</div>
               </div>
             </motion.div>
