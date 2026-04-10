@@ -1390,8 +1390,8 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                           boxShadow: `0 32px 100px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.03)`,
                         }}>
                         {/* Side accent strips — full height, even solid color on both sides */}
-                        <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: COPPER, borderRadius: "28px 0 0 28px" }} />
-                        <div style={{ position: "absolute", top: 0, right: 0, width: 3, height: "100%", background: COPPER, borderRadius: "0 28px 28px 0" }} />
+                        <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: "#4A3728", borderRadius: "28px 0 0 28px" }} />
+                        <div style={{ position: "absolute", top: 0, right: 0, width: 3, height: "100%", background: "#4A3728", borderRadius: "0 28px 28px 0" }} />
 
                         <div style={{ padding: "32px 28px 28px" }}>
                           {/* Close button */}
