@@ -497,6 +497,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
 
   // Online operators
   const [onlineOps, setOnlineOps] = useState(0);
+  const [showTierPopup, setShowTierPopup] = useState(false);
 
   // Group folding
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -909,8 +910,108 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 )}
                 <StatCard icon="👤" label="Total Patients" value={totalPatients.toLocaleString()} color={BLUE} />
                 <StatCard icon="📱" label="Operators Online" value={`${onlineOps} / ${totalDevices}`} color={onlineOps > 0 ? "#22C55E" : "#64748B"} />
-                <StatCard icon="📦" label="Tier Spread" value={(() => { const counts: Record<string, number> = {}; hospitals.forEach(h => { counts[h.tier] = (counts[h.tier] || 0) + 1; }); return Object.entries(counts).map(([t, c]) => `${t}:${c}`).join(" ") || "—"; })()} color="#A855F7" />
+                {/* Tier Spread — clickable with popup */}
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                  onClick={() => setShowTierPopup(true)}
+                  style={{
+                    padding: "24px 20px", borderRadius: 18, cursor: "pointer",
+                    background: "rgba(255,255,255,0.02)", border: "1px solid #A855F712",
+                    backdropFilter: "blur(12px)", position: "relative", overflow: "hidden",
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <div style={{ position: "absolute", top: 0, left: "20%", right: "20%", height: 1, background: "linear-gradient(90deg, transparent, #A855F720, transparent)" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                    <span style={{ fontSize: 20 }}>📦</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B" }}>Tier Spread</span>
+                  </div>
+                  <div style={{ fontSize: 32, fontWeight: 800, color: "#A855F7", fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em" }}>
+                    {hospitals.length}
+                  </div>
+                  <div style={{ fontSize: 10, color: "#64748B", marginTop: 4, fontWeight: 600 }}>Click To View</div>
+                </motion.div>
               </div>
+
+              {/* Tier Spread Popup */}
+              <AnimatePresence>
+                {showTierPopup && (
+                  <motion.div
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    onClick={() => setShowTierPopup(false)}
+                    style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                      onClick={e => e.stopPropagation()}
+                      style={{
+                        background: "rgba(10,10,20,0.95)", border: "1px solid rgba(168,85,247,0.15)",
+                        borderRadius: 24, padding: "36px 40px", minWidth: 360, maxWidth: 480,
+                        backdropFilter: "blur(24px)", boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: "#A855F7", marginBottom: 6 }}>Tier Distribution</div>
+                          <h3 style={{ fontSize: 22, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", margin: 0 }}>
+                            {hospitals.length} Hospital{hospitals.length !== 1 ? "s" : ""}
+                          </h3>
+                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                          onClick={() => setShowTierPopup(false)}
+                          style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#64748B", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                        >
+                          ✕
+                        </motion.button>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {(["T1", "T2", "T3", "T4"] as const).map(tier => {
+                          const tierHospitals = hospitals.filter(h => h.tier === tier);
+                          const tierDef = TIER_DEFAULTS[tier];
+                          const barWidth = hospitals.length > 0 ? (tierHospitals.length / hospitals.length) * 100 : 0;
+                          return (
+                            <div key={tier} style={{ background: "rgba(255,255,255,0.02)", borderRadius: 14, padding: "16px 18px", border: "1px solid rgba(255,255,255,0.04)" }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, #A855F720, #A855F708)`, border: "1px solid #A855F720", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#A855F7", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+                                    {tier}
+                                  </div>
+                                  <div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: "#F0F4FF" }}>{tierDef.label}</div>
+                                    <div style={{ fontSize: 10, color: "#64748B", marginTop: 2 }}>{tierDef.modules.length} Modules</div>
+                                  </div>
+                                </div>
+                                <div style={{ fontSize: 28, fontWeight: 800, color: tierHospitals.length > 0 ? "#A855F7" : "#2a2a3a", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+                                  {tierHospitals.length}
+                                </div>
+                              </div>
+                              {/* Distribution bar */}
+                              <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
+                                <motion.div
+                                  initial={{ width: 0 }} animate={{ width: `${barWidth}%` }}
+                                  transition={{ duration: 0.6, ease: "easeOut" }}
+                                  style={{ height: "100%", borderRadius: 2, background: tierHospitals.length > 0 ? "linear-gradient(90deg, #A855F7, #C084FC)" : "transparent" }}
+                                />
+                              </div>
+                              {tierHospitals.length > 0 && (
+                                <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                  {tierHospitals.map(h => (
+                                    <span key={h.id} style={{ fontSize: 10, fontWeight: 600, color: "#C084FC", background: "#A855F710", padding: "3px 10px", borderRadius: 6, border: "1px solid #A855F715" }}>
+                                      {h.code}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Hospital quick list — grouped */}
               <div style={{ marginBottom: 36 }}>
