@@ -300,7 +300,7 @@ function EncryptedGate({ onUnlock }: { onUnlock: () => void }) {
    OPERATING PLATFORM — Master Control
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-type OpsView = "command" | "hospitals" | "operators" | "tiers" | "audit" | "modules" | "groups";
+type OpsView = "command" | "hospitals" | "operators" | "tiers" | "audit" | "modules" | "groups" | "access";
 
 interface HospitalItem {
   id: string; code: string; name: string; subdomain: string;
@@ -529,6 +529,46 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [groupMsg, setGroupMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [linkHospitalCode, setLinkHospitalCode] = useState("");
+
+  // Access grants state
+  interface AccessGrantItem { id: string; dalxicStaffId: string; grantedRole: string; grantedBy: string; reason: string; isActive: boolean; grantedAt: string; expiresAt: string; revokedAt: string | null; dalxicStaff?: { name: string; email: string }; hospital?: { code: string; name: string } }
+  const [accessGrants, setAccessGrants] = useState<AccessGrantItem[]>([]);
+  const [newGrant, setNewGrant] = useState({ staffId: "", hospitalId: "", role: "viewer", reason: "", hours: "24" });
+  const [grantMsg, setGrantMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  const loadAccessGrants = useCallback(async () => {
+    try {
+      const res = await fetch("/api/access-grants");
+      if (res.ok) setAccessGrants(await res.json());
+    } catch { /* */ }
+  }, []);
+
+  const handleCreateGrant = async () => {
+    if (!newGrant.staffId || !newGrant.hospitalId || !newGrant.reason) { setGrantMsg({ type: "err", text: "All fields required" }); return; }
+    const expiresAt = new Date(Date.now() + parseInt(newGrant.hours) * 60 * 60 * 1000).toISOString();
+    const res = await fetch("/api/access-grants", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dalxicStaffId: newGrant.staffId, hospitalId: newGrant.hospitalId, grantedRole: newGrant.role, grantedBy: "ops-admin", expiresAt, reason: newGrant.reason }),
+    });
+    if (res.ok) {
+      setGrantMsg({ type: "ok", text: "Access granted" });
+      setNewGrant({ staffId: "", hospitalId: "", role: "viewer", reason: "", hours: "24" });
+      loadAccessGrants();
+    } else {
+      const err = await res.json();
+      setGrantMsg({ type: "err", text: err.error || "Failed" });
+    }
+  };
+
+  const handleRevokeGrant = async (grantId: string) => {
+    const res = await fetch("/api/access-grants", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ grantId, revokedBy: "ops-admin" }),
+    });
+    if (res.ok) loadAccessGrants();
+  };
 
   const loadHospitals = useCallback(async () => {
     try {
@@ -784,6 +824,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
             <NavPill icon="📦" label="Tiers" active={view === "tiers"} onClick={() => setView("tiers")} />
             <NavPill icon="🧩" label="Modules" active={view === "modules"} onClick={() => setView("modules")} />
             <NavPill icon="📋" label="Audit" active={view === "audit"} onClick={() => setView("audit")} />
+            <NavPill icon="🔑" label="Access" active={view === "access"} onClick={() => { setView("access"); loadAccessGrants(); }} />
           </div>
         </div>
 
@@ -1909,6 +1950,96 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   Audit logs cannot be filtered, hidden, or deleted by any user level — including Dalxic super admins.
                   This ensures full regulatory compliance across Ghana DPA, Nigeria NDPR, Kenya DPA, and South Africa POPIA.
                 </p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ═══════ ACCESS GRANTS ═══════ */}
+          {view === "access" && (
+            <motion.div key="access" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Staff Access Control</div>
+                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Access Grants</h2>
+              </div>
+
+              {/* Create grant form */}
+              <div style={{ padding: "24px 20px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10`, marginBottom: 24 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: COPPER_LIGHT, marginBottom: 14 }}>Grant Temporary Access</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <input value={newGrant.staffId} onChange={(e) => setNewGrant(g => ({ ...g, staffId: e.target.value }))} placeholder="Dalxic Staff ID"
+                    style={{ padding: "9px 12px", borderRadius: 8, fontSize: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "white", outline: "none" }} />
+                  <select value={newGrant.hospitalId} onChange={(e) => setNewGrant(g => ({ ...g, hospitalId: e.target.value }))}
+                    style={{ padding: "9px 12px", borderRadius: 8, fontSize: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "white", outline: "none" }}>
+                    <option value="">Select Hospital...</option>
+                    {hospitals.map(h => <option key={h.id} value={h.id}>{h.code} — {h.name}</option>)}
+                  </select>
+                  <select value={newGrant.role} onChange={(e) => setNewGrant(g => ({ ...g, role: e.target.value }))}
+                    style={{ padding: "9px 12px", borderRadius: 8, fontSize: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "white", outline: "none" }}>
+                    <option value="viewer">Viewer (Read Only)</option>
+                    <option value="support">Support (Read + Notes)</option>
+                    <option value="admin">Admin (Full Access)</option>
+                  </select>
+                  <select value={newGrant.hours} onChange={(e) => setNewGrant(g => ({ ...g, hours: e.target.value }))}
+                    style={{ padding: "9px 12px", borderRadius: 8, fontSize: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "white", outline: "none" }}>
+                    <option value="1">1 Hour</option>
+                    <option value="4">4 Hours</option>
+                    <option value="8">8 Hours</option>
+                    <option value="24">24 Hours</option>
+                    <option value="72">3 Days</option>
+                    <option value="168">7 Days</option>
+                  </select>
+                </div>
+                <input value={newGrant.reason} onChange={(e) => setNewGrant(g => ({ ...g, reason: e.target.value }))} placeholder="Reason for access grant"
+                  style={{ width: "100%", marginTop: 10, padding: "9px 12px", borderRadius: 8, fontSize: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "white", outline: "none" }} />
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleCreateGrant}
+                    style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none" }}>
+                    Grant Access
+                  </motion.button>
+                  {grantMsg && <span style={{ fontSize: 11, fontWeight: 600, color: grantMsg.type === "ok" ? "#22C55E" : "#F87171" }}>{grantMsg.text}</span>}
+                </div>
+              </div>
+
+              {/* Active grants list */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {accessGrants.length === 0 && (
+                  <div style={{ padding: 32, textAlign: "center", color: "#475569", fontSize: 13 }}>No active access grants</div>
+                )}
+                {accessGrants.map((grant) => {
+                  const expired = new Date(grant.expiresAt) < new Date();
+                  return (
+                    <div key={grant.id} style={{
+                      padding: "14px 18px", borderRadius: 12,
+                      background: expired ? "rgba(255,255,255,0.01)" : "rgba(255,255,255,0.02)",
+                      border: `1px solid ${expired ? "rgba(239,68,68,0.12)" : `${COPPER}10`}`,
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      opacity: expired ? 0.5 : 1,
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>
+                          {grant.dalxicStaff?.name || grant.dalxicStaffId}
+                          <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: grant.grantedRole === "admin" ? "rgba(239,68,68,0.1)" : grant.grantedRole === "support" ? "rgba(245,158,11,0.1)" : "rgba(14,165,233,0.1)", color: grant.grantedRole === "admin" ? "#F87171" : grant.grantedRole === "support" ? "#F59E0B" : "#38BDF8" }}>
+                            {grant.grantedRole.toUpperCase()}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+                          {grant.hospital?.name || "All"} — {grant.reason}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#475569", marginTop: 2 }}>
+                          Granted: {new Date(grant.grantedAt).toLocaleString()} · Expires: {new Date(grant.expiresAt).toLocaleString()}
+                          {expired && <span style={{ color: "#EF4444", fontWeight: 700 }}> · EXPIRED</span>}
+                          {grant.revokedAt && <span style={{ color: "#EF4444", fontWeight: 700 }}> · REVOKED</span>}
+                        </div>
+                      </div>
+                      {grant.isActive && !expired && (
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => handleRevokeGrant(grant.id)}
+                          style={{ padding: "6px 14px", borderRadius: 6, fontSize: 11, fontWeight: 600, color: "#EF4444", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", cursor: "pointer" }}>
+                          Revoke
+                        </motion.button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </motion.div>
           )}

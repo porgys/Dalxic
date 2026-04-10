@@ -408,6 +408,14 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
         setRecentToken(result.queueToken);
         setRecentPin(result.checkoutPin ?? null);
         setRecentEmergency(result.emergencyFlag ?? false);
+        // Auto-route patient to best-fit doctor
+        if (result.recordId && form.department) {
+          fetch("/api/doctors/route-patient", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, department: form.department, recordId: result.recordId }),
+          }).catch(() => {});
+        }
         // Reset form but keep date
         setForm((p) => ({
           ...p, fullName: "", gender: "", phone: "", email: "", maritalStatus: "",

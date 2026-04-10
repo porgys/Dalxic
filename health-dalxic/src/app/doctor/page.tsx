@@ -210,6 +210,18 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [ibSending, setIbSending] = useState(false);
   const [ibIncoming, setIbIncoming] = useState<{ id: string; fromHospitalCode: string; fromHospitalName: string; toHospitalCode: string; department: string; priority: string; status: string; clinicalReason: string; referringDoctorName: string; patientName: string; patientRecordId: string; createdAt: string }[]>([]);
 
+  // Shift handover state
+  const [showHandover, setShowHandover] = useState(false);
+  const [handoverDoctors, setHandoverDoctors] = useState<{ id: string; name: string; specialty: string; status: string }[]>([]);
+  const [handoverTarget, setHandoverTarget] = useState("");
+  const [handoverNotes, setHandoverNotes] = useState("");
+  const [handoverSending, setHandoverSending] = useState(false);
+
+  // WhatsApp & PDF state
+  const [waPhone, setWaPhone] = useState("");
+  const [waSending, setWaSending] = useState(false);
+  const [waResult, setWaResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
   // Check group membership + load branches
   useEffect(() => {
     (async () => {
@@ -284,6 +296,60 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "accept", groupCode: hospitalGroup.groupCode, hospitalCode: HOSPITAL_CODE, recordId: referral.patientRecordId, referralId: referral.id, operatorName: operator.operatorName }),
     });
+  };
+
+  // Load available doctors for handover
+  const loadHandoverDoctors = async () => {
+    try {
+      const res = await fetch(`/api/doctors?hospitalCode=${HOSPITAL_CODE}&available=true`);
+      if (res.ok) {
+        const data = await res.json();
+        setHandoverDoctors((data || []).filter((d: { id: string }) => d.id !== doctorId));
+      }
+    } catch { /* */ }
+  };
+
+  const handleShiftHandover = async () => {
+    if (!handoverTarget || !doctorId) return;
+    setHandoverSending(true);
+    try {
+      const res = await fetch("/api/doctors/handover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, outgoingDoctorId: doctorId, incomingDoctorId: handoverTarget, notes: handoverNotes || undefined }),
+      });
+      if (res.ok) {
+        setShowHandover(false);
+        setHandoverTarget("");
+        setHandoverNotes("");
+        setDoctorStatus("OFF_DUTY");
+      }
+    } catch { /* */ }
+    setHandoverSending(false);
+  };
+
+  // WhatsApp send
+  const handleWhatsAppSend = async () => {
+    if (!activeSession?.recordId || !waPhone.trim()) return;
+    setWaSending(true);
+    setWaResult(null);
+    try {
+      const res = await fetch("/api/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordId: activeSession.recordId, phoneNumber: waPhone }),
+      });
+      if (res.ok) {
+        setWaResult({ ok: true, msg: "Report sent via WhatsApp" });
+        setWaPhone("");
+      } else {
+        const err = await res.json();
+        setWaResult({ ok: false, msg: err.error || "Send failed" });
+      }
+    } catch {
+      setWaResult({ ok: false, msg: "Network error" });
+    }
+    setWaSending(false);
   };
 
   const loadQueue = useCallback(async () => {
@@ -523,6 +589,15 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                     textAlign: "left",
                   }}>
                   {voiceEnabled ? "🔊" : "🔇"} Voice Callout {voiceEnabled ? "On" : "Off"}
+                </button>
+                <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", margin: "4px 0" }} />
+                <button type="button" onClick={() => { setShowHandover(true); setShowStatusMenu(false); loadHandoverDoctors(); }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "7px 10px", borderRadius: 6,
+                    background: "transparent", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 500, color: "#F59E0B",
+                    textAlign: "left",
+                  }}>
+                  🔄 Shift Handover
                 </button>
               </div>
             )}
@@ -1025,6 +1100,38 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                     {ending ? "Saving..." : prescriptions.some((p) => p.medication) ? "End — Send To Pharmacy" : "End Consultation — Close"}
                   </motion.button>
                 </motion.div>
+
+                {/* ── Quick Actions: PDF + WhatsApp ── */}
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <button type="button" onClick={() => window.open(`/api/reports?recordId=${activeSession.recordId}&type=patient`, "_blank")}
+                    style={{ flex: 1, padding: "8px 12px", borderRadius: 8, fontSize: 11, fontWeight: 600, color: "#94A3B8", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+                    📄 Download PDF
+                  </button>
+                  <button type="button" onClick={() => { setWaPhone(activeSession.patient?.phone || ""); setWaResult(null); }}
+                    style={{ flex: 1, padding: "8px 12px", borderRadius: 8, fontSize: 11, fontWeight: 600, color: "#25D366", background: "rgba(37,211,102,0.05)", border: "1px solid rgba(37,211,102,0.15)", cursor: "pointer" }}>
+                    💬 Send Via WhatsApp
+                  </button>
+                </div>
+                {/* WhatsApp phone input */}
+                {waPhone !== "" && (
+                  <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
+                    <input value={waPhone} onChange={(e) => setWaPhone(e.target.value)} placeholder="Phone (e.g. 0244123456)"
+                      style={{ flex: 1, padding: "7px 10px", borderRadius: 8, fontSize: 11, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(37,211,102,0.15)", color: "white", outline: "none" }} />
+                    <button type="button" onClick={handleWhatsAppSend} disabled={waSending || !waPhone.trim()}
+                      style={{ padding: "7px 14px", borderRadius: 8, fontSize: 11, fontWeight: 600, color: "white", background: "#25D366", border: "none", cursor: "pointer", opacity: waSending ? 0.6 : 1 }}>
+                      {waSending ? "Sending..." : "Send"}
+                    </button>
+                    <button type="button" onClick={() => { setWaPhone(""); setWaResult(null); }}
+                      style={{ padding: "7px 10px", borderRadius: 8, fontSize: 11, color: "#64748B", background: "transparent", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+                      ✕
+                    </button>
+                  </div>
+                )}
+                {waResult && (
+                  <div style={{ marginTop: 4, fontSize: 10, fontWeight: 600, color: waResult.ok ? "#25D366" : "#F87171" }}>
+                    {waResult.msg}
+                  </div>
+                )}
               </motion.div>
             ) : (
               /* ── Empty state ── */
@@ -1050,6 +1157,40 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         </div>
       </div>
     </div>
+    {/* ── Shift Handover Modal ── */}
+    {showHandover && (
+      <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
+        onClick={(e) => { if (e.target === e.currentTarget) setShowHandover(false); }}>
+        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          style={{ width: 420, padding: 28, borderRadius: 16, background: "rgba(10,10,20,0.97)", border: `1px solid ${COPPER}20`, backdropFilter: "blur(16px)" }}>
+          <h3 style={{ fontSize: 16, fontWeight: 800, color: "#F59E0B", marginBottom: 16 }}>🔄 Shift Handover</h3>
+          <p style={{ fontSize: 11, color: "#94A3B8", marginBottom: 16 }}>Transfer all your active patients to the incoming doctor. Your status will be set to Off Duty.</p>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", letterSpacing: "0.1em", textTransform: "uppercase" }}>Incoming Doctor</label>
+            <select value={handoverTarget} onChange={(e) => setHandoverTarget(e.target.value)}
+              style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, fontSize: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "white", outline: "none" }}>
+              <option value="">Select Doctor...</option>
+              {handoverDoctors.map(d => <option key={d.id} value={d.id}>{d.name} — {d.specialty} ({d.status})</option>)}
+            </select>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", letterSpacing: "0.1em", textTransform: "uppercase" }}>Handover Notes</label>
+            <textarea value={handoverNotes} onChange={(e) => setHandoverNotes(e.target.value)} placeholder="Key observations, pending actions..."
+              style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, fontSize: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "white", outline: "none", minHeight: 70, resize: "vertical" }} />
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" onClick={() => setShowHandover(false)}
+              style={{ flex: 1, padding: "9px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "#94A3B8", background: "transparent", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+              Cancel
+            </button>
+            <button type="button" onClick={handleShiftHandover} disabled={handoverSending || !handoverTarget}
+              style={{ flex: 1, padding: "9px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", background: "#F59E0B", border: "none", cursor: "pointer", opacity: handoverSending || !handoverTarget ? 0.5 : 1 }}>
+              {handoverSending ? "Transferring..." : "Confirm Handover"}
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    )}
     </StationThemeProvider>
   );
 }
