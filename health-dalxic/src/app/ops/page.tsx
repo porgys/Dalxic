@@ -593,9 +593,9 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
       if (res.ok) {
         setPopupMsg({ type: "ok", text: `${popupOp.name} Added` });
         setPopupOp({ name: "", phone: "", pin: "" });
-        // Refresh operator list
+        // Refresh operator lists
         const opRes = await fetch(`/api/operators?hospitalCode=${detailHospital.code}&activeOnly=false`);
-        if (opRes.ok) { const d = await opRes.json(); setPopupOperators(d.operators || []); }
+        if (opRes.ok) { const d = await opRes.json(); setPopupOperators(d.operators || []); setDetailOperators(d.operators || []); }
       } else { const err = await res.json(); setPopupMsg({ type: "err", text: err.error || "Failed" }); }
     } catch { setPopupMsg({ type: "err", text: "Network Error" }); }
     finally { setPopupAdding(false); }
@@ -1319,8 +1319,17 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   const filtered = moduleFilter === "active" ? allWs.filter(ws => hospitalModules.includes(ws.key))
                     : moduleFilter === "inactive" ? allWs.filter(ws => !hospitalModules.includes(ws.key))
                     : allWs;
+                  // Build role→module mapping for showing operators on cards
+                  const moduleOperatorMap = new Map<string, OperatorItem[]>();
+                  for (const ws of allWs) {
+                    const relevantRoles = ROLE_OPTIONS.filter(r => r.modules.includes(ws.key)).map(r => r.value);
+                    const ops = detailOperators.filter(op => relevantRoles.includes(op.role) && op.isActive);
+                    if (ops.length > 0) moduleOperatorMap.set(ws.key, ops);
+                  }
+
                   return filtered.map((ws, i) => {
                     const isActive = hospitalModules.includes(ws.key);
+                    const moduleOps = moduleOperatorMap.get(ws.key) || [];
                     return (
                       <motion.button key={ws.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
                         whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
@@ -1343,6 +1352,15 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                         {/* Title */}
                         <div style={{ fontSize: 15, fontWeight: 800, color: isActive ? "#F0F4FF" : "#475569", fontFamily: "var(--font-outfit), Outfit, sans-serif", marginBottom: 4 }}>{ws.title}</div>
                         <div style={{ fontSize: 11, color: isActive ? "#64748B" : "#334155", lineHeight: 1.5 }}>{ws.desc}</div>
+
+                        {/* Assigned operators */}
+                        {moduleOps.length > 0 && (
+                          <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {moduleOps.map(op => (
+                              <span key={op.id} style={{ fontSize: 9, fontWeight: 600, color: "#94A3B8", padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>{op.name}</span>
+                            ))}
+                          </div>
+                        )}
 
                         {/* Status dot + toggle */}
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
