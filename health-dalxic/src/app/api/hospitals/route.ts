@@ -81,12 +81,51 @@ export async function PATCH(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
   const { hospitalCode, newTier, actorId } = body;
 
-  if (!hospitalCode || !newTier) {
-    return Response.json({ error: "hospitalCode and newTier required" }, { status: 400 });
+  if (!hospitalCode) {
+    return Response.json({ error: "hospitalCode required" }, { status: 400 });
   }
 
   const hospital = await db.hospital.findUnique({ where: { code: hospitalCode } });
   if (!hospital) return Response.json({ error: "Hospital not found" }, { status: 404 });
+
+  // ── Toggle individual module ──
+  const { toggleModule } = body;
+  if (toggleModule) {
+    const currentModules = (hospital.activeModules as string[]) || [];
+    const tierDefaults = getTierDefaults(hospital.tier);
+    const tierModules = tierDefaults.modules as readonly string[];
+
+    // Can only toggle modules that belong to this hospital's tier
+    if (!tierModules.includes(toggleModule)) {
+      return Response.json({ error: `Module "${toggleModule}" is not available at ${hospital.tier} tier` }, { status: 400 });
+    }
+
+    const isActive = currentModules.includes(toggleModule);
+    const newModules = isActive
+      ? currentModules.filter(m => m !== toggleModule)
+      : [...currentModules, toggleModule];
+
+    const updated = await db.hospital.update({
+      where: { code: hospitalCode },
+      data: { activeModules: newModules },
+    });
+
+    await logAudit({
+      actorType: "dalxic_super_admin",
+      actorId: actorId || "admin",
+      hospitalId: hospital.id,
+      action: isActive ? "hospital.module_deactivated" : "hospital.module_activated",
+      metadata: { module: toggleModule, activeModules: newModules },
+      ipAddress: getClientIP(request),
+    });
+
+    return Response.json(updated);
+  }
+
+  // ── Tier upgrade/downgrade ──
+  if (!newTier) {
+    return Response.json({ error: "newTier or toggleModule required" }, { status: 400 });
+  }
 
   const defaults = getTierDefaults(newTier);
   const oldTier = hospital.tier;

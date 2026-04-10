@@ -304,7 +304,7 @@ type OpsView = "command" | "hospitals" | "operators" | "tiers" | "audit" | "modu
 
 interface HospitalItem {
   id: string; code: string; name: string; subdomain: string;
-  tier: string; active: boolean;
+  tier: string; active: boolean; activeModules?: string[];
   groupId?: string | null; groupCode?: string | null;
   group?: { groupCode: string; name: string } | null;
   _count: { devices: number; monthlyBooks: number; patientRecords: number };
@@ -1769,77 +1769,180 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
               <div style={{ marginBottom: 32 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>System Architecture</div>
                 <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Module Registry</h2>
-                <p style={{ fontSize: 13, color: "#64748B", marginTop: 8 }}>Complete station inventory. Each module is a self-contained LEGO block — plug in, plug out.</p>
+                <p style={{ fontSize: 13, color: "#64748B", marginTop: 8 }}>Select a hospital to view and control its active modules.</p>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-                {ALL_WORKSTATIONS.map((ws, i) => {
-                  const inTiers = (["T1", "T2", "T3", "T4"] as const).filter(t => (TIER_DEFAULTS[t].modules as readonly string[]).includes(ws.key));
+              {/* Hospital picker */}
+              <div style={{
+                padding: "20px 24px", borderRadius: 16, marginBottom: 28,
+                background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}12`,
+                display: "flex", alignItems: "center", gap: 16,
+              }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B", whiteSpace: "nowrap" }}>Hospital</div>
+                <select
+                  value={selectedHospital}
+                  onChange={e => setSelectedHospital(e.target.value)}
+                  style={{
+                    flex: 1, padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600,
+                    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                    color: "#F0F4FF", outline: "none", fontFamily: "var(--font-outfit), Outfit, sans-serif",
+                  }}
+                >
+                  <option value="" style={{ background: "#0a0a14" }}>Select A Hospital</option>
+                  {hospitals.map(h => (
+                    <option key={h.id} value={h.code} style={{ background: "#0a0a14" }}>{h.name} ({h.code}) — {h.tier}</option>
+                  ))}
+                </select>
+                {selectedHospital && (() => {
+                  const h = hospitals.find(x => x.code === selectedHospital);
+                  if (!h) return null;
+                  const tierModules = TIER_DEFAULTS[h.tier as TierKey]?.modules || [];
+                  const activeCount = (h.activeModules || []).length;
                   return (
-                    <motion.div
-                      key={ws.key}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.04 }}
-                      style={{
-                        padding: "20px", borderRadius: 16,
-                        background: "rgba(255,255,255,0.02)",
-                        border: `1px solid ${COPPER}08`,
-                        backdropFilter: "blur(8px)",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                        <span style={{ fontSize: 24 }}>{ws.icon}</span>
-                        <div>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: "#F0F4FF" }}>{ws.title}</div>
-                          <div style={{ fontSize: 10, color: "#64748B" }}>{ws.role}</div>
-                        </div>
-                      </div>
-                      <div style={{ fontSize: 11, color: "#64748B", marginBottom: 12, lineHeight: 1.5 }}>{ws.desc}</div>
-                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                        {inTiers.map(t => {
-                          const colors: Record<string, string> = { T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7" };
-                          return (
-                            <span key={t} style={{
-                              padding: "2px 8px", borderRadius: 5,
-                              background: `${colors[t]}10`, border: `1px solid ${colors[t]}20`,
-                              fontSize: 9, fontWeight: 700, color: colors[t],
-                            }}>
-                              {t}
-                            </span>
-                          );
-                        })}
-                      </div>
-                      <div style={{ marginTop: 10, fontSize: 10, color: "#334155", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
-                        {ws.href}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-
-              {/* Utility stations */}
-              <div style={{ marginTop: 28 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#475569", marginBottom: 14 }}>
-                  Utility Stations (Always Active)
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-                  {UTILITY_STATIONS.map(ws => (
-                    <div key={ws.key} style={{
-                      padding: "16px 18px", borderRadius: 14,
-                      background: "rgba(255,255,255,0.015)",
-                      border: "1px solid rgba(255,255,255,0.03)",
-                      display: "flex", alignItems: "center", gap: 10,
-                    }}>
-                      <span style={{ fontSize: 20 }}>{ws.icon}</span>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#94A3B8" }}>{ws.title}</div>
-                        <div style={{ fontSize: 10, color: "#475569" }}>{ws.desc}</div>
+                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                      <div style={{ fontSize: 11, color: "#64748B" }}>
+                        <span style={{ color: "#22C55E", fontWeight: 800, fontSize: 18 }}>{activeCount}</span>
+                        <span style={{ margin: "0 4px" }}>/</span>
+                        <span style={{ fontWeight: 700 }}>{tierModules.length}</span>
+                        <span style={{ marginLeft: 4 }}>Active</span>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
               </div>
+
+              {!selectedHospital ? (
+                <div style={{ textAlign: "center", padding: "60px 0", color: "#334155", fontSize: 14, fontWeight: 600 }}>
+                  Select A Hospital Above To View Module Status
+                </div>
+              ) : (() => {
+                const h = hospitals.find(x => x.code === selectedHospital);
+                if (!h) return null;
+                const tierModules = (TIER_DEFAULTS[h.tier as TierKey]?.modules || []) as readonly string[];
+                const activeModules = h.activeModules || [];
+
+                const handleToggle = async (moduleKey: string) => {
+                  try {
+                    const res = await fetch("/api/hospitals", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ hospitalCode: h.code, toggleModule: moduleKey }),
+                    });
+                    if (res.ok) {
+                      const updated = await res.json();
+                      setHospitals(prev => prev.map(p => p.code === h.code ? { ...p, activeModules: updated.activeModules } : p));
+                    }
+                  } catch { /* silent */ }
+                };
+
+                return (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                      {ALL_WORKSTATIONS.map((ws, i) => {
+                        const availableAtTier = tierModules.includes(ws.key);
+                        const isActive = activeModules.includes(ws.key);
+                        const inTiers = (["T1", "T2", "T3", "T4"] as const).filter(t => (TIER_DEFAULTS[t].modules as readonly string[]).includes(ws.key));
+
+                        return (
+                          <motion.div
+                            key={ws.key}
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.04 }}
+                            style={{
+                              padding: "20px", borderRadius: 16,
+                              background: !availableAtTier ? "rgba(255,255,255,0.01)" : isActive ? "rgba(34,197,94,0.03)" : "rgba(255,255,255,0.02)",
+                              border: `1px solid ${!availableAtTier ? "rgba(255,255,255,0.03)" : isActive ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.1)"}`,
+                              backdropFilter: "blur(8px)",
+                              opacity: availableAtTier ? 1 : 0.4,
+                              position: "relative",
+                            }}
+                          >
+                            {/* Status indicator dot */}
+                            <div style={{
+                              position: "absolute", top: 16, right: 16,
+                              width: 10, height: 10, borderRadius: "50%",
+                              background: !availableAtTier ? "#334155" : isActive ? "#22C55E" : "#EF4444",
+                              boxShadow: isActive ? "0 0 8px rgba(34,197,94,0.4)" : "none",
+                            }} />
+
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                              <span style={{ fontSize: 24 }}>{ws.icon}</span>
+                              <div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: !availableAtTier ? "#475569" : "#F0F4FF" }}>{ws.title}</div>
+                                <div style={{ fontSize: 10, color: "#64748B" }}>{ws.role}</div>
+                              </div>
+                            </div>
+                            <div style={{ fontSize: 11, color: "#64748B", marginBottom: 12, lineHeight: 1.5 }}>{ws.desc}</div>
+
+                            {/* Tier badges */}
+                            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 12 }}>
+                              {inTiers.map(t => {
+                                const colors: Record<string, string> = { T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7" };
+                                return (
+                                  <span key={t} style={{
+                                    padding: "2px 8px", borderRadius: 5,
+                                    background: `${colors[t]}10`, border: `1px solid ${colors[t]}20`,
+                                    fontSize: 9, fontWeight: 700, color: colors[t],
+                                  }}>
+                                    {t}
+                                  </span>
+                                );
+                              })}
+                            </div>
+
+                            {/* Toggle switch — only for modules available at this tier */}
+                            {availableAtTier ? (
+                              <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                                onClick={() => handleToggle(ws.key)}
+                                style={{
+                                  width: "100%", padding: "8px 0", borderRadius: 8,
+                                  fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
+                                  cursor: "pointer", border: "none",
+                                  background: isActive ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.08)",
+                                  color: isActive ? "#22C55E" : "#EF4444",
+                                }}
+                              >
+                                {isActive ? "Active — Click To Deactivate" : "Inactive — Click To Activate"}
+                              </motion.button>
+                            ) : (
+                              <div style={{ padding: "8px 0", textAlign: "center", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#334155" }}>
+                                Not Available At {h.tier}
+                              </div>
+                            )}
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Utility stations */}
+                    <div style={{ marginTop: 28 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#475569", marginBottom: 14 }}>
+                        Utility Stations (Always Active)
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                        {UTILITY_STATIONS.map(ws => (
+                          <div key={ws.key} style={{
+                            padding: "16px 18px", borderRadius: 14,
+                            background: "rgba(34,197,94,0.03)",
+                            border: "1px solid rgba(34,197,94,0.1)",
+                            display: "flex", alignItems: "center", gap: 10,
+                            position: "relative",
+                          }}>
+                            <div style={{ position: "absolute", top: 12, right: 14, width: 8, height: 8, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 6px rgba(34,197,94,0.4)" }} />
+                            <span style={{ fontSize: 20 }}>{ws.icon}</span>
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "#94A3B8" }}>{ws.title}</div>
+                              <div style={{ fontSize: 10, color: "#475569" }}>{ws.desc}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </motion.div>
           )}
 
