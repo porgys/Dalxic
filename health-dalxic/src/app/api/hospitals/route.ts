@@ -115,17 +115,9 @@ export async function PATCH(request: Request) {
     return Response.json(updated);
   }
 
-  // ── Toggle individual module ──
+  // ── Toggle individual module (freestyle — not tier-restricted) ──
   if (toggleModule) {
     const currentModules = (hospital.activeModules as string[]) || [];
-    const tierDefaults = getTierDefaults(hospital.tier);
-    const tierModules = tierDefaults.modules as readonly string[];
-
-    // Can only toggle modules that belong to this hospital's tier
-    if (!tierModules.includes(toggleModule)) {
-      return Response.json({ error: `Module "${toggleModule}" is not available at ${hospital.tier} tier` }, { status: 400 });
-    }
-
     const isActive = currentModules.includes(toggleModule);
     const newModules = isActive
       ? currentModules.filter(m => m !== toggleModule)

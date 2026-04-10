@@ -1242,7 +1242,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   { label: "Patient Records", value: detailHospital._count.patientRecords.toLocaleString(), color: BLUE, icon: "👤" },
                   { label: "Devices", value: detailDevices.length || detailHospital._count.devices, color: "#22C55E", icon: "📱" },
                   { label: "Operators", value: detailOperators.length, color: COPPER, icon: "🧑‍⚕️" },
-                  { label: "Active Modules", value: `${(detailHospital.activeModules || []).length} / ${TIER_DEFAULTS[detailHospital.tier as TierKey]?.modules.length || "?"}`, color: COPPER_LIGHT, icon: "🧩" },
+                  { label: "Active Modules", value: `${(detailHospital.activeModules || []).length} / ${ALL_WORKSTATIONS.length + UTILITY_STATIONS.length}`, color: COPPER_LIGHT, icon: "🧩" },
                 ].map(s => (
                   <div key={s.label} style={{ padding: "20px 18px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: `1px solid ${s.color}12` }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
@@ -1260,17 +1260,14 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   <div>
                     <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 6 }}>Module Control</div>
                     <div style={{ fontSize: 12, color: "#64748B" }}>
-                      {(detailHospital.activeModules || []).length} Of {TIER_DEFAULTS[detailHospital.tier as TierKey]?.modules.length || 0} Modules Active — Toggle Any Module On Or Off
+                      {(detailHospital.activeModules || []).length} Of {ALL_WORKSTATIONS.length + UTILITY_STATIONS.length} Modules Active — Freestyle, Add Or Remove Any Module
                     </div>
                   </div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
                   {(() => {
-                    const tierDef = TIER_DEFAULTS[detailHospital.tier as TierKey];
-                    if (!tierDef) return null;
-                    const tierModuleKeys = tierDef.modules as readonly string[];
                     const hospitalModules = (detailHospital.activeModules || []) as string[];
-                    return [...ALL_WORKSTATIONS, ...UTILITY_STATIONS].filter(ws => tierModuleKeys.includes(ws.key)).map((ws, i) => {
+                    return [...ALL_WORKSTATIONS, ...UTILITY_STATIONS].map((ws, i) => {
                       const isActive = hospitalModules.includes(ws.key);
                       return (
                         <motion.div key={ws.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
