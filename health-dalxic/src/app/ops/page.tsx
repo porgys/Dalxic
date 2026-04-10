@@ -576,20 +576,20 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
 
   /* ─── Breadcrumb ─── */
   const breadcrumb = (() => {
-    const crumbs: { label: string; onClick?: () => void }[] = [{ label: "Tiers", onClick: () => { setScreen("tiers"); setSelectedTier(null); setConfigModule(null); } }];
-    if (selectedTier && (screen === "modules" || screen === "module-config")) {
+    const crumbs: { label: string; onClick?: () => void }[] = [{ label: "Hospitals", onClick: () => { setScreen("hospitals"); setDetailHospital(null); setConfigModule(null); } }];
+    if (screen === "tiers" || (selectedTier && (screen === "modules" || (screen === "module-config" && !detailHospital)))) {
+      crumbs.push({ label: "Tiers", onClick: () => { setScreen("tiers"); setSelectedTier(null); setConfigModule(null); } });
+    }
+    if (selectedTier && (screen === "modules" || (screen === "module-config" && !detailHospital))) {
       crumbs.push({ label: `${selectedTier} — ${TIER_DEFAULTS[selectedTier].label}`, onClick: () => { setScreen("modules"); setConfigModule(null); } });
     }
     if (configModule && screen === "module-config" && configWs) {
       if (detailHospital) {
-        crumbs.push({ label: "Hospitals", onClick: () => { setScreen("hospitals"); setDetailHospital(null); } });
         crumbs.push({ label: detailHospital.name, onClick: () => { setScreen("hospital-detail"); setConfigModule(null); } });
       }
       crumbs.push({ label: configWs.title });
     }
-    if (screen === "hospitals") crumbs.push({ label: "Hospitals" });
     if (screen === "hospital-detail" && detailHospital) {
-      crumbs.push({ label: "Hospitals", onClick: () => { setScreen("hospitals"); setDetailHospital(null); } });
       crumbs.push({ label: `${detailHospital.code} — ${detailHospital.name}` });
     }
     if (screen === "monitoring") crumbs.push({ label: "Monitoring" });
