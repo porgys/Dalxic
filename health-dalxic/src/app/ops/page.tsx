@@ -10,24 +10,20 @@ const COPPER_LIGHT = "#D4956B";
 const BLUE = "#0EA5E9";
 const OPS_KEY = "dalxic_ops_session";
 
-/** Master role list — keyed to workstation modules where applicable */
+/** Master role list — professional titles, module mapping drives contextual sorting */
 const ROLE_OPTIONS = [
   { value: "front_desk", label: "Front Desk / Records", modules: ["front_desk"] },
-  { value: "doctor", label: "Doctor", modules: ["doctor"] },
-  { value: "specialist", label: "Specialist / Consultant", modules: ["doctor"] },
+  { value: "doctor", label: "Doctor", modules: ["doctor", "ward_ipd", "emergency", "icu", "maternity"] },
+  { value: "specialist", label: "Specialist / Consultant", modules: ["doctor", "ward_ipd"] },
   { value: "surgeon", label: "Surgeon", modules: ["doctor", "emergency", "icu"] },
   { value: "pharmacist", label: "Pharmacist", modules: ["pharmacy"] },
-  { value: "lab_tech", label: "Lab Technician", modules: ["lab"] },
-  { value: "nurse", label: "Nurse", modules: ["nurse_station", "injection_room"] },
-  { value: "ward_nurse", label: "Ward Nurse", modules: ["ward_ipd"] },
-  { value: "emergency_nurse", label: "Emergency Nurse", modules: ["emergency"] },
-  { value: "icu_nurse", label: "ICU Nurse", modules: ["icu"] },
+  { value: "lab_tech", label: "Lab Technician", modules: ["lab", "blood_bank"] },
+  { value: "nurse", label: "Nurse", modules: ["nurse_station", "injection_room", "ward_ipd", "emergency", "icu", "maternity"] },
   { value: "midwife", label: "Midwife", modules: ["maternity"] },
   { value: "radiologist", label: "Radiologist", modules: ["ct_radiology"] },
   { value: "sonographer", label: "Sonographer", modules: ["ultrasound"] },
   { value: "anaesthetist", label: "Anaesthetist", modules: ["icu", "emergency"] },
   { value: "physiotherapist", label: "Physiotherapist", modules: ["ward_ipd"] },
-  { value: "blood_bank_officer", label: "Blood Bank Officer", modules: ["blood_bank"] },
   { value: "billing", label: "Billing / Accounts", modules: ["billing"] },
   { value: "records", label: "Medical Records", modules: ["front_desk"] },
   { value: "porter", label: "Porter / Orderly", modules: [] },
@@ -707,7 +703,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 whileTap={{ scale: 0.99 }}
                 onClick={() => selectTier("MASTER" as TierKey)}
                 style={{
-                  width: "100%", textAlign: "left", cursor: "pointer", padding: "28px 32px", borderRadius: 22, marginTop: 14,
+                  width: "75%", margin: "14px auto 0", textAlign: "left", cursor: "pointer", padding: "28px 32px", borderRadius: 22,
                   background: `linear-gradient(135deg, ${COPPER}06, rgba(168,85,247,0.03), transparent)`,
                   border: `1.5px solid ${COPPER}25`,
                   backdropFilter: "blur(12px)", position: "relative", overflow: "hidden",
