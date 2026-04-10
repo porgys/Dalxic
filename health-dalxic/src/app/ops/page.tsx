@@ -690,8 +690,50 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 })}
               </div>
 
+              {/* MASTER — full-width freestyle card */}
+              <motion.button
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                whileHover={{ scale: 1.01, y: -2 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={() => selectTier("MASTER" as TierKey)}
+                style={{
+                  width: "100%", textAlign: "left", cursor: "pointer", padding: "32px 32px", borderRadius: 22, marginTop: 20,
+                  background: `linear-gradient(135deg, ${COPPER}06, rgba(168,85,247,0.03), transparent)`,
+                  border: `1.5px solid ${COPPER}25`,
+                  backdropFilter: "blur(12px)", position: "relative", overflow: "hidden",
+                  boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
+                }}
+              >
+                <div style={{ position: "absolute", top: 0, left: "5%", right: "5%", height: 2, background: `linear-gradient(90deg, transparent, ${COPPER}50, rgba(168,85,247,0.3), transparent)` }} />
+                <div style={{ position: "absolute", bottom: 0, left: "8%", right: "8%", height: 3, borderRadius: "3px 3px 0 0", background: `linear-gradient(90deg, ${COPPER}, #A855F7)` }} />
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+                    <div style={{ fontSize: 28 }}>⚡</div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+                        <span style={{ fontSize: 24, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em" }}>The Master</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT }}>Privileged Access</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.6, maxWidth: 600 }}>
+                        Every Module Unlocked — Freestyle Configuration For Any Hospital Type. Build Custom Deployments Without Tier Constraints.
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: COPPER, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{ALL_WORKSTATIONS.length + UTILITY_STATIONS.length}</div>
+                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A5568" }}>Modules</div>
+                    </div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={COPPER} strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
+                  </div>
+                </div>
+              </motion.button>
+
               {/* LEGO tagline */}
-              <div style={{ textAlign: "center", marginTop: 40 }}>
+              <div style={{ textAlign: "center", marginTop: 32 }}>
                 <div style={{ fontSize: 11, color: "#334155", fontWeight: 600, letterSpacing: "0.15em", textTransform: "uppercase" }}>Plug And Play — Lets LEGO</div>
               </div>
             </motion.div>

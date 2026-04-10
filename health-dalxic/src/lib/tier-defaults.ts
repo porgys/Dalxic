@@ -76,6 +76,32 @@ export const TIER_DEFAULTS = {
     whatsappBundlePerMonth: 20000,
     description: "Teaching hospitals, national referral hospitals, large private groups",
   },
+  MASTER: {
+    label: "The Master",
+    modules: [
+      "front_desk",
+      "waiting_room",
+      "doctor",
+      "pharmacy",
+      "billing",
+      "lab",
+      "injection_room",
+      "nurse_station",
+      "ct_radiology",
+      "ward_ipd",
+      "ultrasound",
+      "emergency",
+      "icu",
+      "maternity",
+      "blood_bank",
+      "admin",
+      "beds",
+      "display",
+    ],
+    maxDevices: 999,
+    whatsappBundlePerMonth: 50000,
+    description: "Every module unlocked — freestyle configuration for any hospital type",
+  },
 } as const;
 
 export type TierKey = keyof typeof TIER_DEFAULTS;
