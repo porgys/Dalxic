@@ -7,14 +7,9 @@ import { getPusherClient } from "@/lib/pusher-client";
 // ── Purple palette ──
 const PURPLE = "#8B6CC7";
 const PURPLE_LIGHT = "#A78BDB";
-const PURPLE_DEEP = "rgba(20,16,36,0.98)";
-const GLASS = "rgba(255,255,255,0.04)";
-const GLASS_HOVER = "rgba(255,255,255,0.08)";
-const GLASS_ACTIVE = "rgba(255,255,255,0.10)";
 const TEXT_PRIMARY = "#F1F5F9";
 const TEXT_MUTED = "rgba(255,255,255,0.5)";
 const TEXT_DIM = "rgba(255,255,255,0.3)";
-const GREEN = "#22C55E";
 
 interface ChatMsg {
   id: string;

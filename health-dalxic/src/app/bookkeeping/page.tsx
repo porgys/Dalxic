@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
 import type { OperatorSession } from "@/types";
@@ -219,6 +219,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
   const [patientTotal, setPatientTotal] = useState(0);
   const [patientTotalPages, setPatientTotalPages] = useState(1);
   const [selectedPatient, setSelectedPatient] = useState<PatientHistory | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
   // Assessment

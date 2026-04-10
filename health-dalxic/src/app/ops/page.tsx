@@ -208,7 +208,9 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const [hospitals, setHospitals] = useState<HospitalItem[]>([]);
   const [operators, setOperators] = useState<OperatorItem[]>([]);
   const [selectedHospital, setSelectedHospital] = useState<string>("");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [groupDashboard, setGroupDashboard] = useState<GroupDashboard | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedGroup, setSelectedGroup] = useState<string>("");
   const [onlineOps, setOnlineOps] = useState(0);
 
@@ -242,16 +244,21 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   // ─── Hospital Detail ───
   const [detailHospital, setDetailHospital] = useState<HospitalItem | null>(null);
   const [detailOperators, setDetailOperators] = useState<OperatorItem[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailDevices, setDetailDevices] = useState<DeviceItem[]>([]);
   const [editingDetails, setEditingDetails] = useState(false);
   const [detailEditForm, setDetailEditForm] = useState({ name: "", tagline: "", subdomain: "" });
   const [detailEditMsg, setDetailEditMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [changingTier, setChangingTier] = useState(false);
   const [detailNewOp, setDetailNewOp] = useState({ name: "", phone: "", pin: "", role: "front_desk" });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailAddingOp, setDetailAddingOp] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailOpMsg, setDetailOpMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [detailEditOp, setDetailEditOp] = useState<OperatorItem | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailEditOpForm, setDetailEditOpForm] = useState({ name: "", phone: "", role: "", newPin: "" });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailEditOpMsg, setDetailEditOpMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // ─── Module Filter (hospital-detail) ───
@@ -525,6 +532,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     if (detailHospital?.code === hospitalCode) loadHospitalDetail(hospitalCode);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDetailAddOperator = async () => {
     if (!detailHospital || !detailNewOp.name || !detailNewOp.pin || !detailNewOp.role) return;
     setDetailAddingOp(true); setDetailOpMsg(null);
@@ -535,12 +543,14 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     } catch { setDetailOpMsg({ type: "err", text: "Network Error" }); } finally { setDetailAddingOp(false); }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDetailToggleOperator = async (op: OperatorItem) => {
     if (!detailHospital) return;
     await fetch("/api/operators", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, operatorId: op.id, isActive: !op.isActive }) });
     loadHospitalDetail(detailHospital.code);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDetailEditOperator = async () => {
     if (!detailEditOp || !detailHospital) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -554,6 +564,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     else { const err = await res.json(); setDetailEditOpMsg({ type: "err", text: err.error || "Failed" }); }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDetailDeviceAction = async (deviceId: string, action: string) => {
     await fetch("/api/devices", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceId, action, actorId: "ops-admin", actorType: "dalxic_super_admin" }) });
     if (detailHospital) loadHospitalDetail(detailHospital.code);

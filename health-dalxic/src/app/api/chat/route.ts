@@ -7,12 +7,12 @@ export async function GET(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;
   const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
-  const module = searchParams.get("module");
+  const chatModule = searchParams.get("module");
   const view = searchParams.get("view") || "messages"; // "messages" | "conversations" | "staff"
   const withOperator = searchParams.get("withOperator"); // filter messages to/from specific operator
   const limit = parseInt(searchParams.get("limit") || "80");
 
-  if (!hospitalCode || !module) {
+  if (!hospitalCode || !chatModule) {
     return Response.json({ error: "hospitalCode and module required" }, { status: 400 });
   }
 
@@ -46,8 +46,8 @@ export async function GET(request: Request) {
       where: {
         hospitalId: hospital.id,
         OR: [
-          { fromModule: module },
-          { toModule: module },
+          { fromModule: chatModule },
+          { toModule: chatModule },
           { toModule: null },
         ],
       },
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
     }>();
 
     allMessages.forEach(msg => {
-      const isFromMe = msg.fromModule === module;
+      const isFromMe = msg.fromModule === chatModule;
       const partnerId = isFromMe ? (msg.toModule || "broadcast") : msg.fromOperatorId;
       const partnerName = isFromMe ? (msg.toModule ? msg.toModule : "All Stations") : msg.fromOperatorName;
       const partnerModule = isFromMe ? (msg.toModule || "broadcast") : msg.fromModule;
@@ -100,14 +100,14 @@ export async function GET(request: Request) {
   if (withOperator) {
     // Direct conversation with a specific operator
     whereClause.OR = [
-      { fromOperatorId: withOperator, OR: [{ toModule: module }, { toModule: null }] },
-      { fromModule: module, toModule: withOperator },
+      { fromOperatorId: withOperator, OR: [{ toModule: chatModule }, { toModule: null }] },
+      { fromModule: chatModule, toModule: withOperator },
     ];
   } else {
     whereClause.OR = [
-      { toModule: module },
+      { toModule: chatModule },
       { toModule: null },
-      { fromModule: module },
+      { fromModule: chatModule },
     ];
   }
 
@@ -121,8 +121,8 @@ export async function GET(request: Request) {
     where: {
       hospitalId: hospital.id,
       isRead: false,
-      fromModule: { not: module },
-      OR: [{ toModule: module }, { toModule: null }],
+      fromModule: { not: chatModule },
+      OR: [{ toModule: chatModule }, { toModule: null }],
     },
   });
 
@@ -174,9 +174,9 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;
   const body = await request.json();
-  const { hospitalCode, module, fromOperatorId } = body;
+  const { hospitalCode, module: patchModule, fromOperatorId } = body;
 
-  if (!hospitalCode || !module) {
+  if (!hospitalCode || !patchModule) {
     return Response.json({ error: "hospitalCode and module required" }, { status: 400 });
   }
 
@@ -186,8 +186,8 @@ export async function PATCH(request: Request) {
   const readWhere: Record<string, unknown> = {
     hospitalId: hospital.id,
     isRead: false,
-    fromModule: { not: module },
-    OR: [{ toModule: module }, { toModule: null }],
+    fromModule: { not: patchModule },
+    OR: [{ toModule: patchModule }, { toModule: null }],
   };
 
   // Optionally scope to specific sender
