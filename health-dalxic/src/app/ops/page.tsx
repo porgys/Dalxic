@@ -909,7 +909,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 )}
                 <StatCard icon="👤" label="Total Patients" value={totalPatients.toLocaleString()} color={BLUE} />
                 <StatCard icon="📱" label="Operators Online" value={`${onlineOps} / ${totalDevices}`} color={onlineOps > 0 ? "#22C55E" : "#64748B"} />
-                <StatCard icon="📦" label="Tier Templates" value={Object.keys(TIER_DEFAULTS).length} color="#A855F7" />
+                <StatCard icon="📦" label="Tier Spread" value={(() => { const counts: Record<string, number> = {}; hospitals.forEach(h => { counts[h.tier] = (counts[h.tier] || 0) + 1; }); return Object.entries(counts).map(([t, c]) => `${t}:${c}`).join(" ") || "—"; })()} color="#A855F7" />
               </div>
 
               {/* Hospital quick list — grouped */}
