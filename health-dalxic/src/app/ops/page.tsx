@@ -264,6 +264,13 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailEditOpMsg, setDetailEditOpMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
+  // ─── Module Popup (hospital-detail inline config) ───
+  const [modulePopup, setModulePopup] = useState<string | null>(null);
+  const [popupOp, setPopupOp] = useState({ name: "", phone: "", pin: "" });
+  const [popupAdding, setPopupAdding] = useState(false);
+  const [popupMsg, setPopupMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [popupOperators, setPopupOperators] = useState<OperatorItem[]>([]);
+
   // ─── Collapsed groups for tree view ───
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
@@ -555,6 +562,39 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const handleDetailDeviceAction = async (deviceId: string, action: string) => {
     await fetch("/api/devices", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceId, action, actorId: "ops-admin", actorType: "dalxic_super_admin" }) });
     if (detailHospital) loadHospitalDetail(detailHospital.code);
+  };
+
+  /* ─── Module Popup Handlers ─── */
+  const openModulePopup = async (moduleKey: string) => {
+    if (!detailHospital) return;
+    setModulePopup(moduleKey);
+    setPopupOp({ name: "", phone: "", pin: "" });
+    setPopupMsg(null);
+    // Load operators for this hospital filtered by module role
+    try {
+      const res = await fetch(`/api/operators?hospitalCode=${detailHospital.code}&activeOnly=false`);
+      if (res.ok) { const data = await res.json(); setPopupOperators(data); }
+    } catch { /* ignore */ }
+  };
+
+  const handlePopupAddOperator = async () => {
+    if (!detailHospital || !modulePopup || !popupOp.name || popupOp.pin.length !== 4) return;
+    setPopupAdding(true); setPopupMsg(null);
+    // Derive role from the module's workstation role
+    const ws = [...ALL_WORKSTATIONS, ...UTILITY_STATIONS].find(w => w.key === modulePopup);
+    const relevantRole = ROLE_OPTIONS.find(r => r.modules.includes(modulePopup));
+    const role = relevantRole?.value || ws?.key || "front_desk";
+    try {
+      const res = await fetch("/api/operators", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, action: "create", name: popupOp.name, phone: popupOp.phone, pin: popupOp.pin, role }) });
+      if (res.ok) {
+        setPopupMsg({ type: "ok", text: `${popupOp.name} Added` });
+        setPopupOp({ name: "", phone: "", pin: "" });
+        // Refresh operator list
+        const opRes = await fetch(`/api/operators?hospitalCode=${detailHospital.code}&activeOnly=false`);
+        if (opRes.ok) setPopupOperators(await opRes.json());
+      } else { const err = await res.json(); setPopupMsg({ type: "err", text: err.error || "Failed" }); }
+    } catch { setPopupMsg({ type: "err", text: "Network Error" }); }
+    finally { setPopupAdding(false); }
   };
 
   /* ─── Computed ─── */
@@ -1282,10 +1322,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                     return (
                       <motion.button key={ws.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
                         whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
-                        onClick={() => {
-                          setSelectedHospital(detailHospital.code);
-                          enterModuleConfig(ws.key);
-                        }}
+                        onClick={() => openModulePopup(ws.key)}
                         style={{
                           textAlign: "left", cursor: "pointer", padding: "20px 22px", borderRadius: 18,
                           background: isActive ? "rgba(34,197,94,0.03)" : "rgba(255,255,255,0.01)",
@@ -1323,6 +1360,105 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   });
                 })()}
               </div>
+
+              {/* ── Module Config Popup ── */}
+              <AnimatePresence>
+                {modulePopup && (() => {
+                  const popupWs = [...ALL_WORKSTATIONS, ...UTILITY_STATIONS].find(w => w.key === modulePopup);
+                  if (!popupWs) return null;
+                  const popupColor = (detailHospital.activeModules as string[] || []).includes(modulePopup) ? COPPER : "#475569";
+                  return (
+                    <motion.div key="module-popup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      onClick={() => setModulePopup(null)}
+                      style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <motion.div initial={{ opacity: 0, scale: 0.92, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.92 }}
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                          background: "rgba(10,10,20,0.97)", borderRadius: 28, width: 480, maxHeight: "85vh", overflow: "auto",
+                          border: `1px solid ${popupColor}20`, position: "relative",
+                          boxShadow: `0 32px 100px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.03)`,
+                        }}>
+                        {/* Top accent glow — pricing card style */}
+                        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, borderRadius: "28px 28px 0 0", background: `linear-gradient(90deg, ${COPPER}, ${popupColor}, ${COPPER}40)` }} />
+                        {/* Side accent strips */}
+                        <div style={{ position: "absolute", top: 20, left: 0, width: 3, height: 60, borderRadius: "0 3px 3px 0", background: `linear-gradient(180deg, ${COPPER}, transparent)` }} />
+                        <div style={{ position: "absolute", top: 20, right: 0, width: 3, height: 60, borderRadius: "3px 0 0 3px", background: `linear-gradient(180deg, ${COPPER}, transparent)` }} />
+
+                        <div style={{ padding: "32px 28px 28px" }}>
+                          {/* Close button */}
+                          <motion.button whileHover={{ scale: 1.1 }} onClick={() => setModulePopup(null)}
+                            style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#64748B", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>✕</motion.button>
+
+                          {/* Module icon + title */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+                            <span style={{ fontSize: 36 }}>{popupWs.icon}</span>
+                            <div>
+                              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 4 }}>{popupWs.role}</div>
+                              <div style={{ fontSize: 22, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{popupWs.title}</div>
+                              <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>{popupWs.desc}</div>
+                            </div>
+                          </div>
+
+                          {/* Locked hospital */}
+                          <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10`, marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={COPPER} strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#F0F4FF" }}>{detailHospital.name}</span>
+                            <span style={{ fontSize: 10, color: "#475569", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{detailHospital.code}</span>
+                          </div>
+
+                          {/* Add operator form — no Role dropdown */}
+                          <div style={{ marginBottom: 20 }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 14 }}>
+                              Add Operator To {popupWs.title}
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                              <div>
+                                <label style={labelStyle}>Full Name</label>
+                                <input placeholder="e.g. Ama Mensah" value={popupOp.name} onChange={e => setPopupOp(o => ({ ...o, name: e.target.value }))} style={inputStyle} />
+                              </div>
+                              <div>
+                                <label style={labelStyle}>Phone (Optional)</label>
+                                <input placeholder="0244123456" value={popupOp.phone} onChange={e => setPopupOp(o => ({ ...o, phone: e.target.value }))} style={inputStyle} />
+                              </div>
+                              <div>
+                                <label style={labelStyle}>PIN</label>
+                                <input placeholder="4 digits" type="password" maxLength={4} value={popupOp.pin}
+                                  onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setPopupOp(o => ({ ...o, pin: e.target.value })); }}
+                                  style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.3em", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+                              </div>
+                              <motion.button onClick={handlePopupAddOperator} disabled={popupAdding || !popupOp.name || popupOp.pin.length !== 4}
+                                whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                                style={{ padding: "12px 0", borderRadius: 12, cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, opacity: popupAdding || !popupOp.name || popupOp.pin.length !== 4 ? 0.4 : 1, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                                {popupAdding ? "Adding..." : "Add"}
+                              </motion.button>
+                            </div>
+                            {popupMsg && <div style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: popupMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{popupMsg.text}</div>}
+                          </div>
+
+                          {/* Operator list */}
+                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B", marginBottom: 10 }}>
+                            {popupOperators.length} Operator{popupOperators.length !== 1 ? "s" : ""} At {detailHospital.code}
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                            {popupOperators.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#334155", fontSize: 12 }}>No Operators Registered Yet</div>}
+                            {popupOperators.map((op, i) => (
+                              <motion.div key={op.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
+                                style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: `1px solid ${op.isActive ? "rgba(255,255,255,0.04)" : "rgba(239,68,68,0.1)"}`, display: "flex", alignItems: "center", justifyContent: "space-between", opacity: op.isActive ? 1 : 0.5 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: op.isActive ? "#22C55E" : "#EF4444" }} />
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: "#F0F4FF" }}>{op.name}</span>
+                                  {op.phone && <span style={{ fontSize: 10, color: "#475569" }}>{op.phone}</span>}
+                                </div>
+                                <span style={{ padding: "2px 8px", borderRadius: 5, background: `${BLUE}10`, border: `1px solid ${BLUE}18`, fontSize: 9, fontWeight: 700, color: BLUE, textTransform: "uppercase" }}>{op.role.replace(/_/g, " ")}</span>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    </motion.div>
+                  );
+                })()}
+              </AnimatePresence>
 
               {/* Back button */}
               <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
