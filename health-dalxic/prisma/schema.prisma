@@ -448,6 +448,24 @@ model DeviceOperator {
   @@map("device_operators")
 }
 
+// ─── Chat System ───
+
+model ChatMessage {
+  id              String   @id @default(cuid())
+  hospitalId      String   @map("hospital_id")
+  fromModule      String   @map("from_module")    // e.g. "pharmacy", "doctor", "lab"
+  toModule        String?  @map("to_module")       // null = broadcast to all
+  fromOperatorId  String   @map("from_operator_id")
+  fromOperatorName String  @map("from_operator_name")
+  message         String
+  isRead          Boolean  @default(false) @map("is_read")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([hospitalId, toModule, isRead])
+  @@index([hospitalId, createdAt])
+  @@map("chat_messages")
+}
+
 // ─── Audit Trail ───
 
 model AuditLog {

@@ -10,6 +10,7 @@ const BLOCKED_PATHS = [
   "/lab", "/injection-room", "/nurse-station", "/radiology", "/ward",
   "/ultrasound", "/emergency-triage", "/icu", "/maternity", "/blood-bank",
   "/admin", "/beds", "/display", "/platform", "/kiosk", "/ops",
+  "/bookkeeping",
   "/emergency-override", "/print/ticket",
 ]
 
@@ -71,9 +72,13 @@ export function middleware(request: NextRequest) {
   }
 
   // ── Layer 1: dalxic.com shared password gate ──
-  const auth = request.cookies.get("dalxic_access")?.value
-  if (auth !== "granted") {
-    return NextResponse.redirect("https://dalxic.com/gate")
+  // Skip gate on localhost for local development
+  const host = request.headers.get("host") || "";
+  if (!host.includes("localhost")) {
+    const auth = request.cookies.get("dalxic_access")?.value
+    if (auth !== "granted") {
+      return NextResponse.redirect("https://dalxic.com/gate")
+    }
   }
 
   // ── Layer 2: Block direct access to real workstation paths ──

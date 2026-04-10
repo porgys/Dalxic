@@ -161,6 +161,108 @@ const LAB_TESTS = [
   { value: "hb_electro", label: "Hb Electrophoresis" },
 ];
 
+/* ─── SOAP Templates & Diagnosis-Driven Order Sets ─── */
+interface SOAPTemplate {
+  key: string;
+  label: string;
+  icon: string;
+  diagnosis: string;
+  notes: string;
+  suggestedTests: string[];
+  prescriptions: { medication: string; dosage: string; frequency: string; duration: string }[];
+}
+
+const SOAP_TEMPLATES: SOAPTemplate[] = [
+  {
+    key: "malaria", label: "Malaria (Suspected)", icon: "🦟",
+    diagnosis: "Plasmodium Falciparum Malaria (Suspected)",
+    notes: "S: Fever, chills, headache, body aches. O: Temperature elevated, mild pallor. A: Suspected malaria — confirm with RDT/smear. P: Antimalarial pending confirmation.",
+    suggestedTests: ["mp", "fbc"],
+    prescriptions: [
+      { medication: "Artemether-Lumefantrine (AL)", dosage: "80/480mg", frequency: "BD (Twice Daily)", duration: "3 Days" },
+      { medication: "Paracetamol", dosage: "1000mg", frequency: "TDS (3x Daily)", duration: "3 Days" },
+    ],
+  },
+  {
+    key: "hypertension", label: "Hypertension", icon: "❤️",
+    diagnosis: "Essential Hypertension",
+    notes: "S: Headache, dizziness, or asymptomatic. O: BP elevated (≥140/90 mmHg on repeated measurement). A: Essential hypertension — assess end-organ damage. P: Lifestyle modification + antihypertensive.",
+    suggestedTests: ["rfts", "fbc", "rbs", "urinalysis"],
+    prescriptions: [
+      { medication: "Amlodipine", dosage: "5mg", frequency: "OD (Once Daily)", duration: "30 Days" },
+    ],
+  },
+  {
+    key: "diabetes_t2", label: "Diabetes (Type 2)", icon: "🍬",
+    diagnosis: "Type 2 Diabetes Mellitus",
+    notes: "S: Polyuria, polydipsia, weight loss, fatigue. O: Elevated random/fasting blood glucose. A: Type 2 DM — assess glycaemic control and complications. P: Oral hypoglycaemic + dietary counselling.",
+    suggestedTests: ["rbs", "rfts", "lfts", "urinalysis", "fbc"],
+    prescriptions: [
+      { medication: "Metformin", dosage: "500mg", frequency: "BD (Twice Daily)", duration: "30 Days" },
+    ],
+  },
+  {
+    key: "uti", label: "UTI", icon: "🚽",
+    diagnosis: "Urinary Tract Infection",
+    notes: "S: Dysuria, frequency, urgency, suprapubic discomfort. O: Tender suprapubic region, urine may appear cloudy. A: Uncomplicated UTI. P: Antibiotics + hydration advice.",
+    suggestedTests: ["urinalysis", "fbc"],
+    prescriptions: [
+      { medication: "Ciprofloxacin", dosage: "500mg", frequency: "BD (Twice Daily)", duration: "5 Days" },
+      { medication: "Paracetamol", dosage: "1000mg", frequency: "TDS (3x Daily)", duration: "3 Days" },
+    ],
+  },
+  {
+    key: "pneumonia", label: "Pneumonia", icon: "🫁",
+    diagnosis: "Community-Acquired Pneumonia",
+    notes: "S: Cough (productive), fever, chest pain, dyspnoea. O: Reduced breath sounds, crackles/crepitations, tachypnoea. A: Community-acquired pneumonia. P: Antibiotics, chest X-ray if available.",
+    suggestedTests: ["fbc"],
+    prescriptions: [
+      { medication: "Amoxicillin", dosage: "500mg", frequency: "TDS (3x Daily)", duration: "7 Days" },
+      { medication: "Azithromycin", dosage: "500mg", frequency: "OD (Once Daily)", duration: "3 Days" },
+      { medication: "Paracetamol", dosage: "1000mg", frequency: "TDS (3x Daily)", duration: "3 Days" },
+    ],
+  },
+  {
+    key: "gastroenteritis", label: "Gastroenteritis", icon: "🤢",
+    diagnosis: "Acute Gastroenteritis",
+    notes: "S: Diarrhoea, vomiting, abdominal cramps, nausea. O: Mild dehydration, diffuse abdominal tenderness. A: Acute gastroenteritis — likely viral/bacterial. P: ORS, antiemetic, monitor hydration.",
+    suggestedTests: ["fbc"],
+    prescriptions: [
+      { medication: "ORS (Oral Rehydration Salts)", dosage: "1 Sachet", frequency: "After Each Stool", duration: "3 Days" },
+      { medication: "Metoclopramide", dosage: "10mg", frequency: "TDS (3x Daily)", duration: "3 Days" },
+    ],
+  },
+  {
+    key: "anc_routine", label: "ANC Visit (Routine)", icon: "🤰",
+    diagnosis: "Routine Antenatal Visit",
+    notes: "S: Routine ANC visit. O: Fundal height measured, fetal heart rate auscultated, BP checked, urine dipstick. A: Normal pregnancy progression. P: Continue iron/folate, schedule next visit.",
+    suggestedTests: ["fbc", "urinalysis", "rbs", "hiv"],
+    prescriptions: [
+      { medication: "Ferrous Sulphate + Folic Acid", dosage: "200mg/0.4mg", frequency: "OD (Once Daily)", duration: "30 Days" },
+    ],
+  },
+  {
+    key: "asthma", label: "Asthma (Acute)", icon: "💨",
+    diagnosis: "Acute Asthma Exacerbation",
+    notes: "S: Wheeze, shortness of breath, chest tightness, cough (especially nocturnal). O: Bilateral wheeze on auscultation, prolonged expiratory phase, tachypnoea. A: Acute asthma exacerbation — mild/moderate. P: Bronchodilator, oral steroids if moderate-severe.",
+    suggestedTests: ["fbc"],
+    prescriptions: [
+      { medication: "Salbutamol Inhaler", dosage: "2 Puffs", frequency: "QID (4x Daily)", duration: "5 Days" },
+      { medication: "Prednisolone", dosage: "40mg", frequency: "OD (Once Daily)", duration: "5 Days" },
+    ],
+  },
+  {
+    key: "typhoid", label: "Typhoid Fever", icon: "🤒",
+    diagnosis: "Typhoid Fever (Suspected)",
+    notes: "S: Persistent fever (>5 days), headache, abdominal pain, constipation or diarrhoea. O: Coated tongue, hepatosplenomegaly, relative bradycardia. A: Suspected typhoid — confirm with Widal/culture. P: Antibiotics pending confirmation.",
+    suggestedTests: ["widal", "fbc", "lfts"],
+    prescriptions: [
+      { medication: "Ciprofloxacin", dosage: "500mg", frequency: "BD (Twice Daily)", duration: "7 Days" },
+      { medication: "Paracetamol", dosage: "1000mg", frequency: "TDS (3x Daily)", duration: "5 Days" },
+    ],
+  },
+];
+
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 
 export default function DoctorPage() {
@@ -463,6 +565,16 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
       const res = await fetch("/api/queue", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: activeSession.recordId, hospitalCode: HOSPITAL_CODE, escalationReason: diagnosis.notes || "Doctor escalation", escalatedBy: "doctor" }) });
       if (res.ok) { const r = await res.json(); setActiveSession((p) => p ? { ...p, visit: { ...p.visit, queueToken: r.erToken, emergencyFlag: true } } : null); }
     } catch { /* retry */ } finally { setEscalating(false); }
+  };
+
+  // SOAP Template Application
+  const applyTemplate = (template: SOAPTemplate) => {
+    setDiagnosis({ primary: template.diagnosis, notes: template.notes });
+    if (template.prescriptions.length > 0) setPrescriptions(template.prescriptions.map(rx => ({ ...rx })));
+    if (template.suggestedTests.length > 0) {
+      setLabReferral(true);
+      setSelectedTests(template.suggestedTests);
+    }
   };
 
   const addPrescription = () => setPrescriptions((p) => [...p, { medication: "", dosage: "", frequency: "", duration: "" }]);
@@ -813,6 +925,25 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
                       <span style={{ fontSize: 14 }}>🩺</span>
                       <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Diagnosis</span>
+                    </div>
+                    {/* SOAP Template Quick-Select */}
+                    <div style={{ marginBottom: 10 }}>
+                      <label style={{ display: "block", fontSize: 9, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#3D4D78", marginBottom: 4 }}>Quick Template</label>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                        {SOAP_TEMPLATES.map(t => (
+                          <button key={t.key} type="button" onClick={() => applyTemplate(t)}
+                            style={{
+                              fontSize: 10, fontWeight: 600, padding: "4px 8px", borderRadius: 6, cursor: "pointer",
+                              background: diagnosis.primary === t.diagnosis ? `${COPPER}18` : "rgba(255,255,255,0.03)",
+                              border: `1px solid ${diagnosis.primary === t.diagnosis ? COPPER + "30" : "rgba(255,255,255,0.05)"}`,
+                              color: diagnosis.primary === t.diagnosis ? "#D4956B" : "#64748B",
+                              transition: "all 0.15s ease",
+                            }}
+                          >
+                            {t.icon} {t.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <DInput label="Primary Diagnosis" placeholder="e.g. Plasmodium Falciparum Malaria" value={diagnosis.primary} onChange={(e) => setDiagnosis((d) => ({ ...d, primary: e.target.value }))} required />
                     <div style={{ marginTop: 10 }}>

@@ -25,6 +25,7 @@ const nextConfig = withPWA({
       { source: "/w/bN2~sF6kZj8V-rD0mH4nYt9wLa", destination: "/icu" },
       { source: "/w/Xd7_yR1nXf5T~vK3bJ8mAw0cPs", destination: "/maternity" },
       { source: "/w/kQ5~hW9sZr2P-tB6nF3dYm8jLv", destination: "/blood-bank" },
+      { source: "/w/Gn4~rL8kZv2W-mB5xJ1nYt9hQs", destination: "/bookkeeping" },
       // Utility
       { source: "/w/Vt8_mA4bXk1R~wN7rJ0nDs3hFy", destination: "/admin" },
       { source: "/w/nF3~jK7dZs9W-yR2vH5mBt1xQa", destination: "/beds" },

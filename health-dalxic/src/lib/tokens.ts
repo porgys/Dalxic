@@ -75,4 +75,5 @@ export const ROLE_PREFIXES: Record<string, string> = {
   icu: "ICU",
   maternity: "MT",
   blood_bank: "BB",
+  bookkeeping: "BK",
 };

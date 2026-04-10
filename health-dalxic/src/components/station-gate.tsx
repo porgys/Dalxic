@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { OperatorSession } from "@/types";
 import { useOperator } from "@/hooks/use-operator";
+import { ChatPanel } from "@/components/chat-panel";
 
 const COPPER = "#B87333";
 
@@ -26,13 +27,27 @@ interface StationGateProps {
   stationIcon: string;
   /** Optional: restrict to specific operator roles */
   allowedRoles?: string[];
+  /** Optional: module key for chat (e.g. "doctor", "pharmacy"). Auto-derived from stationName if not provided */
+  moduleKey?: string;
   children: (session: OperatorSession) => React.ReactNode;
 }
 
 /** Idle timeout in milliseconds — lock after 10 minutes of no interaction */
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 
-export function StationGate({ hospitalCode, stationName, stationIcon, allowedRoles, children }: StationGateProps) {
+/** Derive module key from station name: "Front Desk" → "front_desk", "Doctor Station" → "doctor" */
+const STATION_TO_MODULE: Record<string, string> = {
+  "Front Desk": "front_desk", "Waiting Room": "waiting_room", "Doctor Station": "doctor",
+  "Doctor": "doctor", "Pharmacy": "pharmacy", "Billing": "billing", "Laboratory": "lab",
+  "Lab": "lab", "Injection Room": "injection_room", "Nursing": "nurse_station",
+  "Nurse Station": "nurse_station", "Radiology": "ct_radiology", "CT / Radiology": "ct_radiology",
+  "Ward / IPD": "ward_ipd", "Ward": "ward_ipd", "Ultrasound": "ultrasound",
+  "Emergency": "emergency", "Emergency Triage": "emergency", "ICU": "icu",
+  "Maternity": "maternity", "Blood Bank": "blood_bank", "Bookkeeping": "bookkeeping",
+  "Admin": "admin",
+};
+
+export function StationGate({ hospitalCode, stationName, stationIcon, allowedRoles, moduleKey, children }: StationGateProps) {
   const { session, isAuthenticated, loading, login, logout } = useOperator(hospitalCode);
 
   // Auto-lock on idle — resets on mouse, keyboard, touch activity
@@ -85,7 +100,19 @@ export function StationGate({ hospitalCode, stationName, stationIcon, allowedRol
     );
   }
 
-  return <>{children(session)}</>;
+  const resolvedModule = moduleKey || STATION_TO_MODULE[stationName] || stationName.toLowerCase().replace(/[\s/]+/g, "_");
+
+  return (
+    <>
+      {children(session)}
+      <ChatPanel
+        hospitalCode={hospitalCode}
+        currentModule={resolvedModule}
+        operatorId={session.operatorId}
+        operatorName={session.operatorName}
+      />
+    </>
+  );
 }
 
 /**

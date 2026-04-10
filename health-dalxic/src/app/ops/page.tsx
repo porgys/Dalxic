@@ -194,11 +194,11 @@ interface AccessGrant { id: string; dalxicStaffId: string; grantedRole: string; 
    OPERATING PLATFORM — Hierarchical Drill-Down
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-type OpsScreen = "tiers" | "modules" | "module-config" | "hospitals" | "hospital-detail" | "monitoring" | "audit" | "access";
+type OpsScreen = "tiers" | "modules" | "module-config" | "create-hospitals" | "hospitals" | "hospital-detail" | "operators" | "audit" | "access";
 
 function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   // ─── Navigation ───
-  const [screen, setScreen] = useState<OpsScreen>("hospitals");
+  const [screen, setScreen] = useState<OpsScreen>("create-hospitals");
   const [selectedTier, setSelectedTier] = useState<TierKey | null>(null);
   const [activeModules, setActiveModules] = useState<string[]>([]);
   const [configModule, setConfigModule] = useState<string | null>(null);
@@ -239,29 +239,19 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const [newGrant, setNewGrant] = useState({ staffId: "", hospitalId: "", role: "viewer", reason: "", hours: "24" });
   const [grantMsg, setGrantMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
-  // ─── Hospital Detail ─── (some temporarily unused — will return when detail sections are re-added)
+  // ─── Hospital Detail ───
   const [detailHospital, setDetailHospital] = useState<HospitalItem | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailOperators, setDetailOperators] = useState<OperatorItem[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailDevices, setDetailDevices] = useState<DeviceItem[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [editingDetails, setEditingDetails] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailEditForm, setDetailEditForm] = useState({ name: "", tagline: "", subdomain: "" });
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailEditMsg, setDetailEditMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [changingTier, setChangingTier] = useState(false);
   const [detailNewOp, setDetailNewOp] = useState({ name: "", phone: "", pin: "", role: "front_desk" });
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailAddingOp, setDetailAddingOp] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailOpMsg, setDetailOpMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [detailEditOp, setDetailEditOp] = useState<OperatorItem | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailEditOpForm, setDetailEditOpForm] = useState({ name: "", phone: "", role: "", newPin: "" });
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailEditOpMsg, setDetailEditOpMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // ─── Module Filter (hospital-detail) ───
@@ -274,6 +264,14 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const [popupMsg, setPopupMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [popupOperators, setPopupOperators] = useState<OperatorItem[]>([]);
+
+  // ─── Operators Page ───
+  const [opsPageHospital, setOpsPageHospital] = useState<string>("");
+  const [opsPageOperators, setOpsPageOperators] = useState<OperatorItem[]>([]);
+  const [opsPageFilter, setOpsPageFilter] = useState<"all" | "active" | "inactive">("all");
+  const [opsPageEditOp, setOpsPageEditOp] = useState<OperatorItem | null>(null);
+  const [opsPageEditForm, setOpsPageEditForm] = useState({ name: "", phone: "", role: "", newPin: "" });
+  const [opsPageEditMsg, setOpsPageEditMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // ─── Collapsed groups for tree view ───
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -481,7 +479,6 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   // handleToggleHospitalActive moved to detail view as handleDetailToggleActive
 
   /* ─── Hospital Detail Handlers ─── */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDetailEditSave = async () => {
     if (!detailHospital) return;
     setDetailEditMsg(null);
@@ -516,21 +513,18 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     if (res.ok) { loadHospitalDetail(detailHospital.code); loadHospitals(); }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDetailChangeTier = async (newTier: TierKey) => {
     if (!detailHospital) return;
     const res = await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, newTier, actorId: "ops-admin" }) });
     if (res.ok) { setChangingTier(false); loadHospitalDetail(detailHospital.code); loadHospitals(); }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleDetailToggleActive = async () => {
-    if (!detailHospital) return;
-    await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, editFields: { active: !detailHospital.active }, actorId: "ops-admin" }) });
-    loadHospitalDetail(detailHospital.code); loadHospitals();
+  const handleToggleHospitalActive = async (hospitalCode: string, currentlyActive: boolean) => {
+    await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode, editFields: { active: !currentlyActive }, actorId: "ops-admin" }) });
+    loadHospitals();
+    if (detailHospital?.code === hospitalCode) loadHospitalDetail(hospitalCode);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDetailAddOperator = async () => {
     if (!detailHospital || !detailNewOp.name || !detailNewOp.pin || !detailNewOp.role) return;
     setDetailAddingOp(true); setDetailOpMsg(null);
@@ -541,14 +535,12 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     } catch { setDetailOpMsg({ type: "err", text: "Network Error" }); } finally { setDetailAddingOp(false); }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDetailToggleOperator = async (op: OperatorItem) => {
     if (!detailHospital) return;
     await fetch("/api/operators", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, operatorId: op.id, isActive: !op.isActive }) });
     loadHospitalDetail(detailHospital.code);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDetailEditOperator = async () => {
     if (!detailEditOp || !detailHospital) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -562,10 +554,45 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     else { const err = await res.json(); setDetailEditOpMsg({ type: "err", text: err.error || "Failed" }); }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDetailDeviceAction = async (deviceId: string, action: string) => {
     await fetch("/api/devices", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceId, action, actorId: "ops-admin", actorType: "dalxic_super_admin" }) });
     if (detailHospital) loadHospitalDetail(detailHospital.code);
+  };
+
+  /* ─── Operators Page Handlers ─── */
+  const loadOpsPageOperators = async (hospitalCode: string) => {
+    if (!hospitalCode) { setOpsPageOperators([]); return; }
+    try {
+      const res = await fetch(`/api/operators?hospitalCode=${hospitalCode}&activeOnly=false`);
+      if (res.ok) { const data = await res.json(); setOpsPageOperators(data.operators || []); }
+    } catch { /* ignore */ }
+  };
+
+  const handleOpsPageToggleOperator = async (op: OperatorItem) => {
+    if (!opsPageHospital) return;
+    await fetch("/api/operators", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: opsPageHospital, operatorId: op.id, isActive: !op.isActive }) });
+    loadOpsPageOperators(opsPageHospital);
+  };
+
+  const handleOpsPageEditOperator = async () => {
+    if (!opsPageEditOp || !opsPageHospital) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload: any = { hospitalCode: opsPageHospital, operatorId: opsPageEditOp.id };
+    if (opsPageEditForm.name !== opsPageEditOp.name) payload.name = opsPageEditForm.name;
+    if (opsPageEditForm.phone !== (opsPageEditOp.phone || "")) payload.phone = opsPageEditForm.phone;
+    if (opsPageEditForm.role !== opsPageEditOp.role) payload.role = opsPageEditForm.role;
+    if (opsPageEditForm.newPin && opsPageEditForm.newPin.length === 4) payload.newPin = opsPageEditForm.newPin;
+    const res = await fetch("/api/operators", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    if (res.ok) { setOpsPageEditMsg({ type: "ok", text: "Updated" }); loadOpsPageOperators(opsPageHospital); setTimeout(() => { setOpsPageEditOp(null); setOpsPageEditMsg(null); }, 600); }
+    else { const err = await res.json(); setOpsPageEditMsg({ type: "err", text: err.error || "Failed" }); }
+  };
+
+  const handleOpsPageResetPin = async (op: OperatorItem) => {
+    if (!opsPageHospital) return;
+    const newPin = prompt("Enter New 4-Digit PIN:");
+    if (!newPin || newPin.length !== 4 || !/^\d{4}$/.test(newPin)) return;
+    await fetch("/api/operators", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: opsPageHospital, operatorId: op.id, newPin }) });
+    loadOpsPageOperators(opsPageHospital);
   };
 
   /* ─── Module Popup Handlers ─── */
@@ -620,7 +647,11 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
 
   /* ─── Breadcrumb ─── */
   const breadcrumb = (() => {
-    const crumbs: { label: string; onClick?: () => void }[] = [{ label: "Hospitals", onClick: () => { setScreen("hospitals"); setDetailHospital(null); setConfigModule(null); } }];
+    const crumbs: { label: string; onClick?: () => void }[] = [];
+    // Only show breadcrumb for drill-down screens, not for top-level nav screens
+    if (screen === "hospital-detail" || screen === "module-config" || screen === "tiers" || screen === "modules") {
+      crumbs.push({ label: "Hospitals", onClick: () => { setScreen("hospitals"); setDetailHospital(null); setConfigModule(null); } });
+    }
     if (screen === "tiers" || (selectedTier && (screen === "modules" || (screen === "module-config" && !detailHospital)))) {
       crumbs.push({ label: "Tiers", onClick: () => { setScreen("tiers"); setSelectedTier(null); setConfigModule(null); } });
     }
@@ -636,9 +667,6 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     if (screen === "hospital-detail" && detailHospital) {
       crumbs.push({ label: `${detailHospital.code} — ${detailHospital.name}` });
     }
-    if (screen === "monitoring") crumbs.push({ label: "Monitoring" });
-    if (screen === "audit") crumbs.push({ label: "Audit Trail" });
-    if (screen === "access") crumbs.push({ label: "Access Grants" });
     return crumbs;
   })();
 
@@ -679,12 +707,16 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
 
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {/* Utility nav */}
-          {["hospitals", "monitoring", "audit", "access"].map(s => (
-            <motion.button key={s} whileHover={{ scale: 1.05 }} onClick={() => { setScreen(s as OpsScreen); if (s === "audit") loadAuditLogs(); if (s === "access") loadAccessGrants(); }}
-              style={{ background: screen === s ? `${COPPER}10` : "none", border: screen === s ? `1px solid ${COPPER}20` : "1px solid transparent", color: screen === s ? COPPER_LIGHT : "#475569", fontSize: 10, fontWeight: 700, padding: "6px 12px", borderRadius: 8, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
-              {s === "hospitals" ? "🏥" : s === "monitoring" ? "📊" : s === "audit" ? "📋" : "🔑"} {s}
+          {["create-hospitals", "hospitals", "operators", "audit", "access"].map(s => {
+            const isActive = s === "hospitals" ? (screen === "hospitals" || screen === "hospital-detail") : screen === s;
+            const label = s === "create-hospitals" ? "Create" : s;
+            return (
+            <motion.button key={s} whileHover={{ scale: 1.05 }} onClick={() => { if (s === "hospitals") { setScreen("hospitals"); setDetailHospital(null); setConfigModule(null); } else { setScreen(s as OpsScreen); } if (s === "audit") loadAuditLogs(); if (s === "access") loadAccessGrants(); }}
+              style={{ background: isActive ? `${COPPER}10` : "none", border: isActive ? `1px solid ${COPPER}20` : "1px solid transparent", color: isActive ? COPPER_LIGHT : "#475569", fontSize: 10, fontWeight: 700, padding: "6px 12px", borderRadius: 8, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+              {s === "create-hospitals" ? "➕" : s === "hospitals" ? "🏥" : s === "operators" ? "👥" : s === "audit" ? "📋" : "🔑"} {label}
             </motion.button>
-          ))}
+            );
+          })}
 
           <span style={{ fontSize: 12, fontWeight: 700, color: "#334155", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
@@ -1082,18 +1114,18 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
           )}
 
           {/* ═══════════════════════════════════════ */}
-          {/* SCREEN 4: HOSPITALS (Create + Assign)  */}
+          {/* SCREEN: CREATE HOSPITALS               */}
           {/* ═══════════════════════════════════════ */}
-          {screen === "hospitals" && (
-            <motion.div key="hospitals" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
-              <div style={{ marginBottom: 32 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Hospital Management</div>
-                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Hospitals & Groups</h2>
+          {screen === "create-hospitals" && (
+            <motion.div key="create-hospitals" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Deployment</div>
+                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Create Hospital</h2>
               </div>
 
               {/* Create hospital */}
               <div style={{ padding: "28px 24px", borderRadius: 20, marginBottom: 28, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}12` }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 20 }}>Create Hospital{selectedTier ? ` (${selectedTier} — ${activeModules.length} Modules)` : ""}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 20 }}>New Hospital{selectedTier ? ` (${selectedTier} — ${activeModules.length} Modules)` : ""}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 14 }}>
                   <div><label style={labelStyle}>Hospital Code</label><input placeholder="e.g. KBH" value={newHospital.code} onChange={e => setNewHospital(h => ({ ...h, code: e.target.value.toUpperCase() }))} style={inputStyle} /></div>
                   <div><label style={labelStyle}>Hospital Name</label><input placeholder="e.g. Korle Bu Teaching Hospital" value={newHospital.name} onChange={e => setNewHospital(h => ({ ...h, name: e.target.value }))} style={inputStyle} /></div>
@@ -1130,6 +1162,36 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   </motion.button>
                 </div>
                 {groupMsg && <div style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: groupMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{groupMsg.text}</div>}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ═══════════════════════════════════════ */}
+          {/* SCREEN 4: HOSPITALS (View Only)         */}
+          {/* ═══════════════════════════════════════ */}
+          {screen === "hospitals" && (
+            <motion.div key="hospitals" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Hospital Management</div>
+                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Hospitals & Groups</h2>
+              </div>
+
+              {/* Compact stats bar */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+                {[
+                  { icon: "🏥", label: "Hospitals", value: hospitals.length, color: COPPER },
+                  { icon: "👤", label: "Total Patients", value: totalPatients.toLocaleString(), color: BLUE },
+                  { icon: "📱", label: "Operators Online", value: `${onlineOps} / ${totalDevices}`, color: onlineOps > 0 ? "#22C55E" : "#64748B" },
+                  { icon: "📂", label: "Groups", value: grouped.groups.length, color: COPPER_LIGHT },
+                ].map(s => (
+                  <div key={s.label} style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(255,255,255,0.02)", border: `1px solid ${s.color}10` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <span style={{ fontSize: 13 }}>{s.icon}</span>
+                      <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B" }}>{s.label}</span>
+                    </div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: s.color, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{s.value}</div>
+                  </div>
+                ))}
               </div>
 
               {/* Hospital card grid */}
@@ -1206,8 +1268,12 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                                         <div style={{ width: 7, height: 7, borderRadius: "50%", background: h.active ? "#22C55E" : "#EF4444", boxShadow: h.active ? "0 0 5px rgba(34,197,94,0.3)" : "none" }} />
                                         <span style={{ fontSize: 9, fontWeight: 700, color: h.active ? "#22C55E" : "#EF4444", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h.active ? "Active" : "Suspended"}</span>
                                       </div>
-                                      <motion.button whileHover={{ scale: 1.1 }} onClick={(e) => { e.stopPropagation(); handleUnlinkHospital(h.code); }}
-                                        style={{ padding: "2px 6px", borderRadius: 4, fontSize: 8, fontWeight: 700, color: "#475569", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer", textTransform: "uppercase" }}>Unlink</motion.button>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                        <motion.button whileHover={{ scale: 1.1 }} onClick={(e) => { e.stopPropagation(); handleToggleHospitalActive(h.code, h.active); }}
+                                          style={{ padding: "2px 6px", borderRadius: 4, fontSize: 8, fontWeight: 700, color: h.active ? "#EF4444" : "#22C55E", background: h.active ? "rgba(239,68,68,0.04)" : "rgba(34,197,94,0.04)", border: `1px solid ${h.active ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)"}`, cursor: "pointer", textTransform: "uppercase" }}>{h.active ? "Suspend" : "Activate"}</motion.button>
+                                        <motion.button whileHover={{ scale: 1.1 }} onClick={(e) => { e.stopPropagation(); handleUnlinkHospital(h.code); }}
+                                          style={{ padding: "2px 6px", borderRadius: 4, fontSize: 8, fontWeight: 700, color: "#475569", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer", textTransform: "uppercase" }}>Unlink</motion.button>
+                                      </div>
                                     </div>
                                   </motion.div>
                                 );
@@ -1273,7 +1339,13 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                           <div style={{ width: 8, height: 8, borderRadius: "50%", background: h.active ? "#22C55E" : "#EF4444", boxShadow: h.active ? "0 0 6px rgba(34,197,94,0.3)" : "none" }} />
                           <span style={{ fontSize: 10, fontWeight: 700, color: h.active ? "#22C55E" : "#EF4444", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h.active ? "Active" : "Suspended"}</span>
                         </div>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <motion.button whileHover={{ scale: 1.05 }} onClick={(e) => { e.stopPropagation(); handleToggleHospitalActive(h.code, h.active); }}
+                            style={{ padding: "4px 10px", borderRadius: 6, fontSize: 9, fontWeight: 700, color: h.active ? "#EF4444" : "#22C55E", background: h.active ? "rgba(239,68,68,0.06)" : "rgba(34,197,94,0.06)", border: `1px solid ${h.active ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                            {h.active ? "Suspend" : "Activate"}
+                          </motion.button>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
+                        </div>
                       </div>
                     </motion.div>
                   );
@@ -1285,99 +1357,154 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
           {/* ═══════════════════════════════════════ */}
           {/* SCREEN: HOSPITAL DETAIL — Module Grid  */}
           {/* ═══════════════════════════════════════ */}
-          {screen === "hospital-detail" && detailHospital && (
+          {screen === "hospital-detail" && detailHospital && (() => {
+            const tierColor = ({ T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7", MASTER: "#F59E0B" } as Record<string, string>)[detailHospital.tier] || COPPER;
+            const tierDef = TIER_DEFAULTS[detailHospital.tier as TierKey];
+            const hospitalModules = (detailHospital.activeModules || []) as string[];
+            const allWs = [...ALL_WORKSTATIONS, ...UTILITY_STATIONS];
+            const cardStyle: React.CSSProperties = { background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}12`, borderRadius: 20, padding: "28px 28px", marginBottom: 20 };
+            const sectionTitle = (text: string) => <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 16 }}>{text}</div>;
+            return (
             <motion.div key="hospital-detail" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
 
-              {/* Header bar */}
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Module Configuration</div>
-                  <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em", margin: 0 }}>{detailHospital.name}</h2>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
-                    <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: `${({ T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7" } as Record<string, string>)[detailHospital.tier] || COPPER}10`, border: `1px solid ${({ T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7" } as Record<string, string>)[detailHospital.tier] || COPPER}25`, color: ({ T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7" } as Record<string, string>)[detailHospital.tier] || COPPER, textTransform: "uppercase", letterSpacing: "0.06em" }}>{detailHospital.tier} — {TIER_DEFAULTS[detailHospital.tier as TierKey]?.label || detailHospital.tier}</span>
-                    <span style={{ fontSize: 11, color: "#64748B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{detailHospital.code}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: detailHospital.active ? "#22C55E" : "#EF4444", boxShadow: detailHospital.active ? "0 0 8px rgba(34,197,94,0.4)" : "none" }} />
-                      <span style={{ fontSize: 10, fontWeight: 700, color: detailHospital.active ? "#22C55E" : "#EF4444", textTransform: "uppercase", letterSpacing: "0.08em" }}>{detailHospital.active ? "Active" : "Suspended"}</span>
-                    </div>
+              {/* ═══ SECTION A: HOSPITAL HEADER ═══ */}
+              <div style={cardStyle}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+                  <div style={{ flex: 1 }}>
+                    {!editingDetails ? (
+                      <>
+                        <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em", margin: 0 }}>{detailHospital.name}</h2>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
+                          <span style={{ padding: "4px 12px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: `${tierColor}10`, border: `1px solid ${tierColor}25`, color: tierColor, textTransform: "uppercase", letterSpacing: "0.06em" }}>{detailHospital.tier} — {tierDef?.label || detailHospital.tier}</span>
+                          <span style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, color: COPPER_LIGHT, background: `${COPPER}08`, fontFamily: "var(--font-jetbrains-mono), monospace", letterSpacing: "0.04em" }}>{detailHospital.code}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: detailHospital.active ? "#22C55E" : "#EF4444", boxShadow: detailHospital.active ? "0 0 8px rgba(34,197,94,0.4)" : "none" }} />
+                            <span style={{ fontSize: 10, fontWeight: 700, color: detailHospital.active ? "#22C55E" : "#EF4444", textTransform: "uppercase", letterSpacing: "0.08em" }}>{detailHospital.active ? "Active" : "Suspended"}</span>
+                          </div>
+                        </div>
+                        {detailHospital.tagline && <p style={{ fontSize: 13, color: "#94A3B8", marginTop: 8, fontStyle: "italic" }}>{detailHospital.tagline}</p>}
+                        <p onClick={() => window.open(window.location.origin, "_blank")} style={{ fontSize: 11, color: "#475569", marginTop: 6, fontFamily: "var(--font-jetbrains-mono), monospace", cursor: "text" }}>{detailHospital.subdomain}.health.dalxic.com</p>
+                      </>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 420 }}>
+                        <div>
+                          <label style={labelStyle}>Hospital Name</label>
+                          <input value={detailEditForm.name} onChange={e => setDetailEditForm(f => ({ ...f, name: e.target.value }))} style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Tagline</label>
+                          <input value={detailEditForm.tagline} onChange={e => setDetailEditForm(f => ({ ...f, tagline: e.target.value }))} style={inputStyle} placeholder="e.g. Where Care Meets Excellence" />
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Subdomain</label>
+                          <input value={detailEditForm.subdomain} onChange={e => setDetailEditForm(f => ({ ...f, subdomain: e.target.value }))} style={inputStyle} />
+                        </div>
+                        <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleDetailEditSave}
+                            style={{ padding: "10px 24px", borderRadius: 10, cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Save</motion.button>
+                          <motion.button whileHover={{ scale: 1.03 }} onClick={() => setEditingDetails(false)}
+                            style={{ padding: "10px 24px", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8", fontWeight: 700, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Cancel</motion.button>
+                        </div>
+                        {detailEditMsg && <div style={{ fontSize: 11, fontWeight: 600, color: detailEditMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{detailEditMsg.text}</div>}
+                      </div>
+                    )}
                   </div>
-                  <p style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>{(detailHospital.activeModules || []).length} modules active. Click any module to configure operators and access.</p>
+
+                  {/* Action buttons */}
+                  {!editingDetails && (
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        onClick={() => { setEditingDetails(true); setDetailEditForm({ name: detailHospital.name, tagline: detailHospital.tagline || "", subdomain: detailHospital.subdomain }); setDetailEditMsg(null); }}
+                        style={{ padding: "8px 18px", borderRadius: 10, cursor: "pointer", background: `${COPPER}10`, border: `1px solid ${COPPER}25`, color: COPPER_LIGHT, fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Edit Details</motion.button>
+                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        onClick={() => handleToggleHospitalActive(detailHospital.code, detailHospital.active)}
+                        style={{ padding: "8px 18px", borderRadius: 10, cursor: "pointer", background: detailHospital.active ? "rgba(239,68,68,0.08)" : "rgba(34,197,94,0.08)", border: `1px solid ${detailHospital.active ? "rgba(239,68,68,0.2)" : "rgba(34,197,94,0.2)"}`, color: detailHospital.active ? "#EF4444" : "#22C55E", fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>{detailHospital.active ? "Suspend" : "Activate"}</motion.button>
+                    </div>
+                  )}
                 </div>
-                <select value={moduleFilter} onChange={e => setModuleFilter(e.target.value as "all" | "active" | "inactive")}
-                  style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, color: moduleFilter === "active" ? "#22C55E" : moduleFilter === "inactive" ? "#EF4444" : COPPER_LIGHT, background: "rgba(255,255,255,0.03)", border: `1px solid ${moduleFilter === "active" ? "rgba(34,197,94,0.3)" : moduleFilter === "inactive" ? "rgba(239,68,68,0.3)" : COPPER + "18"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", appearance: "none", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
-                  <option value="all" style={{ background: "#0a0a14" }}>All</option>
-                  <option value="active" style={{ background: "#0a0a14" }}>Active</option>
-                  <option value="inactive" style={{ background: "#0a0a14" }}>Inactive</option>
-                </select>
               </div>
 
-              {/* Module cards — 3 column grid, clickable to enter operator config */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-                {(() => {
-                  const hospitalModules = (detailHospital.activeModules || []) as string[];
-                  const allWs = [...ALL_WORKSTATIONS, ...UTILITY_STATIONS];
-                  const filtered = moduleFilter === "active" ? allWs.filter(ws => hospitalModules.includes(ws.key))
-                    : moduleFilter === "inactive" ? allWs.filter(ws => !hospitalModules.includes(ws.key))
-                    : allWs;
-                  // Build role→module mapping for showing operators on cards
-                  const moduleOperatorMap = new Map<string, OperatorItem[]>();
-                  for (const ws of allWs) {
-                    const relevantRoles = ROLE_OPTIONS.filter(r => r.modules.includes(ws.key)).map(r => r.value);
-                    const ops = detailOperators.filter(op => relevantRoles.includes(op.role) && op.isActive);
-                    if (ops.length > 0) moduleOperatorMap.set(ws.key, ops);
-                  }
+              {/* ═══ SECTION B: MODULE CONFIGURATION (Original polished design) ═══ */}
+              <div style={cardStyle}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+                  <div>
+                    {sectionTitle("Module Configuration")}
+                    <p style={{ fontSize: 12, color: "#64748B", margin: 0 }}>{hospitalModules.length} modules active. Click any module to configure operators and access.</p>
+                  </div>
+                  <select value={moduleFilter} onChange={e => setModuleFilter(e.target.value as "all" | "active" | "inactive")}
+                    style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, color: moduleFilter === "active" ? "#22C55E" : moduleFilter === "inactive" ? "#EF4444" : COPPER_LIGHT, background: "rgba(255,255,255,0.03)", border: `1px solid ${moduleFilter === "active" ? "rgba(34,197,94,0.3)" : moduleFilter === "inactive" ? "rgba(239,68,68,0.3)" : COPPER + "18"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", appearance: "none", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+                    <option value="all" style={{ background: "#0a0a14" }}>All</option>
+                    <option value="active" style={{ background: "#0a0a14" }}>Active</option>
+                    <option value="inactive" style={{ background: "#0a0a14" }}>Inactive</option>
+                  </select>
+                </div>
 
-                  return filtered.map((ws, i) => {
-                    const isActive = hospitalModules.includes(ws.key);
-                    const moduleOps = moduleOperatorMap.get(ws.key) || [];
-                    return (
-                      <motion.button key={ws.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
-                        whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
-                        onClick={() => openModulePopup(ws.key)}
-                        style={{
-                          textAlign: "left", cursor: "pointer", padding: "20px 22px", borderRadius: 18,
-                          background: isActive ? "rgba(34,197,94,0.03)" : "rgba(255,255,255,0.01)",
-                          border: `1.5px solid ${isActive ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.04)"}`,
-                          position: "relative", overflow: "hidden",
-                        }}>
-                        {/* Accent line at bottom */}
-                        <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: 2, borderRadius: "2px 2px 0 0", background: isActive ? `linear-gradient(90deg, transparent, ${COPPER}60, transparent)` : "transparent" }} />
+                {/* Module cards — 3 column grid, clickable to enter operator config */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+                  {(() => {
+                    const filtered = moduleFilter === "active" ? allWs.filter(ws => hospitalModules.includes(ws.key))
+                      : moduleFilter === "inactive" ? allWs.filter(ws => !hospitalModules.includes(ws.key))
+                      : allWs;
+                    // Build role→module mapping for showing operators on cards
+                    const moduleOperatorMap = new Map<string, OperatorItem[]>();
+                    for (const ws of allWs) {
+                      const relevantRoles = ROLE_OPTIONS.filter(r => r.modules.includes(ws.key)).map(r => r.value);
+                      const ops = detailOperators.filter(op => relevantRoles.includes(op.role) && op.isActive);
+                      if (ops.length > 0) moduleOperatorMap.set(ws.key, ops);
+                    }
 
-                        {/* Top row: icon + role badge */}
-                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-                          <span style={{ fontSize: 28 }}>{ws.icon}</span>
-                          <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: isActive ? COPPER_LIGHT : "#4A5568" }}>{ws.role}</span>
-                        </div>
+                    return filtered.map((ws, i) => {
+                      const isActive = hospitalModules.includes(ws.key);
+                      const moduleOps = moduleOperatorMap.get(ws.key) || [];
+                      return (
+                        <motion.button key={ws.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
+                          whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
+                          onClick={() => openModulePopup(ws.key)}
+                          style={{
+                            textAlign: "left", cursor: "pointer", padding: "20px 22px", borderRadius: 18,
+                            background: isActive ? "rgba(34,197,94,0.03)" : "rgba(255,255,255,0.01)",
+                            border: `1.5px solid ${isActive ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.04)"}`,
+                            position: "relative", overflow: "hidden",
+                          }}>
+                          {/* Accent line at bottom */}
+                          <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: 2, borderRadius: "2px 2px 0 0", background: isActive ? `linear-gradient(90deg, transparent, ${COPPER}60, transparent)` : "transparent" }} />
 
-                        {/* Title */}
-                        <div style={{ fontSize: 15, fontWeight: 800, color: isActive ? "#F0F4FF" : "#475569", fontFamily: "var(--font-outfit), Outfit, sans-serif", marginBottom: 4 }}>{ws.title}</div>
-                        <div style={{ fontSize: 11, color: isActive ? "#64748B" : "#334155", lineHeight: 1.5 }}>{ws.desc}</div>
-
-                        {/* Status dot + operators + toggle */}
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "#22C55E" : "#334155", boxShadow: isActive ? "0 0 6px rgba(34,197,94,0.3)" : "none" }} />
-                            <span style={{ fontSize: 10, fontWeight: 700, color: isActive ? "#22C55E" : "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>{isActive ? "Active" : "Inactive"}</span>
+                          {/* Top row: icon + role badge */}
+                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+                            <span style={{ fontSize: 28 }}>{ws.icon}</span>
+                            <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: isActive ? COPPER_LIGHT : "#4A5568" }}>{ws.role}</span>
                           </div>
-                          {moduleOps.length > 0 && (
-                            <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, justifyContent: "center" }}>
-                              {moduleOps.slice(0, 3).map(op => (
-                                <span key={op.id} style={{ fontSize: 9, fontWeight: 600, color: "#94A3B8" }}>{op.name}</span>
-                              ))}
-                              {moduleOps.length > 3 && <span style={{ fontSize: 9, color: "#475569" }}>+{moduleOps.length - 3}</span>}
+
+                          {/* Title */}
+                          <div style={{ fontSize: 15, fontWeight: 800, color: isActive ? "#F0F4FF" : "#475569", fontFamily: "var(--font-outfit), Outfit, sans-serif", marginBottom: 4 }}>{ws.title}</div>
+                          <div style={{ fontSize: 11, color: isActive ? "#64748B" : "#334155", lineHeight: 1.5 }}>{ws.desc}</div>
+
+                          {/* Status dot + operators + toggle */}
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "#22C55E" : "#334155", boxShadow: isActive ? "0 0 6px rgba(34,197,94,0.3)" : "none" }} />
+                              <span style={{ fontSize: 10, fontWeight: 700, color: isActive ? "#22C55E" : "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>{isActive ? "Active" : "Inactive"}</span>
                             </div>
-                          )}
-                          <motion.span
-                            whileHover={{ scale: 1.1 }}
-                            onClick={(e) => { e.stopPropagation(); handleDetailToggleModule(ws.key); }}
-                            style={{ padding: "3px 10px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", cursor: "pointer", background: isActive ? "rgba(239,68,68,0.08)" : "rgba(34,197,94,0.08)", color: isActive ? "#EF4444" : "#22C55E" }}>
-                            {isActive ? "Disable" : "Enable"}
-                          </motion.span>
-                        </div>
-                      </motion.button>
-                    );
-                  });
-                })()}
+                            {moduleOps.length > 0 && (
+                              <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, justifyContent: "center" }}>
+                                {moduleOps.slice(0, 3).map(op => (
+                                  <span key={op.id} style={{ fontSize: 9, fontWeight: 600, color: "#94A3B8" }}>{op.name}</span>
+                                ))}
+                                {moduleOps.length > 3 && <span style={{ fontSize: 9, color: "#475569" }}>+{moduleOps.length - 3}</span>}
+                              </div>
+                            )}
+                            <motion.span
+                              whileHover={{ scale: 1.1 }}
+                              onClick={(e) => { e.stopPropagation(); handleDetailToggleModule(ws.key); }}
+                              style={{ padding: "3px 10px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", cursor: "pointer", background: isActive ? "rgba(239,68,68,0.08)" : "rgba(34,197,94,0.08)", color: isActive ? "#EF4444" : "#22C55E" }}>
+                              {isActive ? "Disable" : "Enable"}
+                            </motion.span>
+                          </div>
+                        </motion.button>
+                      );
+                    });
+                  })()}
+                </div>
               </div>
 
               {/* ── Module Config Popup ── */}
@@ -1385,7 +1512,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 {modulePopup && (() => {
                   const popupWs = [...ALL_WORKSTATIONS, ...UTILITY_STATIONS].find(w => w.key === modulePopup);
                   if (!popupWs) return null;
-                  const popupColor = (detailHospital.activeModules as string[] || []).includes(modulePopup) ? COPPER : "#475569";
+                  const popupColor = hospitalModules.includes(modulePopup) ? COPPER : "#475569";
                   return (
                     <motion.div key="module-popup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                       onClick={() => setModulePopup(null)}
@@ -1447,8 +1574,6 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                             </div>
                             {popupMsg && <div style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: popupMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{popupMsg.text}</div>}
                           </div>
-
-                          {/* Operator list — removed from popup, will be shown in dedicated hospital operators view */}
                         </div>
                       </motion.div>
                     </motion.div>
@@ -1456,122 +1581,226 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 })()}
               </AnimatePresence>
 
+              {/* ═══ SECTION E: STATS + TIER INFO ═══ */}
+              <div style={cardStyle}>
+                {sectionTitle("Stats & Tier")}
+
+                {/* Stats grid */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
+                  {[
+                    { label: "Patients", value: detailHospital._count.patientRecords, color: BLUE },
+                    { label: "Devices", value: detailHospital._count.devices, color: COPPER },
+                    { label: "Monthly Books", value: detailHospital._count.monthlyBooks, color: "#A855F7" },
+                    { label: "Active Modules", value: hospitalModules.length, color: "#22C55E" },
+                  ].map(stat => (
+                    <div key={stat.label} style={{ textAlign: "center", padding: "18px 12px", borderRadius: 14, background: `${stat.color}06`, border: `1px solid ${stat.color}12` }}>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: stat.color, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{stat.value.toLocaleString()}</div>
+                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#64748B", marginTop: 4 }}>{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Tier info card */}
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "20px 24px", borderRadius: 16, background: `${tierColor}06`, border: `1px solid ${tierColor}12` }}>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: tierColor, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{detailHospital.tier} — {tierDef?.label || detailHospital.tier}</div>
+                    <p style={{ fontSize: 12, color: "#94A3B8", margin: "6px 0 10px" }}>{tierDef?.description || ""}</p>
+                    <div style={{ display: "flex", gap: 20, fontSize: 11, color: "#64748B" }}>
+                      <span>Max Devices: <strong style={{ color: "#F0F4FF" }}>{tierDef?.maxDevices || "—"}</strong></span>
+                      <span>WhatsApp Bundle: <strong style={{ color: "#F0F4FF" }}>{tierDef?.whatsappBundlePerMonth?.toLocaleString() || "—"}/mo</strong></span>
+                      <span>Modules: <strong style={{ color: "#F0F4FF" }}>{tierDef?.modules?.length || "—"}</strong></span>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                    {!changingTier ? (
+                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        onClick={() => setChangingTier(true)}
+                        style={{ padding: "8px 18px", borderRadius: 10, cursor: "pointer", background: `${tierColor}10`, border: `1px solid ${tierColor}25`, color: tierColor, fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Change Tier</motion.button>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                        <div style={{ fontSize: 9, color: "#F59E0B", fontWeight: 600, marginBottom: 2 }}>Warning: Changing Tier May Reset Modules</div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          {(Object.keys(TIER_DEFAULTS) as TierKey[]).filter(t => t !== detailHospital.tier).map(t => (
+                            <motion.button key={t} whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}
+                              onClick={() => handleDetailChangeTier(t)}
+                              style={{ padding: "6px 14px", borderRadius: 8, cursor: "pointer", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", background: `${({ T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7", MASTER: "#F59E0B" } as Record<string, string>)[t] || COPPER}10`, border: `1px solid ${({ T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7", MASTER: "#F59E0B" } as Record<string, string>)[t] || COPPER}25`, color: ({ T1: "#22C55E", T2: BLUE, T3: COPPER, T4: "#A855F7", MASTER: "#F59E0B" } as Record<string, string>)[t] || COPPER }}>{t}</motion.button>
+                          ))}
+                          <motion.button whileHover={{ scale: 1.05 }} onClick={() => setChangingTier(false)}
+                            style={{ padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 10, fontWeight: 700, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#64748B" }}>Cancel</motion.button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Back button */}
-              <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+              <div style={{ display: "flex", justifyContent: "center", marginTop: 8, marginBottom: 40 }}>
                 <motion.button whileHover={{ scale: 1.03 }} onClick={() => { setScreen("hospitals"); setDetailHospital(null); }}
                   style={{ padding: "12px 32px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "#64748B", cursor: "pointer", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                   ← Back To Hospitals
                 </motion.button>
               </div>
             </motion.div>
-          )}
+          ); })()}
 
           {/* ═══════════════════════════════════════ */}
-          {/* SCREEN 5: MONITORING                   */}
+          {/* SCREEN 5: OPERATORS                    */}
           {/* ═══════════════════════════════════════ */}
-          {screen === "monitoring" && (
-            <motion.div key="monitoring" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
-              <div style={{ marginBottom: 32 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Live Dashboard</div>
-                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Monitoring</h2>
+          {screen === "operators" && (() => {
+            const filteredOps = opsPageOperators.filter(op =>
+              opsPageFilter === "all" ? true : opsPageFilter === "active" ? op.isActive : !op.isActive
+            );
+            const activeCount = opsPageOperators.filter(o => o.isActive).length;
+            const selectedH = hospitals.find(h => h.code === opsPageHospital);
+            return (
+            <motion.div key="operators" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Personnel Management</div>
+                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Operators</h2>
               </div>
 
-              {/* Summary stats */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 36 }}>
-                {[
-                  { icon: "🏥", label: "Hospitals", value: hospitals.length, color: COPPER },
-                  { icon: "👤", label: "Total Patients", value: totalPatients.toLocaleString(), color: BLUE },
-                  { icon: "📱", label: "Operators Online", value: `${onlineOps} / ${totalDevices}`, color: onlineOps > 0 ? "#22C55E" : "#64748B" },
-                  { icon: "📂", label: "Groups", value: grouped.groups.length, color: COPPER_LIGHT },
-                ].map(s => (
-                  <div key={s.label} style={{ padding: "24px 20px", borderRadius: 18, background: "rgba(255,255,255,0.02)", border: `1px solid ${s.color}12` }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                      <span style={{ fontSize: 20 }}>{s.icon}</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B" }}>{s.label}</span>
+              {/* Hospital selector + filter */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+                <select value={opsPageHospital} onChange={e => { setOpsPageHospital(e.target.value); loadOpsPageOperators(e.target.value); setOpsPageFilter("all"); }}
+                  style={{ ...inputStyle, maxWidth: 340, appearance: "none" }}>
+                  <option value="" style={{ background: "#0a0a14" }}>Select A Hospital</option>
+                  {hospitals.map(h => <option key={h.code} value={h.code} style={{ background: "#0a0a14" }}>{h.code} — {h.name}</option>)}
+                </select>
+                {opsPageHospital && (
+                  <>
+                    <select value={opsPageFilter} onChange={e => setOpsPageFilter(e.target.value as "all" | "active" | "inactive")}
+                      style={{ ...inputStyle, maxWidth: 140, appearance: "none" }}>
+                      <option value="all" style={{ background: "#0a0a14" }}>All</option>
+                      <option value="active" style={{ background: "#0a0a14" }}>Active</option>
+                      <option value="inactive" style={{ background: "#0a0a14" }}>Inactive</option>
+                    </select>
+                    <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#22C55E" }}>{activeCount} Active</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#64748B" }}>{opsPageOperators.length - activeCount} Inactive</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: COPPER_LIGHT }}>{opsPageOperators.length} Total</span>
                     </div>
-                    <div style={{ fontSize: 32, fontWeight: 800, color: s.color, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{s.value}</div>
-                  </div>
-                ))}
+                  </>
+                )}
               </div>
 
-              {/* Group selector for dashboard */}
-              {grouped.groups.length > 0 && (
-                <div style={{ marginBottom: 24 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>Group Dashboard</div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {grouped.groups.map(g => (
-                      <motion.button key={g.groupCode} whileHover={{ scale: 1.03 }} onClick={() => setSelectedGroup(g.groupCode)}
-                        style={{ padding: "10px 18px", borderRadius: 10, cursor: "pointer", background: selectedGroup === g.groupCode ? `${COPPER}12` : "rgba(255,255,255,0.02)", border: `1px solid ${selectedGroup === g.groupCode ? COPPER + "30" : "rgba(255,255,255,0.05)"}`, color: selectedGroup === g.groupCode ? COPPER_LIGHT : "#64748B", fontSize: 12, fontWeight: 700 }}>
-                        {g.groupName} ({g.hospitals.length})
-                      </motion.button>
-                    ))}
+              {/* No hospital selected */}
+              {!opsPageHospital && (
+                <div style={{ textAlign: "center", padding: "80px 0" }}>
+                  <div style={{ fontSize: 40, marginBottom: 16 }}>👥</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#475569" }}>Select A Hospital To View Operators</div>
+                </div>
+              )}
+
+              {/* Operator grid */}
+              {opsPageHospital && (
+                <div style={{ padding: "28px 24px", borderRadius: 20, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}12` }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT }}>
+                      {selectedH?.name || opsPageHospital} — {filteredOps.length} Operator{filteredOps.length !== 1 ? "s" : ""}
+                    </div>
+                  </div>
+
+                  {filteredOps.length === 0 && (
+                    <div style={{ textAlign: "center", padding: "40px 0", color: "#475569", fontSize: 13, fontWeight: 600 }}>
+                      {opsPageFilter === "all" ? "No Operators Registered" : `No ${opsPageFilter === "active" ? "Active" : "Inactive"} Operators`}
+                    </div>
+                  )}
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                    {filteredOps.map((op, i) => {
+                      const roleLabel = ROLE_OPTIONS.find(r => r.value === op.role)?.label || op.role;
+                      const roleModules = ROLE_OPTIONS.find(r => r.value === op.role)?.modules || [];
+                      return (
+                        <motion.div key={op.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
+                          style={{ padding: "18px 16px", borderRadius: 16, background: op.isActive ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.01)", border: `1px solid ${op.isActive ? "#22C55E" + "20" : "rgba(255,255,255,0.04)"}`, position: "relative", overflow: "hidden" }}>
+                          {/* Status dot + Name */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: op.isActive ? "#22C55E" : "#EF4444", flexShrink: 0 }} />
+                            <div style={{ fontSize: 15, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{op.name}</div>
+                          </div>
+
+                          {/* Role badge */}
+                          <div style={{ fontSize: 10, fontWeight: 700, color: COPPER_LIGHT, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>{roleLabel}</div>
+
+                          {/* Module tags */}
+                          {roleModules.length > 0 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
+                              {roleModules.slice(0, 3).map(m => {
+                                const ws = [...ALL_WORKSTATIONS, ...UTILITY_STATIONS].find(w => w.key === m);
+                                return <span key={m} style={{ padding: "2px 6px", borderRadius: 4, background: `${BLUE}08`, border: `1px solid ${BLUE}12`, fontSize: 8, fontWeight: 700, color: BLUE, textTransform: "uppercase", letterSpacing: "0.06em" }}>{ws?.title || m}</span>;
+                              })}
+                              {roleModules.length > 3 && <span style={{ fontSize: 8, color: "#475569", alignSelf: "center" }}>+{roleModules.length - 3}</span>}
+                            </div>
+                          )}
+
+                          {/* Phone + PIN info */}
+                          <div style={{ fontSize: 10, color: "#4A5568", marginBottom: 12 }}>
+                            {op.phone && <span>{op.phone} · </span>}
+                            <span>PIN ····</span>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <motion.button whileHover={{ scale: 1.05 }}
+                              onClick={() => { setOpsPageEditOp(op); setOpsPageEditForm({ name: op.name, phone: op.phone || "", role: op.role, newPin: "" }); setOpsPageEditMsg(null); }}
+                              style={{ padding: "5px 10px", borderRadius: 6, fontSize: 9, fontWeight: 700, color: BLUE, background: `${BLUE}08`, border: `1px solid ${BLUE}15`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                              Edit
+                            </motion.button>
+                            <motion.button whileHover={{ scale: 1.05 }}
+                              onClick={() => handleOpsPageResetPin(op)}
+                              style={{ padding: "5px 10px", borderRadius: 6, fontSize: 9, fontWeight: 700, color: "#F59E0B", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                              Reset PIN
+                            </motion.button>
+                            <motion.button whileHover={{ scale: 1.05 }}
+                              onClick={() => handleOpsPageToggleOperator(op)}
+                              style={{ padding: "5px 10px", borderRadius: 6, fontSize: 9, fontWeight: 700, color: op.isActive ? "#EF4444" : "#22C55E", background: op.isActive ? "rgba(239,68,68,0.06)" : "rgba(34,197,94,0.06)", border: `1px solid ${op.isActive ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                              {op.isActive ? "Deactivate" : "Activate"}
+                            </motion.button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* Group dashboard data */}
-              {groupDashboard && (
-                <div style={{ padding: "24px", borderRadius: 18, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10` }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: COPPER_LIGHT, marginBottom: 20, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{groupDashboard.group.name}</div>
+              {/* Edit operator modal */}
+              {opsPageEditOp && (
+                <div onClick={() => setOpsPageEditOp(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()}
+                    style={{ width: 440, padding: "32px 28px", borderRadius: 20, background: "#0C0C16", border: `1px solid ${COPPER}20`, position: "relative" }}>
+                    {/* Side accents */}
+                    <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 4, background: "#4A3728", borderRadius: "20px 0 0 20px" }} />
+                    <div style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: 4, background: "#4A3728", borderRadius: "0 20px 20px 0" }} />
 
-                  {/* Totals */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
-                    {[
-                      { label: "Total Patients", value: groupDashboard.totals.patients },
-                      { label: "Today", value: groupDashboard.totals.todayPatients },
-                      { label: "Operators", value: groupDashboard.totals.operators },
-                      { label: "Branches", value: groupDashboard.totals.branches },
-                    ].map(t => (
-                      <div key={t.label} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", textAlign: "center" }}>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: BLUE, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{t.value}</div>
-                        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B", marginTop: 4 }}>{t.label}</div>
-                      </div>
-                    ))}
-                  </div>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 20 }}>Edit Operator</div>
 
-                  {/* Branch breakdown */}
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B", marginBottom: 10 }}>Branch Breakdown</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {groupDashboard.branches.map(b => (
-                      <div key={b.code} style={{ padding: "12px 16px", borderRadius: 10, background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ fontSize: 11, fontWeight: 800, color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{b.code}</span>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: "#E2E8F0" }}>{b.name}</span>
-                          <span style={{ padding: "2px 6px", borderRadius: 4, background: `${BLUE}10`, fontSize: 9, fontWeight: 700, color: BLUE }}>{b.tier}</span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 11, color: "#64748B" }}>
-                          <span>{b.totalPatients} patients</span>
-                          <span>{b.todayPatients} today</span>
-                          <span>{b.operators} ops</span>
-                        </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div><label style={labelStyle}>Name</label><input value={opsPageEditForm.name} onChange={e => setOpsPageEditForm(f => ({ ...f, name: e.target.value }))} style={inputStyle} /></div>
+                      <div><label style={labelStyle}>Phone</label><input value={opsPageEditForm.phone} onChange={e => setOpsPageEditForm(f => ({ ...f, phone: e.target.value }))} style={inputStyle} /></div>
+                      <div><label style={labelStyle}>Role</label>
+                        <select value={opsPageEditForm.role} onChange={e => setOpsPageEditForm(f => ({ ...f, role: e.target.value }))} style={{ ...inputStyle, appearance: "none" }}>
+                          {ROLE_OPTIONS.map(r => <option key={r.value} value={r.value} style={{ background: "#0a0a14" }}>{r.label}</option>)}
+                        </select>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Per-hospital quick stats (if no group selected) */}
-              {!groupDashboard && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {hospitals.map(h => (
-                    <div key={h.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: h.active ? "#22C55E" : "#EF4444" }} />
-                        <span style={{ fontSize: 12, fontWeight: 800, color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.code}</span>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: "#E2E8F0" }}>{h.name}</span>
-                        <span style={{ padding: "2px 6px", borderRadius: 4, background: `${BLUE}10`, fontSize: 9, fontWeight: 700, color: BLUE }}>{h.tier}</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 11, color: "#64748B" }}>
-                        <span>{h._count.patientRecords} patients</span>
-                        <span>{h._count.devices} devices</span>
-                        <span>{(h.activeModules || []).length} modules</span>
-                      </div>
+                      <div><label style={labelStyle}>New PIN (Leave Empty To Keep Current)</label><input type="password" maxLength={4} placeholder="····" value={opsPageEditForm.newPin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setOpsPageEditForm(f => ({ ...f, newPin: e.target.value })); }} style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.3em" }} /></div>
                     </div>
-                  ))}
+
+                    {opsPageEditMsg && <div style={{ marginTop: 12, fontSize: 11, fontWeight: 600, color: opsPageEditMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{opsPageEditMsg.text}</div>}
+
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+                      <motion.button whileHover={{ scale: 1.03 }} onClick={() => setOpsPageEditOp(null)}
+                        style={{ padding: "10px 20px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "#64748B", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>Cancel</motion.button>
+                      <motion.button whileHover={{ scale: 1.03 }} onClick={handleOpsPageEditOperator}
+                        style={{ padding: "10px 20px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "#fff", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", cursor: "pointer" }}>Save Changes</motion.button>
+                    </div>
+                  </motion.div>
                 </div>
               )}
             </motion.div>
-          )}
+            );
+          })()}
 
           {/* ═══════════════════════════════════════ */}
           {/* SCREEN 6: AUDIT TRAIL                  */}
