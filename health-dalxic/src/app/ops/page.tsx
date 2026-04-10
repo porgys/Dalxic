@@ -1303,21 +1303,12 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   </div>
                   <p style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>{(detailHospital.activeModules || []).length} modules active. Click any module to configure operators and access.</p>
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {([
-                    { key: "active" as const, label: "Active", color: "#22C55E" },
-                    { key: "inactive" as const, label: "Inactive", color: "#64748B" },
-                  ]).map(f => {
-                    const isSelected = moduleFilter === f.key;
-                    return (
-                      <motion.button key={f.key} whileHover={{ scale: 1.04 }}
-                        onClick={() => setModuleFilter(isSelected ? "all" : f.key)}
-                        style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, color: isSelected ? f.color : "#475569", background: isSelected ? `${f.color}12` : "rgba(255,255,255,0.03)", border: `1px solid ${isSelected ? f.color + "30" : "rgba(255,255,255,0.06)"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                        {f.label}
-                      </motion.button>
-                    );
-                  })}
-                </div>
+                <select value={moduleFilter} onChange={e => setModuleFilter(e.target.value as "all" | "active" | "inactive")}
+                  style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, color: moduleFilter === "active" ? "#22C55E" : moduleFilter === "inactive" ? "#EF4444" : COPPER_LIGHT, background: "rgba(255,255,255,0.03)", border: `1px solid ${moduleFilter === "active" ? "rgba(34,197,94,0.3)" : moduleFilter === "inactive" ? "rgba(239,68,68,0.3)" : COPPER + "18"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", appearance: "none", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+                  <option value="all" style={{ background: "#0a0a14" }}>All</option>
+                  <option value="active" style={{ background: "#0a0a14" }}>Active</option>
+                  <option value="inactive" style={{ background: "#0a0a14" }}>Inactive</option>
+                </select>
               </div>
 
               {/* Module cards — 3 column grid, clickable to enter operator config */}
