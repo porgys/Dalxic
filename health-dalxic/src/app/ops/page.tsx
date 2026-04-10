@@ -1353,21 +1353,20 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                         <div style={{ fontSize: 15, fontWeight: 800, color: isActive ? "#F0F4FF" : "#475569", fontFamily: "var(--font-outfit), Outfit, sans-serif", marginBottom: 4 }}>{ws.title}</div>
                         <div style={{ fontSize: 11, color: isActive ? "#64748B" : "#334155", lineHeight: 1.5 }}>{ws.desc}</div>
 
-                        {/* Assigned operators */}
-                        {moduleOps.length > 0 && (
-                          <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 4 }}>
-                            {moduleOps.map(op => (
-                              <span key={op.id} style={{ fontSize: 9, fontWeight: 600, color: "#94A3B8", padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>{op.name}</span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Status dot + toggle */}
+                        {/* Status dot + operators + toggle */}
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <div style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "#22C55E" : "#334155", boxShadow: isActive ? "0 0 6px rgba(34,197,94,0.3)" : "none" }} />
                             <span style={{ fontSize: 10, fontWeight: 700, color: isActive ? "#22C55E" : "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>{isActive ? "Active" : "Inactive"}</span>
                           </div>
+                          {moduleOps.length > 0 && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, justifyContent: "center" }}>
+                              {moduleOps.slice(0, 3).map(op => (
+                                <span key={op.id} style={{ fontSize: 9, fontWeight: 600, color: "#94A3B8" }}>{op.name}</span>
+                              ))}
+                              {moduleOps.length > 3 && <span style={{ fontSize: 9, color: "#475569" }}>+{moduleOps.length - 3}</span>}
+                            </div>
+                          )}
                           <motion.span
                             whileHover={{ scale: 1.1 }}
                             onClick={(e) => { e.stopPropagation(); handleDetailToggleModule(ws.key); }}
