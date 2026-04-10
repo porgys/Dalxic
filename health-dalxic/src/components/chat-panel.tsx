@@ -175,6 +175,7 @@ export function ChatPanel({ hospitalCode, currentModule, operatorId, operatorNam
   useEffect(() => {
     if (!chatEnabled) return;
     const pusher = getPusherClient();
+    if (!pusher) return;
     const channel = pusher.subscribe(`private-hospital-${hospitalCode}-chat`);
     channel.bind("new-message", (msg: ChatMsg) => {
       if (msg.toModule === null || msg.toModule === currentModule || msg.fromModule === currentModule) {

@@ -47,6 +47,7 @@ export default function WaitingRoomPage() {
     loadQueue();
     try {
       const pusher = getPusherClient();
+      if (!pusher) return;
       const channel = pusher.subscribe(`hospital-${HOSPITAL_CODE}-queue`);
       channel.bind("patient-added", (data: { queueToken: string; patientName: string; department: string; emergencyFlag?: boolean; symptomSeverity?: number }) => {
         setQueue((prev) => [...prev, {

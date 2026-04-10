@@ -108,6 +108,7 @@ function DisplayContent() {
 
     try {
       const pusher = getPusherClient();
+      if (!pusher) { return () => clearInterval(interval); }
       const channelName = dept
         ? `hospital-${HOSPITAL_CODE}-callout-${dept}`
         : `hospital-${HOSPITAL_CODE}-callout`;
