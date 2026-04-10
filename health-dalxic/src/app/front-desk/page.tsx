@@ -490,8 +490,24 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
     }
   };
 
-  const handleBulkParsed = (entries: ParsedPatientEntry[]) => {
-    console.log(`Saving ${entries.length} parsed records`);
+  const handleBulkParsed = async (entries: ParsedPatientEntry[]) => {
+    let saved = 0;
+    for (const entry of entries) {
+      try {
+        const res = await fetch("/api/queue", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            hospitalCode: HOSPITAL_CODE,
+            patient: { fullName: entry.patient.fullName, dateOfBirth: entry.patient.dateOfBirth || null, gender: entry.patient.gender || null, phone: entry.patient.phone || null },
+            chiefComplaint: entry.visit.chiefComplaint || "General consultation",
+            department: entry.visit.department || "general",
+          }),
+        });
+        if (res.ok) saved++;
+      } catch { /* continue with next */ }
+    }
+    if (saved > 0) loadQueue();
   };
 
   // Close visit handlers

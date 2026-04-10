@@ -116,7 +116,7 @@ interface PrescriptionItem {
 const NAV_ITEMS = [
   { id: "prescriptions", icon: "💊", label: "Prescriptions" },
   { id: "dispensed", icon: "✅", label: "Dispensed Today" },
-  { id: "inventory", icon: "📦", label: "Inventory" },
+  // Inventory nav removed — no backend API yet
 ];
 
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
@@ -351,22 +351,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
             </motion.div>
           )}
 
-          {/* ═══════ INVENTORY VIEW (PLACEHOLDER) ═══════ */}
-          {activeNav === "inventory" && (
-            <motion.div key="inventory" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <WorkshopBox title="Inventory Management" icon="📦" delay={0.05}>
-                <div style={{ textAlign: "center", paddingTop: 40, paddingBottom: 40 }}>
-                  <div style={{ width: 64, height: 64, margin: "0 auto 16px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid rgba(184,115,51,0.15)" }}>
-                    <span style={{ fontSize: 24 }}>📦</span>
-                  </div>
-                  <p style={{ fontSize: 20, fontWeight: 700, color: "white", marginBottom: 8 }}>Inventory Module Coming Soon</p>
-                  <p style={{ fontSize: 14.5, fontWeight: 500, color: "#94A3B8", lineHeight: 1.7 }}>
-                    Stock Tracking, Reorder Alerts, And Expiry Management Will Be Available In The Next Update
-                  </p>
-                </div>
-              </WorkshopBox>
-            </motion.div>
-          )}
+          {/* Inventory view — requires backend inventory API (not yet built) */}
         </AnimatePresence>
       </main>
     </div>

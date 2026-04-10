@@ -536,6 +536,36 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const [newGrant, setNewGrant] = useState({ staffId: "", hospitalId: "", role: "viewer", reason: "", hours: "24" });
   const [grantMsg, setGrantMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
+  // Tier upgrade
+  const [tierTarget, setTierTarget] = useState("");
+  const [tierMsg, setTierMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const handleTierUpgrade = async () => {
+    if (!tierTarget || !selectedTier) return;
+    setTierMsg(null);
+    const res = await fetch("/api/hospitals", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hospitalCode: tierTarget, newTier: selectedTier, actorId: "ops-admin" }),
+    });
+    if (res.ok) {
+      setTierMsg({ type: "ok", text: `${tierTarget} upgraded to ${selectedTier}` });
+      setTierTarget("");
+      loadHospitals();
+    } else {
+      const err = await res.json();
+      setTierMsg({ type: "err", text: err.error || "Upgrade failed" });
+    }
+  };
+
+  // Audit logs
+  const [auditLogs, setAuditLogs] = useState<{ id: string; actorType: string; actorId: string; action: string; metadata: Record<string, unknown>; ipAddress: string; timestamp: string; hospital?: { code: string; name: string } }[]>([]);
+  const loadAuditLogs = useCallback(async () => {
+    try {
+      const res = await fetch("/api/audit?limit=100");
+      if (res.ok) setAuditLogs(await res.json());
+    } catch { /* */ }
+  }, []);
+
   const loadAccessGrants = useCallback(async () => {
     try {
       const res = await fetch("/api/access-grants");
@@ -640,11 +670,12 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     if (!code || !name || !subdomain) return;
     setAddingHospital(true);
     try {
-      await fetch("/api/hospitals", {
+      const res = await fetch("/api/hospitals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, name, subdomain, tier: newHospital.tier, tagline: newHospital.tagline, actorId: "dalxic_ops" }),
       });
+      if (!res.ok) { const err = await res.json(); setGroupMsg({ type: "err", text: err.error || "Hospital creation failed" }); return; }
       // If groupCode selected, link hospital to group
       if (newHospital.groupCode) {
         await fetch("/api/groups", {
@@ -823,7 +854,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
             <NavPill icon="👥" label="Operators" active={view === "operators"} onClick={() => setView("operators")} />
             <NavPill icon="📦" label="Tiers" active={view === "tiers"} onClick={() => setView("tiers")} />
             <NavPill icon="🧩" label="Modules" active={view === "modules"} onClick={() => setView("modules")} />
-            <NavPill icon="📋" label="Audit" active={view === "audit"} onClick={() => setView("audit")} />
+            <NavPill icon="📋" label="Audit" active={view === "audit"} onClick={() => { setView("audit"); loadAuditLogs(); }} />
             <NavPill icon="🔑" label="Access" active={view === "access"} onClick={() => { setView("access"); loadAccessGrants(); }} />
           </div>
         </div>
@@ -878,7 +909,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 )}
                 <StatCard icon="👤" label="Total Patients" value={totalPatients.toLocaleString()} color={BLUE} />
                 <StatCard icon="📱" label="Operators Online" value={`${onlineOps} / ${totalDevices}`} color={onlineOps > 0 ? "#22C55E" : "#64748B"} />
-                <StatCard icon="📦" label="Tier Templates" value="4" color="#A855F7" />
+                <StatCard icon="📦" label="Tier Templates" value={Object.keys(TIER_DEFAULTS).length} color="#A855F7" />
               </div>
 
               {/* Hospital quick list — grouped */}
@@ -1611,6 +1642,23 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   ))}
                 </div>
               </div>
+
+              {/* Tier upgrade action */}
+              <div style={{ marginTop: 28, padding: "20px", borderRadius: 14, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10` }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: COPPER_LIGHT, marginBottom: 10 }}>Deploy {selectedTier} To Hospital</div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <select value={tierTarget} onChange={(e) => setTierTarget(e.target.value)}
+                    style={{ flex: 1, padding: "9px 12px", borderRadius: 8, fontSize: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "white", outline: "none" }}>
+                    <option value="">Select Hospital...</option>
+                    {hospitals.map(h => <option key={h.code} value={h.code}>{h.code} — {h.name} (Current: {h.tier})</option>)}
+                  </select>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleTierUpgrade} disabled={!tierTarget}
+                    style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: tierTarget ? "pointer" : "not-allowed", background: tierTarget ? `linear-gradient(135deg, ${COPPER}, #D4956B)` : "rgba(255,255,255,0.03)", border: "none", opacity: tierTarget ? 1 : 0.4 }}>
+                    Upgrade
+                  </motion.button>
+                </div>
+                {tierMsg && <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, color: tierMsg.type === "ok" ? "#22C55E" : "#F87171" }}>{tierMsg.text}</div>}
+              </div>
             </motion.div>
           )}
 
@@ -1929,27 +1977,41 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
               <div style={{ marginBottom: 32 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>System Records</div>
                 <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Audit Trail</h2>
+                <p style={{ fontSize: 12, color: "#475569", marginTop: 6 }}>Immutable log. Cannot be edited or deleted by any user level.</p>
               </div>
 
-              <div style={{
-                padding: "28px 24px", borderRadius: 18,
-                background: "rgba(255,255,255,0.02)",
-                border: `1px solid ${COPPER}10`,
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COPPER} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  </svg>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: COPPER_LIGHT, letterSpacing: "0.06em" }}>AuditVault™</span>
-                </div>
-                <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.8, marginBottom: 16 }}>
-                  Immutable audit trail across all hospitals. Every action logged with: actor type, actor identity, hospital, action, metadata, IP address, and timestamp.
-                  Emergency override entries carry a permanent <strong style={{ color: "#EF4444" }}>EMERGENCY_OVERRIDE</strong> flag.
-                </p>
-                <p style={{ fontSize: 12, color: "#475569", lineHeight: 1.7 }}>
-                  Audit logs cannot be filtered, hidden, or deleted by any user level — including Dalxic super admins.
-                  This ensures full regulatory compliance across Ghana DPA, Nigeria NDPR, Kenya DPA, and South Africa POPIA.
-                </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {auditLogs.length === 0 && (
+                  <div style={{ padding: 32, textAlign: "center", color: "#475569", fontSize: 13 }}>No audit logs recorded yet</div>
+                )}
+                {auditLogs.map((log) => {
+                  const isEmergency = log.action.includes("emergency");
+                  return (
+                    <div key={log.id} style={{
+                      padding: "10px 14px", borderRadius: 10,
+                      background: isEmergency ? "rgba(239,68,68,0.04)" : "rgba(255,255,255,0.015)",
+                      border: `1px solid ${isEmergency ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.04)"}`,
+                      display: "flex", alignItems: "flex-start", gap: 10,
+                    }}>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", marginTop: 5, background: isEmergency ? "#EF4444" : log.action.includes("login") ? "#22C55E" : log.action.includes("created") ? COPPER : "#64748B", flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: "white" }}>{log.action}</span>
+                          <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 6px", borderRadius: 4, background: "rgba(255,255,255,0.04)", color: "#64748B" }}>{log.actorType}</span>
+                          {log.hospital && <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 6px", borderRadius: 4, background: `${COPPER}10`, color: COPPER_LIGHT }}>{log.hospital.code}</span>}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#475569", marginTop: 2 }}>
+                          Actor: {log.actorId} · IP: {log.ipAddress} · {new Date(log.timestamp).toLocaleString()}
+                        </div>
+                        {log.metadata && Object.keys(log.metadata).length > 0 && (
+                          <div style={{ fontSize: 9, color: "#334155", marginTop: 2, fontFamily: "var(--font-jetbrains-mono), monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {JSON.stringify(log.metadata)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </motion.div>
           )}

@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const HOSPITAL_ID = "placeholder-hospital-id";
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
 const COPPER = "#B87333";
@@ -184,12 +183,14 @@ export default function AdminPage() {
   const [newDevice, setNewDevice] = useState({ name: "", role: "", pin: "" });
   const [addingDevice, setAddingDevice] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [hospitalId, setHospitalId] = useState<string>("");
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (hId: string) => {
+    if (!hId) return;
     try {
       const [devRes, bookRes, queueRes] = await Promise.all([
-        fetch(`/api/devices?hospitalId=${HOSPITAL_ID}`),
-        fetch(`/api/books?hospitalId=${HOSPITAL_ID}`),
+        fetch(`/api/devices?hospitalId=${hId}`),
+        fetch(`/api/books?hospitalId=${hId}`),
         fetch(`/api/queue?hospitalCode=${HOSPITAL_CODE}`),
       ]);
       if (devRes.ok) setDevices(await devRes.json());
@@ -198,7 +199,15 @@ export default function AdminPage() {
     } catch { /* retry */ }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  // Resolve hospital ID from code on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`/api/hospitals?code=${HOSPITAL_CODE}`);
+        if (res.ok) { const h = await res.json(); setHospitalId(h.id); loadData(h.id); }
+      } catch { /* */ }
+    })();
+  }, [loadData]);
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -211,7 +220,7 @@ export default function AdminPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ deviceId, action, actorId: "admin", actorType: "hospital_admin" }),
     });
-    loadData();
+    loadData(hospitalId);
   };
 
   const handleAddDevice = async () => {
@@ -221,10 +230,10 @@ export default function AdminPage() {
       await fetch("/api/devices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hospitalId: HOSPITAL_ID, deviceName: newDevice.name, role: newDevice.role, pin: newDevice.pin, assignedBy: "admin" }),
+        body: JSON.stringify({ hospitalId: hospitalId, deviceName: newDevice.name, role: newDevice.role, pin: newDevice.pin, assignedBy: "admin" }),
       });
       setNewDevice({ name: "", role: "", pin: "" });
-      loadData();
+      loadData(hospitalId);
     } finally { setAddingDevice(false); }
   };
 
@@ -234,7 +243,7 @@ export default function AdminPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ bookId, actorId: "admin" }),
     });
-    loadData();
+    loadData(hospitalId);
   };
 
   const activeDevices = devices.filter((d) => d.isActive);
@@ -338,7 +347,7 @@ export default function AdminPage() {
                       { label: "Manage Devices", action: () => setView("devices"), icon: "📱" },
                       { label: "View Books", action: () => setView("books"), icon: "📚" },
                       { label: "Staff Access Log", action: () => setView("staff"), icon: "👥" },
-                      { label: "Refresh Data", action: () => loadData(), icon: "🔄" },
+                      { label: "Refresh Data", action: () => loadData(hospitalId), icon: "🔄" },
                     ].map((item) => (
                       <motion.button
                         key={item.label}

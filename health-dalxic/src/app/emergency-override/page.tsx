@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const HOSPITAL_ID = "placeholder-hospital-id";
+const HOSPITAL_CODE = "KBH";
 const COPPER = "#B87333";
 const EMERGENCY_RED = "#DC2626";
 
@@ -139,6 +139,7 @@ interface PatientRow {
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 
 export default function EmergencyOverridePage() {
+  const [hospitalId, setHospitalId] = useState("");
   const [userId, setUserId] = useState("");
   const [pin, setPin] = useState("");
   const [reason, setReason] = useState("");
@@ -148,6 +149,16 @@ export default function EmergencyOverridePage() {
   const [records, setRecords] = useState<PatientRow[]>([]);
   const [expiresIn, setExpiresIn] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Resolve hospital ID from code
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`/api/hospitals?code=${HOSPITAL_CODE}`);
+        if (res.ok) { const h = await res.json(); setHospitalId(h.id); }
+      } catch { /* */ }
+    })();
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -165,7 +176,7 @@ export default function EmergencyOverridePage() {
       const res = await fetch("/api/emergency", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hospitalId: HOSPITAL_ID, userId, pin, reason }),
+        body: JSON.stringify({ hospitalId, userId, pin, reason }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }

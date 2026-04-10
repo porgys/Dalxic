@@ -146,31 +146,31 @@ export default function BedManagementPage() {
   const createWard = async () => {
     if (!newWardForm.name.trim()) return;
     try {
-      await fetch("/api/beds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, action: "create_ward", ...newWardForm }) });
-      setNewWardForm({ name: "", type: "general", floor: 1 }); setAddingWard(false); loadDashboard();
+      const res = await fetch("/api/beds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, action: "create_ward", ...newWardForm }) });
+      if (res.ok) { setNewWardForm({ name: "", type: "general", floor: 1 }); setAddingWard(false); loadDashboard(); }
     } catch { /* retry */ }
   };
 
   const createRoom = async (wardId: string) => {
     if (!newRoomName.trim()) return;
     try {
-      await fetch("/api/beds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, action: "create_room", wardId, name: newRoomName }) });
-      setNewRoomName(""); setAddingRoom(null); loadDashboard();
+      const res = await fetch("/api/beds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, action: "create_room", wardId, name: newRoomName }) });
+      if (res.ok) { setNewRoomName(""); setAddingRoom(null); loadDashboard(); }
     } catch { /* retry */ }
   };
 
   const createBed = async (roomId: string) => {
     if (!newBedLabel.trim()) return;
     try {
-      await fetch("/api/beds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, action: "create_bed", roomId, label: newBedLabel }) });
-      setNewBedLabel(""); setAddingBed(null); loadDashboard();
+      const res = await fetch("/api/beds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, action: "create_bed", roomId, label: newBedLabel }) });
+      if (res.ok) { setNewBedLabel(""); setAddingBed(null); loadDashboard(); }
     } catch { /* retry */ }
   };
 
   const updateBedStatus = async (bedId: string, newStatus: string) => {
     try {
-      await fetch("/api/beds", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bedId, status: newStatus, triggeredBy: "admin" }) });
-      loadDashboard();
+      const res = await fetch("/api/beds", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bedId, status: newStatus, triggeredBy: "admin" }) });
+      if (res.ok) loadDashboard();
     } catch { /* retry */ }
   };
 

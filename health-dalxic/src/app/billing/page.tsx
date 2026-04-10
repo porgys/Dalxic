@@ -614,7 +614,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                 <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>
                   Use Patient Billing Tab To Search Bills By Patient ID.
                   <br /><br />
-                  <span style={{ fontSize: 11, color: "#4A5568" }}>Global Bill Search Coming Soon — Use Patient ID For Now</span>
+                  <span style={{ fontSize: 11, color: "#4A5568" }}>Search By Patient ID In The Patient Billing Tab</span>
                 </p>
               </WorkshopBox>
             </motion.div>
