@@ -347,6 +347,15 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [incomingReferrals, setIncomingReferrals] = useState<{ id: string; recordId: string; patientName: string; queueToken: string; specialty?: string; reason: string; urgency: string; referredBy: string; referredAt: string; status: string; chiefComplaint: string; currentDiagnosis: string | null }[]>([]);
   const [referralCount, setReferralCount] = useState(0);
 
+  // Sub-menu navigation
+  const [consultTab, setConsultTab] = useState<"consultation" | "lab" | "actions">("consultation");
+
+  // Vitals state
+  const [vitals, setVitals] = useState({ bp: "", heartRate: "", rr: "", temperature: "", spo2: "", weight: "", height: "" });
+  const calcBmi = vitals.weight && vitals.height ? (Number(vitals.weight) / ((Number(vitals.height) / 100) ** 2)).toFixed(1) : "";
+  const bmiClass = calcBmi ? (Number(calcBmi) < 18.5 ? "Underweight" : Number(calcBmi) < 25 ? "Normal" : Number(calcBmi) < 30 ? "Overweight" : "Obese") : "";
+  const bmiColor = bmiClass === "Normal" ? "#22C55E" : bmiClass === "Underweight" ? "#38BDF8" : bmiClass === "Overweight" ? "#F59E0B" : bmiClass === "Obese" ? "#EF4444" : "#64748B";
+
   // Custom SOAP templates
   const [customTemplates, setCustomTemplates] = useState<SOAPTemplate[]>(() => getCustomTemplates(operator.operatorId));
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
@@ -722,8 +731,9 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
     setEnding(true);
     try {
       const validRx = prescriptions.filter((p) => p.medication);
-      // Save diagnosis + treatment
-      await fetch("/api/records", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: activeSession.recordId, hospitalCode: HOSPITAL_CODE, diagnosis: { primary: diagnosis.primary, secondary: [], icdCodes: [], notes: diagnosis.notes }, treatment: { prescriptions: validRx, procedures: [], followUp: null, nextAppointment: null } }) });
+      const vitalsData = { bp: vitals.bp, heartRate: vitals.heartRate, rr: vitals.rr, temperature: vitals.temperature, spo2: vitals.spo2, weight: vitals.weight, height: vitals.height, bmi: calcBmi };
+      // Save diagnosis + treatment + vitals
+      await fetch("/api/records", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: activeSession.recordId, hospitalCode: HOSPITAL_CODE, diagnosis: { primary: diagnosis.primary, secondary: [], icdCodes: [], notes: diagnosis.notes }, treatment: { prescriptions: validRx, procedures: [], followUp: null, nextAppointment: null }, vitals: vitalsData }) });
       // If lab tests selected WITHOUT pause, still create orders (legacy path)
       if (labReferral && selectedTests.length > 0) {
         await fetch("/api/lab-orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ patientId: activeSession.recordId, hospitalCode: HOSPITAL_CODE, tests: selectedTests.map((t) => ({ testName: t, category: "other" })), clinicalNotes }) });
@@ -762,9 +772,10 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
     if (!activeSession || !admitSelectedBed) return;
     setAdmitting(true);
     try {
-      // Save diagnosis + treatment first
+      // Save diagnosis + treatment + vitals first
       const validRx = prescriptions.filter((p) => p.medication);
-      await fetch("/api/records", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: activeSession.recordId, hospitalCode: HOSPITAL_CODE, diagnosis: { primary: diagnosis.primary, secondary: [], icdCodes: [], notes: diagnosis.notes }, treatment: { prescriptions: validRx, procedures: [], followUp: null, nextAppointment: null } }) });
+      const vitalsData = { bp: vitals.bp, heartRate: vitals.heartRate, rr: vitals.rr, temperature: vitals.temperature, spo2: vitals.spo2, weight: vitals.weight, height: vitals.height, bmi: calcBmi };
+      await fetch("/api/records", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: activeSession.recordId, hospitalCode: HOSPITAL_CODE, diagnosis: { primary: diagnosis.primary, secondary: [], icdCodes: [], notes: diagnosis.notes }, treatment: { prescriptions: validRx, procedures: [], followUp: null, nextAppointment: null }, vitals: vitalsData }) });
 
       // Admit to ward
       await fetch("/api/ward-ipd", {
@@ -796,6 +807,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
 
   const resetSession = () => {
     setActiveSession(null); setDiagnosis({ primary: "", notes: "" }); setPrescriptions([{ medication: "", dosage: "", frequency: "", duration: "" }]); setLabReferral(false); setSelectedTests([]); setClinicalNotes(""); setShowReferralPanel(false); setReferralSpecialty(""); setReferralReason(""); setReferralNotes("");
+    setVitals({ bp: "", heartRate: "", rr: "", temperature: "", spo2: "", weight: "", height: "" }); setConsultTab("consultation");
     setDoctorStatus("AVAILABLE");
     if (doctorId) {
       fetch("/api/doctors", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doctorId, hospitalCode: HOSPITAL_CODE, status: "AVAILABLE" }) }).catch(() => {});
@@ -1092,342 +1104,379 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
           <AnimatePresence mode="wait">
             {activeSession ? (
               <motion.div key="charting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                {/* ── Assessment & Plan — compact stacked sections ── */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-                  {/* Diagnosis */}
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-                    style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                      <span style={{ fontSize: 14 }}>🩺</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Diagnosis</span>
-                    </div>
-                    {/* SOAP Template Quick-Select */}
-                    <div style={{ marginBottom: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <label style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#3D4D78" }}>Quick Template</label>
-                        <div style={{ display: "flex", gap: 4 }}>
-                          {diagnosis.primary && (
-                            <button type="button" onClick={saveCurrentAsTemplate} style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, cursor: "pointer", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#22C55E", letterSpacing: "0.04em" }}>
-                              Save As Template
-                            </button>
-                          )}
-                          <button type="button" onClick={() => setShowCreateTemplate(true)} style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, cursor: "pointer", background: `${COPPER}08`, border: `1px solid ${COPPER}20`, color: "#D4956B", letterSpacing: "0.04em" }}>
-                            + New
-                          </button>
+                {/* Sub-menu pills */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+                  {([
+                    { id: "consultation" as const, icon: "🩺", label: "Consultation" },
+                    { id: "lab" as const, icon: "🧪", label: "Lab & Referrals", badge: selectedTests.length > 0 ? selectedTests.length : undefined },
+                    { id: "actions" as const, icon: "⚡", label: "Actions" },
+                  ]).map((tab) => (
+                    <motion.button key={tab.id} type="button" onClick={() => setConsultTab(tab.id)} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                        background: consultTab === tab.id ? `${COPPER}12` : "rgba(255,255,255,0.02)",
+                        border: `1px solid ${consultTab === tab.id ? COPPER + "30" : "rgba(255,255,255,0.05)"}`,
+                        color: consultTab === tab.id ? "#D4956B" : "#64748B",
+                        textTransform: "uppercase", letterSpacing: "0.04em", transition: "all 0.2s",
+                      }}>
+                      <span>{tab.icon}</span> {tab.label}
+                      {tab.badge && <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 5px", borderRadius: 4, background: "#0EA5E9", color: "#fff", marginLeft: 2 }}>{tab.badge}</span>}
+                    </motion.button>
+                  ))}
+                </div>
+
+                {/* ═══════ TAB 1: CONSULTATION ═══════ */}
+                {consultTab === "consultation" && (
+                  <motion.div key="consult-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    {/* Vitals grid */}
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                      style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(14,165,233,0.1)", backdropFilter: "blur(12px)", marginBottom: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                        <span style={{ fontSize: 14 }}>📊</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Vital Signs</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
+                        <DInput label="BP (mmHg)" placeholder="120/80" value={vitals.bp} onChange={(e) => setVitals(v => ({ ...v, bp: e.target.value }))} />
+                        <DInput label="Heart Rate (bpm)" placeholder="72" value={vitals.heartRate} onChange={(e) => setVitals(v => ({ ...v, heartRate: e.target.value }))} />
+                        <DInput label="Resp. Rate (/min)" placeholder="18" value={vitals.rr} onChange={(e) => setVitals(v => ({ ...v, rr: e.target.value }))} />
+                        <DInput label="Temperature (°C)" placeholder="36.8" value={vitals.temperature} onChange={(e) => setVitals(v => ({ ...v, temperature: e.target.value }))} />
+                        <DInput label="SpO2 (%)" placeholder="98" value={vitals.spo2} onChange={(e) => setVitals(v => ({ ...v, spo2: e.target.value }))} />
+                        <DInput label="Weight (kg)" placeholder="75" value={vitals.weight} onChange={(e) => setVitals(v => ({ ...v, weight: e.target.value }))} />
+                        <DInput label="Height (cm)" placeholder="170" value={vitals.height} onChange={(e) => setVitals(v => ({ ...v, height: e.target.value }))} />
+                        <div>
+                          <label className="block text-xs font-medium font-body mb-1.5" style={{ color: theme.textLabel, transition: "color 0.4s ease" }}>BMI</label>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", minHeight: 40 }}>
+                            <span style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: calcBmi ? bmiColor : "#3D4D78" }}>{calcBmi || "—"}</span>
+                            {bmiClass && <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: `${bmiColor}12`, color: bmiColor, textTransform: "uppercase", letterSpacing: "0.04em" }}>{bmiClass}</span>}
+                          </div>
                         </div>
                       </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                        {allTemplates.map(t => (
-                          <div key={t.key} style={{ position: "relative", display: "inline-flex" }}>
-                            <button type="button" onClick={() => applyTemplate(t)}
-                              style={{
-                                fontSize: 10, fontWeight: 600, padding: "4px 8px", borderRadius: 6, cursor: "pointer",
-                                background: diagnosis.primary === t.diagnosis ? `${COPPER}18` : "rgba(255,255,255,0.03)",
-                                border: `1px solid ${diagnosis.primary === t.diagnosis ? COPPER + "30" : t.key.startsWith("custom_") ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.05)"}`,
-                                color: diagnosis.primary === t.diagnosis ? "#D4956B" : t.key.startsWith("custom_") ? "#94A3B8" : "#64748B",
-                                transition: "all 0.15s ease",
-                                paddingRight: t.key.startsWith("custom_") ? 20 : 8,
-                              }}
-                            >
-                              {t.icon} {t.label}
-                            </button>
-                            {t.key.startsWith("custom_") && (
-                              <button type="button" onClick={(e) => { e.stopPropagation(); deleteCustomTemplate(t.key); }}
-                                style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", fontSize: 8, fontWeight: 800, width: 14, height: 14, borderRadius: 3, border: "none", background: "rgba(239,68,68,0.1)", color: "#EF4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
-                                x
+                    </motion.div>
+
+                    {/* Diagnosis */}
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}
+                      style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)", marginBottom: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                        <span style={{ fontSize: 14 }}>🩺</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Diagnosis</span>
+                      </div>
+                      {/* SOAP Template Quick-Select */}
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                          <label style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#3D4D78" }}>Quick Template</label>
+                          <div style={{ display: "flex", gap: 4 }}>
+                            {diagnosis.primary && (
+                              <button type="button" onClick={saveCurrentAsTemplate} style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, cursor: "pointer", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#22C55E", letterSpacing: "0.04em" }}>
+                                Save As Template
                               </button>
                             )}
+                            <button type="button" onClick={() => setShowCreateTemplate(true)} style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, cursor: "pointer", background: `${COPPER}08`, border: `1px solid ${COPPER}20`, color: "#D4956B", letterSpacing: "0.04em" }}>
+                              + New
+                            </button>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                          {allTemplates.map(t => (
+                            <div key={t.key} style={{ position: "relative", display: "inline-flex" }}>
+                              <button type="button" onClick={() => applyTemplate(t)}
+                                style={{
+                                  fontSize: 10, fontWeight: 600, padding: "4px 8px", borderRadius: 6, cursor: "pointer",
+                                  background: diagnosis.primary === t.diagnosis ? `${COPPER}18` : "rgba(255,255,255,0.03)",
+                                  border: `1px solid ${diagnosis.primary === t.diagnosis ? COPPER + "30" : t.key.startsWith("custom_") ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.05)"}`,
+                                  color: diagnosis.primary === t.diagnosis ? "#D4956B" : t.key.startsWith("custom_") ? "#94A3B8" : "#64748B",
+                                  transition: "all 0.15s ease", paddingRight: t.key.startsWith("custom_") ? 20 : 8,
+                                }}>
+                                {t.icon} {t.label}
+                              </button>
+                              {t.key.startsWith("custom_") && (
+                                <button type="button" onClick={(e) => { e.stopPropagation(); deleteCustomTemplate(t.key); }}
+                                  style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", fontSize: 8, fontWeight: 800, width: 14, height: 14, borderRadius: 3, border: "none", background: "rgba(239,68,68,0.1)", color: "#EF4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
+                                  x
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <DInput label="Primary Diagnosis" placeholder="e.g. Plasmodium Falciparum Malaria" value={diagnosis.primary} onChange={(e) => setDiagnosis((d) => ({ ...d, primary: e.target.value }))} required />
+                      <div style={{ marginTop: 10 }}>
+                        <DTextarea label="Clinical Notes" rows={3} placeholder="S: ... O: ... A: ... P: ..."
+                          value={diagnosis.notes} onChange={(e) => setDiagnosis((d) => ({ ...d, notes: e.target.value }))} />
+                      </div>
+                    </motion.div>
+
+                    {/* Prescriptions */}
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
+                      style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 14 }}>💊</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Prescriptions</span>
+                        </div>
+                        <button type="button" onClick={addPrescription} style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", color: "#64748B", cursor: "pointer" }}>+ Add</button>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1.2fr 1fr 28px", gap: 8, marginBottom: 6, padding: "0 2px" }}>
+                        {["Medication", "Dosage", "Frequency", "Duration", ""].map((h) => (
+                          <span key={h} style={{ fontSize: 9, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#3D4D78" }}>{h}</span>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {prescriptions.map((rx, i) => (
+                          <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1.2fr 1fr 28px", gap: 8, alignItems: "center" }}>
+                            <DInput placeholder="Amoxicillin" value={rx.medication} onChange={(e) => updatePrescription(i, "medication", e.target.value)} />
+                            <DInput placeholder="500mg" value={rx.dosage} onChange={(e) => updatePrescription(i, "dosage", e.target.value)} />
+                            <DInput placeholder="3x Daily" value={rx.frequency} onChange={(e) => updatePrescription(i, "frequency", e.target.value)} />
+                            <DInput placeholder="2 Weeks" value={rx.duration} onChange={(e) => updatePrescription(i, "duration", e.target.value)} />
+                            {prescriptions.length > 1 ? (
+                              <button type="button" onClick={() => removePrescription(i)} style={{ width: 24, height: 24, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.08)", color: "#EF4444", cursor: "pointer", fontSize: 11 }}>x</button>
+                            ) : <div />}
                           </div>
                         ))}
                       </div>
-                    </div>
-                    <DInput label="Primary Diagnosis" placeholder="e.g. Plasmodium Falciparum Malaria" value={diagnosis.primary} onChange={(e) => setDiagnosis((d) => ({ ...d, primary: e.target.value }))} required />
-                    <div style={{ marginTop: 10 }}>
-                      <DTextarea label="Clinical Notes" rows={3} placeholder="History, examination findings, observations..."
-                        value={diagnosis.notes} onChange={(e) => setDiagnosis((d) => ({ ...d, notes: e.target.value }))} />
-                    </div>
+                    </motion.div>
                   </motion.div>
+                )}
 
-                  {/* Lab Referral */}
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
-                    style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                      <span style={{ fontSize: 14 }}>🧪</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Lab Orders</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: labReferral ? 10 : 0 }}>
-                      <input type="checkbox" id="labRef" checked={labReferral} onChange={(e) => setLabReferral(e.target.checked)} style={{ width: 14, height: 14, accentColor: COPPER }} />
-                      <label htmlFor="labRef" style={{ fontSize: 12, fontWeight: 500, color: "#94A3B8", cursor: "pointer" }}>Order Lab Tests</label>
-                    </div>
-                    {labReferral && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        <select
-                          className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white focus:outline-none focus:ring-1 focus:ring-[#B87333]/30 transition-all duration-200 appearance-none"
-                          style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(184,115,51,0.1)" }}
-                          value="" onChange={(e) => { if (e.target.value && !selectedTests.includes(e.target.value)) setSelectedTests((p) => [...p, e.target.value]); }}>
-                          <option value="" style={{ background: theme.selectOptionBg }}>Add Test...</option>
-                          {LAB_TESTS.map((t) => <option key={t.value} value={t.value} style={{ background: theme.selectOptionBg }}>{t.label}</option>)}
-                        </select>
-                        {selectedTests.length > 0 && (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                            {selectedTests.map((test) => (
-                              <span key={test} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 5, background: "rgba(14,165,233,0.06)", border: "1px solid rgba(14,165,233,0.1)", color: "#38BDF8" }}>
-                                {LAB_TESTS.find((t) => t.value === test)?.label ?? test}
-                                <button type="button" onClick={() => setSelectedTests((p) => p.filter((t) => t !== test))} style={{ color: "#EF4444", cursor: "pointer", background: "none", border: "none", fontSize: 10, lineHeight: 1 }}>x</button>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <textarea
-                          rows={2}
-                          className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white placeholder:text-[#3D4D78] focus:outline-none focus:ring-1 focus:ring-[#B87333]/30 resize-none transition-all duration-200"
-                          style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(184,115,51,0.1)" }}
-                          placeholder="Clinical context for lab..."
-                          value={clinicalNotes} onChange={(e) => setClinicalNotes(e.target.value)}
-                        />
+                {/* ═══════ TAB 2: LAB & REFERRALS ═══════ */}
+                {consultTab === "lab" && (
+                  <motion.div key="lab-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    {/* Lab Orders */}
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                      style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(14,165,233,0.1)", backdropFilter: "blur(12px)", marginBottom: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                        <span style={{ fontSize: 14 }}>🧪</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Lab Orders</span>
                       </div>
-                    )}
-                  </motion.div>
-                </div>
-
-                {/* Prescriptions — full width, compact table */}
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.11 }}
-                  style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)", marginBottom: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontSize: 14 }}>💊</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Prescriptions</span>
-                    </div>
-                    <button type="button" onClick={addPrescription} style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", color: "#64748B", cursor: "pointer" }}>+ Add</button>
-                  </div>
-
-                  {/* Table header */}
-                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1.2fr 1fr 28px", gap: 8, marginBottom: 6, padding: "0 2px" }}>
-                    {["Medication", "Dosage", "Frequency", "Duration", ""].map((h) => (
-                      <span key={h} style={{ fontSize: 9, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#3D4D78" }}>{h}</span>
-                    ))}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {prescriptions.map((rx, i) => (
-                      <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1.2fr 1fr 28px", gap: 8, alignItems: "center" }}>
-                        <DInput placeholder="Amoxicillin" value={rx.medication} onChange={(e) => updatePrescription(i, "medication", e.target.value)} />
-                        <DInput placeholder="500mg" value={rx.dosage} onChange={(e) => updatePrescription(i, "dosage", e.target.value)} />
-                        <DInput placeholder="3x Daily" value={rx.frequency} onChange={(e) => updatePrescription(i, "frequency", e.target.value)} />
-                        <DInput placeholder="2 Weeks" value={rx.duration} onChange={(e) => updatePrescription(i, "duration", e.target.value)} />
-                        {prescriptions.length > 1 ? (
-                          <button type="button" onClick={() => removePrescription(i)} style={{ width: 24, height: 24, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.08)", color: "#EF4444", cursor: "pointer", fontSize: 11 }}>x</button>
-                        ) : <div />}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: labReferral ? 10 : 0 }}>
+                        <input type="checkbox" id="labRef" checked={labReferral} onChange={(e) => setLabReferral(e.target.checked)} style={{ width: 14, height: 14, accentColor: "#0EA5E9" }} />
+                        <label htmlFor="labRef" style={{ fontSize: 12, fontWeight: 500, color: "#94A3B8", cursor: "pointer" }}>Order Lab Tests</label>
                       </div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* Specialist Referral */}
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.13 }}
-                  style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(14,165,233,0.1)", backdropFilter: "blur(12px)", marginBottom: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showReferralPanel ? 12 : 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontSize: 14 }}>🔗</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Refer To Specialist</span>
-                    </div>
-                    <button type="button" onClick={() => setShowReferralPanel(!showReferralPanel)}
-                      style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: showReferralPanel ? "rgba(14,165,233,0.1)" : "rgba(255,255,255,0.03)", border: `1px solid ${showReferralPanel ? "rgba(14,165,233,0.2)" : "rgba(255,255,255,0.05)"}`, color: showReferralPanel ? "#38BDF8" : "#64748B", cursor: "pointer" }}>
-                      {showReferralPanel ? "Close" : "+ Refer"}
-                    </button>
-                  </div>
-                  {showReferralPanel && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                        <DSelect label="Specialty" value={referralSpecialty} onChange={(e) => setReferralSpecialty(e.target.value)}
-                          options={["Cardiologist", "Neurologist", "Orthopedic", "Dermatologist", "Pediatrician", "Gynecologist", "Surgeon", "Ophthalmologist", "ENT Specialist", "Psychiatrist", "Urologist", "Oncologist", "Pulmonologist", "Endocrinologist"].map((s) => ({ value: s.toLowerCase().replace(/\s+/g, "_"), label: s }))} />
-                        <div>
-                          <label className="block text-xs font-medium font-body mb-1.5" style={{ color: "#94A3B8" }}>Urgency</label>
-                          <div style={{ display: "flex", gap: 6 }}>
-                            {(["routine", "urgent", "stat"] as const).map((u) => (
-                              <button key={u} type="button" onClick={() => setReferralUrgency(u)}
-                                style={{
-                                  flex: 1, padding: "6px 0", borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", cursor: "pointer",
-                                  background: referralUrgency === u ? (u === "stat" ? "rgba(220,38,38,0.1)" : u === "urgent" ? "rgba(245,158,11,0.1)" : "rgba(34,197,94,0.1)") : "rgba(255,255,255,0.02)",
-                                  border: `1px solid ${referralUrgency === u ? (u === "stat" ? "rgba(220,38,38,0.3)" : u === "urgent" ? "rgba(245,158,11,0.3)" : "rgba(34,197,94,0.3)") : "rgba(255,255,255,0.05)"}`,
-                                  color: referralUrgency === u ? (u === "stat" ? "#F87171" : u === "urgent" ? "#F59E0B" : "#22C55E") : "#64748B",
-                                }}>
-                                {u}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      <DInput label="Reason For Referral" placeholder="e.g. Suspected cardiac arrhythmia, needs ECG and specialist evaluation" required
-                        value={referralReason} onChange={(e) => setReferralReason(e.target.value)} />
-                      <DTextarea label="Additional Notes" rows={2} placeholder="Additional notes for the receiving specialist..."
-                        value={referralNotes} onChange={(e) => setReferralNotes(e.target.value)} />
-                      <button type="button" onClick={sendReferral} disabled={referralSending || !referralReason.trim()}
-                        style={{
-                          padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: (!referralReason.trim() || referralSending) ? "not-allowed" : "pointer",
-                          background: "linear-gradient(135deg, #0EA5E9, #38BDF8)", border: "none",
-                          opacity: (!referralReason.trim() || referralSending) ? 0.4 : 1,
-                        }}>
-                        {referralSending ? "Sending..." : "Send Referral"}
-                      </button>
-                    </div>
-                  )}
-                </motion.div>
-
-                {/* Inter-Branch Referral — only if hospital is in a group */}
-                {hospitalGroup && (
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.135 }}
-                    style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.15)", backdropFilter: "blur(12px)", marginBottom: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showInterBranchPanel ? 12 : 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ fontSize: 14 }}>🌐</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
-                          Inter-Branch Referral
-                        </span>
-                        <span style={{ fontSize: 9, color: "#64748B", marginLeft: 4 }}>({hospitalGroup.name})</span>
-                      </div>
-                      <button type="button" onClick={() => setShowInterBranchPanel(!showInterBranchPanel)}
-                        style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: showInterBranchPanel ? `${COPPER}15` : "rgba(255,255,255,0.03)", border: `1px solid ${showInterBranchPanel ? COPPER + "30" : "rgba(255,255,255,0.05)"}`, color: showInterBranchPanel ? COPPER : "#64748B", cursor: "pointer" }}>
-                        {showInterBranchPanel ? "Close" : "+ Transfer"}
-                      </button>
-                    </div>
-                    {showInterBranchPanel && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                          <DSelect label="Destination Branch" value={ibDest} onChange={(e) => setIbDest(e.target.value)}
-                            options={groupBranches.map((b) => ({ value: b.code, label: `${b.code} — ${b.name}` }))} />
-                          <DSelect label="Department" value={ibDept} onChange={(e) => setIbDept(e.target.value)}
-                            options={["Doctor", "Lab", "Pharmacy", "CT/Radiology", "Ultrasound", "Ward", "ICU", "Maternity", "Blood Bank", "Emergency"].map((d) => ({ value: d, label: d }))} />
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                          <div>
-                            <label className="block text-xs font-medium font-body mb-1.5" style={{ color: "#94A3B8" }}>Type</label>
-                            <div style={{ display: "flex", gap: 4 }}>
-                              {(["OUTPATIENT", "ADMISSION", "EMERGENCY", "BLOOD_REQUEST"] as const).map((t) => (
-                                <button key={t} type="button" onClick={() => setIbType(t)}
-                                  style={{
-                                    flex: 1, padding: "5px 0", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", cursor: "pointer",
-                                    background: ibType === t ? `${COPPER}10` : "rgba(255,255,255,0.02)",
-                                    border: `1px solid ${ibType === t ? COPPER + "30" : "rgba(255,255,255,0.05)"}`,
-                                    color: ibType === t ? COPPER : "#64748B",
-                                  }}>
-                                  {t.replace("_", " ")}
-                                </button>
+                      {labReferral && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          <select
+                            className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white focus:outline-none focus:ring-1 focus:ring-[#0EA5E9]/30 transition-all duration-200 appearance-none"
+                            style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(14,165,233,0.15)" }}
+                            value="" onChange={(e) => { if (e.target.value && !selectedTests.includes(e.target.value)) setSelectedTests((p) => [...p, e.target.value]); }}>
+                            <option value="" style={{ background: theme.selectOptionBg }}>Add Test...</option>
+                            {LAB_TESTS.map((t) => <option key={t.value} value={t.value} style={{ background: theme.selectOptionBg }}>{t.label}</option>)}
+                          </select>
+                          {selectedTests.length > 0 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              {selectedTests.map((test) => (
+                                <span key={test} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 5, background: "rgba(14,165,233,0.06)", border: "1px solid rgba(14,165,233,0.1)", color: "#38BDF8" }}>
+                                  {LAB_TESTS.find((t) => t.value === test)?.label ?? test}
+                                  <button type="button" onClick={() => setSelectedTests((p) => p.filter((t) => t !== test))} style={{ color: "#EF4444", cursor: "pointer", background: "none", border: "none", fontSize: 10, lineHeight: 1 }}>x</button>
+                                </span>
                               ))}
                             </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium font-body mb-1.5" style={{ color: "#94A3B8" }}>Priority</label>
-                            <div style={{ display: "flex", gap: 6 }}>
-                              {(["ROUTINE", "URGENT", "CRITICAL"] as const).map((p) => (
-                                <button key={p} type="button" onClick={() => setIbPriority(p)}
-                                  style={{
-                                    flex: 1, padding: "5px 0", borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: "uppercase", cursor: "pointer",
-                                    background: ibPriority === p ? (p === "CRITICAL" ? "rgba(220,38,38,0.1)" : p === "URGENT" ? "rgba(245,158,11,0.1)" : "rgba(34,197,94,0.1)") : "rgba(255,255,255,0.02)",
-                                    border: `1px solid ${ibPriority === p ? (p === "CRITICAL" ? "rgba(220,38,38,0.3)" : p === "URGENT" ? "rgba(245,158,11,0.3)" : "rgba(34,197,94,0.3)") : "rgba(255,255,255,0.05)"}`,
-                                    color: ibPriority === p ? (p === "CRITICAL" ? "#F87171" : p === "URGENT" ? "#F59E0B" : "#22C55E") : "#64748B",
-                                  }}>
-                                  {p}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
+                          )}
+                          <DTextarea label="Clinical Context For Lab" rows={2} placeholder="Clinical context for lab..." value={clinicalNotes} onChange={(e) => setClinicalNotes(e.target.value)} />
+                          <button type="button" onClick={sendToLab} disabled={ending || selectedTests.length === 0}
+                            style={{ padding: "10px 20px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "white", cursor: ending ? "wait" : "pointer", background: "linear-gradient(135deg, #0EA5E9, #38BDF8)", border: "none", opacity: ending || selectedTests.length === 0 ? 0.4 : 1, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                            {ending ? "Sending..." : "Send To Lab — Pause Consultation"}
+                          </button>
                         </div>
-                        <DInput label="Clinical Reason" placeholder="e.g. Requires CT scan not available at this branch" required
-                          value={ibReason} onChange={(e) => setIbReason(e.target.value)} />
-                        <DTextarea label="Additional Notes" rows={2} placeholder="Additional notes..."
-                          value={ibNotes} onChange={(e) => setIbNotes(e.target.value)} />
-                        {ibPriority === "CRITICAL" && (
-                          <div style={{ fontSize: 10, color: "#F87171", padding: "6px 10px", borderRadius: 6, background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.15)" }}>
-                            CRITICAL priority will auto-accept at the receiving branch — no waiting for approval.
-                          </div>
-                        )}
-                        <button type="button" onClick={sendInterBranchReferral} disabled={ibSending || !ibDest || !ibDept || !ibReason.trim()}
-                          style={{
-                            padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white",
-                            cursor: (!ibDest || !ibDept || !ibReason.trim() || ibSending) ? "not-allowed" : "pointer",
-                            background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none",
-                            opacity: (!ibDest || !ibDept || !ibReason.trim() || ibSending) ? 0.4 : 1,
-                          }}>
-                          {ibSending ? "Sending..." : "Transfer To Branch"}
+                      )}
+                    </motion.div>
+
+                    {/* Specialist Referral */}
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}
+                      style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(14,165,233,0.1)", backdropFilter: "blur(12px)", marginBottom: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showReferralPanel ? 12 : 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 14 }}>🔗</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Refer To Specialist</span>
+                        </div>
+                        <button type="button" onClick={() => setShowReferralPanel(!showReferralPanel)}
+                          style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: showReferralPanel ? "rgba(14,165,233,0.1)" : "rgba(255,255,255,0.03)", border: `1px solid ${showReferralPanel ? "rgba(14,165,233,0.2)" : "rgba(255,255,255,0.05)"}`, color: showReferralPanel ? "#38BDF8" : "#64748B", cursor: "pointer" }}>
+                          {showReferralPanel ? "Close" : "+ Refer"}
                         </button>
                       </div>
+                      {showReferralPanel && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                            <DSelect label="Specialty" value={referralSpecialty} onChange={(e) => setReferralSpecialty(e.target.value)}
+                              options={["Cardiologist", "Neurologist", "Orthopedic", "Dermatologist", "Pediatrician", "Gynecologist", "Surgeon", "Ophthalmologist", "ENT Specialist", "Psychiatrist", "Urologist", "Oncologist", "Pulmonologist", "Endocrinologist"].map((s) => ({ value: s.toLowerCase().replace(/\s+/g, "_"), label: s }))} />
+                            <div>
+                              <label className="block text-xs font-medium font-body mb-1.5" style={{ color: "#94A3B8" }}>Urgency</label>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                {(["routine", "urgent", "stat"] as const).map((u) => (
+                                  <button key={u} type="button" onClick={() => setReferralUrgency(u)}
+                                    style={{
+                                      flex: 1, padding: "6px 0", borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", cursor: "pointer",
+                                      background: referralUrgency === u ? (u === "stat" ? "rgba(220,38,38,0.1)" : u === "urgent" ? "rgba(245,158,11,0.1)" : "rgba(34,197,94,0.1)") : "rgba(255,255,255,0.02)",
+                                      border: `1px solid ${referralUrgency === u ? (u === "stat" ? "rgba(220,38,38,0.3)" : u === "urgent" ? "rgba(245,158,11,0.3)" : "rgba(34,197,94,0.3)") : "rgba(255,255,255,0.05)"}`,
+                                      color: referralUrgency === u ? (u === "stat" ? "#F87171" : u === "urgent" ? "#F59E0B" : "#22C55E") : "#64748B",
+                                    }}>{u}</button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <DInput label="Reason For Referral" placeholder="e.g. Suspected cardiac arrhythmia" required value={referralReason} onChange={(e) => setReferralReason(e.target.value)} />
+                          <DTextarea label="Additional Notes" rows={2} placeholder="Additional notes..." value={referralNotes} onChange={(e) => setReferralNotes(e.target.value)} />
+                          <button type="button" onClick={sendReferral} disabled={referralSending || !referralReason.trim()}
+                            style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: (!referralReason.trim() || referralSending) ? "not-allowed" : "pointer", background: "linear-gradient(135deg, #0EA5E9, #38BDF8)", border: "none", opacity: (!referralReason.trim() || referralSending) ? 0.4 : 1 }}>
+                            {referralSending ? "Sending..." : "Send Referral"}
+                          </button>
+                        </div>
+                      )}
+                    </motion.div>
+
+                    {/* Inter-Branch Referral */}
+                    {hospitalGroup && (
+                      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
+                        style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: `1px solid ${COPPER}15`, backdropFilter: "blur(12px)", marginBottom: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showInterBranchPanel ? 12 : 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 14 }}>🌐</span>
+                            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>Inter-Branch Referral</span>
+                            <span style={{ fontSize: 9, color: "#64748B", marginLeft: 4 }}>({hospitalGroup.name})</span>
+                          </div>
+                          <button type="button" onClick={() => setShowInterBranchPanel(!showInterBranchPanel)}
+                            style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: showInterBranchPanel ? `${COPPER}15` : "rgba(255,255,255,0.03)", border: `1px solid ${showInterBranchPanel ? COPPER + "30" : "rgba(255,255,255,0.05)"}`, color: showInterBranchPanel ? COPPER : "#64748B", cursor: "pointer" }}>
+                            {showInterBranchPanel ? "Close" : "+ Transfer"}
+                          </button>
+                        </div>
+                        {showInterBranchPanel && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                              <DSelect label="Destination Branch" value={ibDest} onChange={(e) => setIbDest(e.target.value)}
+                                options={groupBranches.map((b) => ({ value: b.code, label: `${b.code} — ${b.name}` }))} />
+                              <DSelect label="Department" value={ibDept} onChange={(e) => setIbDept(e.target.value)}
+                                options={["Doctor", "Lab", "Pharmacy", "CT/Radiology", "Ultrasound", "Ward", "ICU", "Maternity", "Blood Bank", "Emergency"].map((d) => ({ value: d, label: d }))} />
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                              <div>
+                                <label className="block text-xs font-medium font-body mb-1.5" style={{ color: "#94A3B8" }}>Type</label>
+                                <div style={{ display: "flex", gap: 4 }}>
+                                  {(["OUTPATIENT", "ADMISSION", "EMERGENCY", "BLOOD_REQUEST"] as const).map((t) => (
+                                    <button key={t} type="button" onClick={() => setIbType(t)}
+                                      style={{ flex: 1, padding: "5px 0", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", cursor: "pointer", background: ibType === t ? `${COPPER}10` : "rgba(255,255,255,0.02)", border: `1px solid ${ibType === t ? COPPER + "30" : "rgba(255,255,255,0.05)"}`, color: ibType === t ? COPPER : "#64748B" }}>
+                                      {t.replace("_", " ")}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium font-body mb-1.5" style={{ color: "#94A3B8" }}>Priority</label>
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  {(["ROUTINE", "URGENT", "CRITICAL"] as const).map((p) => (
+                                    <button key={p} type="button" onClick={() => setIbPriority(p)}
+                                      style={{ flex: 1, padding: "5px 0", borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: "uppercase", cursor: "pointer", background: ibPriority === p ? (p === "CRITICAL" ? "rgba(220,38,38,0.1)" : p === "URGENT" ? "rgba(245,158,11,0.1)" : "rgba(34,197,94,0.1)") : "rgba(255,255,255,0.02)", border: `1px solid ${ibPriority === p ? (p === "CRITICAL" ? "rgba(220,38,38,0.3)" : p === "URGENT" ? "rgba(245,158,11,0.3)" : "rgba(34,197,94,0.3)") : "rgba(255,255,255,0.05)"}`, color: ibPriority === p ? (p === "CRITICAL" ? "#F87171" : p === "URGENT" ? "#F59E0B" : "#22C55E") : "#64748B" }}>
+                                      {p}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <DInput label="Clinical Reason" placeholder="e.g. Requires CT scan not available at this branch" required value={ibReason} onChange={(e) => setIbReason(e.target.value)} />
+                            <DTextarea label="Additional Notes" rows={2} placeholder="Additional notes..." value={ibNotes} onChange={(e) => setIbNotes(e.target.value)} />
+                            {ibPriority === "CRITICAL" && (
+                              <div style={{ fontSize: 10, color: "#F87171", padding: "6px 10px", borderRadius: 6, background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.15)" }}>
+                                CRITICAL priority will auto-accept at the receiving branch — no waiting for approval.
+                              </div>
+                            )}
+                            <button type="button" onClick={sendInterBranchReferral} disabled={ibSending || !ibDest || !ibDept || !ibReason.trim()}
+                              style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: (!ibDest || !ibDept || !ibReason.trim() || ibSending) ? "not-allowed" : "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", opacity: (!ibDest || !ibDept || !ibReason.trim() || ibSending) ? 0.4 : 1 }}>
+                              {ibSending ? "Sending..." : "Transfer To Branch"}
+                            </button>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+
+                    {/* Incoming referrals summary */}
+                    {incomingReferrals.length > 0 && (
+                      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+                        style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(14,165,233,0.1)", backdropFilter: "blur(12px)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                          <span style={{ fontSize: 14 }}>📨</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Incoming Referrals</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "rgba(14,165,233,0.08)", color: "#38BDF8", marginLeft: 4 }}>{incomingReferrals.length}</span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {incomingReferrals.map((ref) => (
+                            <div key={ref.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(14,165,233,0.03)", border: "1px solid rgba(14,165,233,0.1)" }}>
+                              <div>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: "#38BDF8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{ref.queueToken}</span>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: "white", marginLeft: 8 }}>{ref.patientName}</span>
+                                <span style={{ fontSize: 10, color: "#64748B", marginLeft: 8 }}>{ref.reason}</span>
+                              </div>
+                              <motion.button whileTap={{ scale: 0.95 }} onClick={() => acceptReferral(ref)}
+                                style={{ padding: "5px 12px", borderRadius: 6, fontSize: 10, fontWeight: 600, color: "#38BDF8", cursor: "pointer", background: "rgba(14,165,233,0.06)", border: "1px solid rgba(14,165,233,0.15)" }}>
+                                Accept
+                              </motion.button>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
                     )}
                   </motion.div>
                 )}
 
-                {/* Session actions — two paths */}
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}
-                  style={{ display: "flex", gap: 10 }}>
-                  {/* Send to Lab — only if tests selected */}
-                  {labReferral && selectedTests.length > 0 && (
-                    <motion.button
-                      whileHover={{ boxShadow: "0 6px 24px rgba(14,165,233,0.25)" }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={sendToLab} disabled={ending}
-                      style={{
-                        flex: 1, padding: "11px 24px", borderRadius: 12,
-                        fontSize: 13, fontWeight: 600, color: "white", cursor: "pointer",
-                        background: "linear-gradient(135deg, #0EA5E9, #38BDF8)",
-                        border: "none", opacity: ending ? 0.6 : 1, transition: "all 0.3s",
-                      }}
-                    >
-                      {ending ? "Sending..." : "Send To Lab — Pause"}
-                    </motion.button>
-                  )}
-                  {/* End consultation — advance to pharmacy or close */}
-                  <motion.button
-                    whileHover={{ boxShadow: `0 6px 24px ${COPPER}25` }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={endSession} disabled={ending}
-                    style={{
-                      flex: 1, padding: "11px 24px", borderRadius: 12,
-                      fontSize: 13, fontWeight: 600, color: "white", cursor: "pointer",
-                      background: `linear-gradient(135deg, ${COPPER}, #D4956B)`,
-                      border: "none", opacity: ending ? 0.6 : 1, transition: "all 0.3s",
-                    }}
-                  >
-                    {ending ? "Saving..." : prescriptions.some((p) => p.medication) ? "End — Send To Pharmacy" : "End Consultation — Close"}
-                  </motion.button>
-                </motion.div>
+                {/* ═══════ TAB 3: ACTIONS ═══════ */}
+                {consultTab === "actions" && (
+                  <motion.div key="actions-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                      {/* End Consultation */}
+                      <motion.div whileHover={{ y: -2 }} onClick={endSession}
+                        style={{ padding: 24, borderRadius: 16, background: theme.cardBg, border: `1px solid ${COPPER}20`, backdropFilter: "blur(12px)", cursor: ending ? "wait" : "pointer", opacity: ending ? 0.6 : 1 }}>
+                        <div style={{ fontSize: 28, marginBottom: 12 }}>✅</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: "#D4956B", marginBottom: 4 }}>
+                          {prescriptions.some((p) => p.medication) ? "End — Send To Pharmacy" : "End Consultation"}
+                        </div>
+                        <p style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5 }}>
+                          {prescriptions.some((p) => p.medication)
+                            ? "Save diagnosis, vitals, and prescriptions. Patient proceeds to pharmacy for medication."
+                            : "Close this consultation and save all records. Patient proceeds to checkout."}
+                        </p>
+                      </motion.div>
 
-                {/* ── Admit To Ward ── */}
-                <motion.button type="button" onClick={openAdmitModal}
-                  whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}
-                  style={{ width: "100%", marginTop: 10, padding: "10px 24px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "#A855F7", background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.2)", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  🏥 Admit To Ward
-                </motion.button>
+                      {/* Admit To Ward */}
+                      <motion.div whileHover={{ y: -2 }} onClick={openAdmitModal}
+                        style={{ padding: 24, borderRadius: 16, background: theme.cardBg, border: "1px solid rgba(168,85,247,0.2)", backdropFilter: "blur(12px)", cursor: "pointer" }}>
+                        <div style={{ fontSize: 28, marginBottom: 12 }}>🏥</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: "#A855F7", marginBottom: 4 }}>Admit To Ward</div>
+                        <p style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5 }}>Transfer patient to an inpatient ward. Select bed assignment and provide admission reason.</p>
+                      </motion.div>
 
-                {/* ── Quick Actions: PDF + WhatsApp ── */}
-                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                  <button type="button" onClick={() => window.open(`/api/reports?recordId=${activeSession.recordId}&type=patient`, "_blank")}
-                    style={{ flex: 1, padding: "8px 12px", borderRadius: 8, fontSize: 11, fontWeight: 600, color: "#94A3B8", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
-                    📄 Download PDF
-                  </button>
-                  <button type="button" onClick={() => { setWaPhone(activeSession.patient?.phone || ""); setWaResult(null); }}
-                    style={{ flex: 1, padding: "8px 12px", borderRadius: 8, fontSize: 11, fontWeight: 600, color: "#25D366", background: "rgba(37,211,102,0.05)", border: "1px solid rgba(37,211,102,0.15)", cursor: "pointer" }}>
-                    💬 Send Via WhatsApp
-                  </button>
-                </div>
-                {/* WhatsApp phone input */}
-                {waPhone !== "" && (
-                  <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
-                    <div style={{ flex: 1 }}>
-                      <DInput value={waPhone} onChange={(e) => setWaPhone(e.target.value)} placeholder="Phone (e.g. 0244123456)" />
+                      {/* Download PDF */}
+                      <motion.div whileHover={{ y: -2 }} onClick={() => window.open(`/api/reports?recordId=${activeSession.recordId}&type=patient`, "_blank")}
+                        style={{ padding: 24, borderRadius: 16, background: theme.cardBg, border: "1px solid rgba(14,165,233,0.15)", backdropFilter: "blur(12px)", cursor: "pointer" }}>
+                        <div style={{ fontSize: 28, marginBottom: 12 }}>📄</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: "#38BDF8", marginBottom: 4 }}>Download PDF</div>
+                        <p style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5 }}>Generate and download the patient record as a PDF document for printing or filing.</p>
+                      </motion.div>
+
+                      {/* Send Via WhatsApp */}
+                      <motion.div whileHover={{ y: -2 }} onClick={() => { setWaPhone(activeSession.patient?.phone || ""); setWaResult(null); }}
+                        style={{ padding: 24, borderRadius: 16, background: theme.cardBg, border: "1px solid rgba(37,211,102,0.15)", backdropFilter: "blur(12px)", cursor: "pointer" }}>
+                        <div style={{ fontSize: 28, marginBottom: 12 }}>💬</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: "#25D366", marginBottom: 4 }}>Send Via WhatsApp</div>
+                        <p style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5 }}>Send consultation summary and prescriptions to the patient via WhatsApp message.</p>
+                      </motion.div>
                     </div>
-                    <button type="button" onClick={handleWhatsAppSend} disabled={waSending || !waPhone.trim()}
-                      style={{ padding: "7px 14px", borderRadius: 8, fontSize: 11, fontWeight: 600, color: "white", background: "#25D366", border: "none", cursor: "pointer", opacity: waSending ? 0.6 : 1 }}>
-                      {waSending ? "Sending..." : "Send"}
-                    </button>
-                    <button type="button" onClick={() => { setWaPhone(""); setWaResult(null); }}
-                      style={{ padding: "7px 10px", borderRadius: 8, fontSize: 11, color: "#64748B", background: "transparent", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
-                      ✕
-                    </button>
-                  </div>
-                )}
-                {waResult && (
-                  <div style={{ marginTop: 4, fontSize: 10, fontWeight: 600, color: waResult.ok ? "#25D366" : "#F87171" }}>
-                    {waResult.msg}
-                  </div>
+
+                    {/* WhatsApp phone input (shows when WhatsApp card clicked) */}
+                    {waPhone !== "" && (
+                      <div style={{ marginTop: 14, padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(37,211,102,0.15)", backdropFilter: "blur(12px)" }}>
+                        <div style={{ display: "flex", gap: 8, alignItems: "end" }}>
+                          <div style={{ flex: 1 }}>
+                            <DInput label="Patient Phone Number" value={waPhone} onChange={(e) => setWaPhone(e.target.value)} placeholder="e.g. 0244123456" />
+                          </div>
+                          <button type="button" onClick={handleWhatsAppSend} disabled={waSending || !waPhone.trim()}
+                            style={{ padding: "10px 20px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "white", background: "#25D366", border: "none", cursor: "pointer", opacity: waSending ? 0.6 : 1, marginBottom: 1 }}>
+                            {waSending ? "Sending..." : "Send"}
+                          </button>
+                          <button type="button" onClick={() => { setWaPhone(""); setWaResult(null); }}
+                            style={{ padding: "10px 12px", borderRadius: 10, fontSize: 12, color: "#64748B", background: "transparent", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer", marginBottom: 1 }}>
+                            ✕
+                          </button>
+                        </div>
+                        {waResult && <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, color: waResult.ok ? "#25D366" : "#F87171" }}>{waResult.msg}</div>}
+                      </div>
+                    )}
+                  </motion.div>
                 )}
               </motion.div>
             ) : (
