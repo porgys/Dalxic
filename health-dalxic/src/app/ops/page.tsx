@@ -284,13 +284,20 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   /* ─── API Loaders ─── */
-  const loadHospitals = useCallback(async () => {
-    try { const res = await fetch("/api/hospitals"); if (res.ok) setHospitals(await res.json()); } catch { /* */ }
+  const loadHospitals = useCallback(async (retries = 2) => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try { const res = await fetch("/api/hospitals"); if (res.ok) { setHospitals(await res.json()); return; } } catch { if (attempt < retries) await new Promise(r => setTimeout(r, 1500)); }
+    }
   }, []);
 
-  const loadOperators = useCallback(async (hospitalCode: string) => {
+  const loadOperators = useCallback(async (hospitalCode: string, retries = 2) => {
     if (!hospitalCode) { setOperators([]); return; }
-    try { const res = await fetch(`/api/operators?hospitalCode=${hospitalCode}&activeOnly=false`); if (res.ok) { const data = await res.json(); setOperators(data.operators || []); } } catch { /* */ }
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(`/api/operators?hospitalCode=${hospitalCode}&activeOnly=false`);
+        if (res.ok) { const data = await res.json(); setOperators(data.operators || []); return; }
+      } catch { if (attempt < retries) await new Promise(r => setTimeout(r, 1500)); }
+    }
   }, []);
 
   const loadGroups = useCallback(async () => {
