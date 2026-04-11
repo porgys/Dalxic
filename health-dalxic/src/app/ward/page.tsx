@@ -95,23 +95,6 @@ function DInput({ label, required, ...props }: React.InputHTMLAttributes<HTMLInp
   );
 }
 
-/* ─── Themed Select ─── */
-function _DSelect({ label, options, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string; options: { value: string; label: string }[] }) {
-  const t = useThemeContext();
-  return (
-    <div>
-      {label && <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>{label}</label>}
-      <select
-        {...props}
-        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300 appearance-none"
-        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
-      >
-        <option value="" style={{ background: t.selectOptionBg }}>Select...</option>
-        {options.map((o) => <option key={o.value} value={o.value} style={{ background: t.selectOptionBg }}>{o.label}</option>)}
-      </select>
-    </div>
-  );
-}
 
 /* ─── Themed Textarea ─── */
 function DTextarea({ label, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string }) {
