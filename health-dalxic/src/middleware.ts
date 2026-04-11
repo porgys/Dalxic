@@ -71,17 +71,7 @@ export function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next())
   }
 
-  // ── Layer 1: dalxic.com shared password gate ──
-  // Skip gate on localhost for local development
-  const host = request.headers.get("host") || "";
-  if (!host.includes("localhost")) {
-    const auth = request.cookies.get("dalxic_access")?.value
-    if (auth !== "granted") {
-      return NextResponse.redirect("https://dalxic.com/gate")
-    }
-  }
-
-  // ── Layer 2: Block direct access to real workstation paths ──
+  // ── Block direct access to real workstation paths ──
   const isBlockedPath = BLOCKED_PATHS.some(p =>
     pathname === p || pathname.startsWith(p + "/")
   )
