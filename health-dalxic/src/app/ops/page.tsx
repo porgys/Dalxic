@@ -291,6 +291,11 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const [accessGrants, setAccessGrants] = useState<AccessGrant[]>([]);
   const [newGrant, setNewGrant] = useState({ staffId: "", hospitalId: "", role: "viewer", reason: "", hours: "24" });
   const [grantMsg, setGrantMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  // Access screen gate
+  const [accessUnlocked, setAccessUnlocked] = useState(false);
+  const [accessGatePass, setAccessGatePass] = useState("");
+  const [accessGateError, setAccessGateError] = useState("");
+  const [accessGateLoading, setAccessGateLoading] = useState(false);
   // Master Password + PIN state
   const [opsPassCurrent, setOpsPassCurrent] = useState("");
   const [opsPassNew, setOpsPassNew] = useState("");
@@ -575,6 +580,18 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     if (res.ok) loadMasterPinStatus();
   };
 
+  const handleAccessGateUnlock = async () => {
+    if (!accessGatePass.trim()) return;
+    setAccessGateLoading(true); setAccessGateError("");
+    try {
+      const res = await fetch("/api/system-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "verify_ops_password", password: accessGatePass.trim() }) });
+      const data = await res.json();
+      if (data.valid) { setAccessUnlocked(true); setAccessGatePass(""); loadOpsPasswordStatus(); loadMasterPinStatus(); loadAccessGrants(); }
+      else { setAccessGateError("Invalid password"); setAccessGatePass(""); }
+    } catch { setAccessGateError("Connection error"); }
+    setAccessGateLoading(false);
+  };
+
   const handleExportAuditCSV = () => {
     const params = new URLSearchParams({ limit: "500", format: "csv" });
     if (auditFilter.hospitalCode) params.set("hospitalCode", auditFilter.hospitalCode);
@@ -824,7 +841,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
             const isActive = s === "hospitals" ? (screen === "hospitals" || screen === "hospital-detail") : screen === s;
             const label = s === "create-hospitals" ? "Create" : s;
             return (
-            <motion.button key={s} whileHover={{ scale: 1.05 }} onClick={() => { if (s === "hospitals") { setScreen("hospitals"); setDetailHospital(null); setConfigModule(null); } else { setScreen(s as OpsScreen); } if (s === "audit") loadAuditLogs(); if (s === "access") { loadAccessGrants(); loadOpsPasswordStatus(); loadMasterPinStatus(); } }}
+            <motion.button key={s} whileHover={{ scale: 1.05 }} onClick={() => { if (s === "hospitals") { setScreen("hospitals"); setDetailHospital(null); setConfigModule(null); } else { setScreen(s as OpsScreen); } if (s === "audit") loadAuditLogs(); if (s !== "access") setAccessUnlocked(false); }}
               style={{ background: isActive ? `${COPPER}10` : "none", border: isActive ? `1px solid ${COPPER}20` : "1px solid transparent", color: isActive ? COPPER_LIGHT : "#475569", fontSize: 10, fontWeight: 700, padding: "6px 12px", borderRadius: 8, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
               {s === "create-hospitals" ? "➕" : s === "hospitals" ? "🏥" : s === "operators" ? "👥" : s === "audit" ? "📋" : "🔑"} {label}
             </motion.button>
@@ -1984,6 +2001,29 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Access Management</h2>
               </div>
 
+              {/* ─── Access Gate: re-authenticate before showing sensitive controls ─── */}
+              {!accessUnlocked ? (
+                <div style={{ maxWidth: 420, margin: "80px auto", textAlign: "center" }}>
+                  <div style={{ width: 64, height: 64, borderRadius: 18, margin: "0 auto 24px", background: `radial-gradient(circle, ${COPPER}08, transparent 70%)`, border: `1px solid ${COPPER}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={COPPER} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><rect x="10" y="10" width="4" height="5" rx="0.5" /><circle cx="12" cy="8.5" r="1.5" />
+                    </svg>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#F0F4FF", marginBottom: 6, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Owner Authentication Required</div>
+                  <div style={{ fontSize: 11, color: "#64748B", marginBottom: 24 }}>Re-enter your Ops password to access security controls.</div>
+                  <form onSubmit={e => { e.preventDefault(); handleAccessGateUnlock(); }}>
+                    <input type="password" value={accessGatePass} onChange={e => { setAccessGatePass(e.target.value); setAccessGateError(""); }} placeholder="Enter Ops Password" autoFocus
+                      style={{ width: "100%", padding: "14px 18px", borderRadius: 12, fontSize: 13, fontWeight: 500, color: "#E2E8F0", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${accessGateError ? "rgba(239,68,68,0.4)" : accessGatePass ? COPPER + "30" : "rgba(255,255,255,0.06)"}`, outline: "none", fontFamily: "var(--font-jetbrains-mono), monospace", marginBottom: 12 }} />
+                    <motion.button type="submit" disabled={!accessGatePass.trim() || accessGateLoading} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                      style={{ width: "100%", padding: "13px 0", borderRadius: 12, cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", opacity: !accessGatePass.trim() ? 0.4 : 1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+                      {accessGateLoading ? "Verifying..." : "Unlock Access Controls"}
+                    </motion.button>
+                  </form>
+                  {accessGateError && <div style={{ marginTop: 12, fontSize: 11, color: "#EF4444", fontWeight: 600, padding: "8px 14px", borderRadius: 8, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)" }}>{accessGateError}</div>}
+                </div>
+              ) : (
+              <>
+
               {/* ─── Section A: Master Password ─── */}
               <div style={{ padding: "24px 20px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10`, marginBottom: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
@@ -2080,6 +2120,8 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   );
                 })}
               </div>
+              </>
+              )}
             </motion.div>
           )}
 
