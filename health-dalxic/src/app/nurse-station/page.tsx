@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, COPPER_LIGHT, BLUE, fontFamily } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
 import type { OperatorSession } from "@/types";
 

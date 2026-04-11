@@ -9,20 +9,6 @@ import { COPPER, COPPER_LIGHT, fontFamily } from "@/hooks/use-station-theme";
 /* ─── Constants ─── */
 const BOOT_HOLD = 5000; // ms — how long the landing page stays visible before transitioning
 
-/* ─── Fullscreen helpers ─── */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function requestFullscreen() {
-  const el = document.documentElement as HTMLElement & {
-    webkitRequestFullscreen?: () => Promise<void>;
-    msRequestFullscreen?: () => Promise<void>;
-  };
-  try {
-    if (el.requestFullscreen) el.requestFullscreen();
-    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    else if (el.msRequestFullscreen) el.msRequestFullscreen();
-  } catch { /* Fullscreen may require user gesture */ }
-}
-
 /* ─── Module lookup ─── */
 const ALL_STATIONS = [...ALL_WORKSTATIONS, ...UTILITY_STATIONS];
 function getStationByKey(key: string) {
@@ -342,8 +328,6 @@ function KioskInner() {
   // Phase 1: Show landing page for BOOT_HOLD ms, then transition
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Fullscreen is handled by Chrome --kiosk flag at OS level
-      // Don't call requestFullscreen() here — browsers block it without user gesture
       setPhase("transition");
     }, BOOT_HOLD);
     return () => clearTimeout(timer);
