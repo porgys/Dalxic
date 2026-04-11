@@ -28,7 +28,11 @@ export async function GET(request: Request) {
     admittedBy?: string;
     wardName?: string;
     bedLabel?: string;
+    bedId?: string;
     admissionReason?: string;
+    assignedDoctor?: string;
+    assignedDoctorName?: string;
+    visitingHours?: string;
     discharged?: boolean;
     dischargedAt?: string;
     dischargedBy?: string;
@@ -42,8 +46,10 @@ export async function GET(request: Request) {
       return visit.admission?.admitted;
     })
     .map((r) => {
-      const patient = r.patient as { fullName: string; age?: number; gender?: string };
+      const patient = r.patient as { fullName: string; age?: number; gender?: string; phone?: string };
       const visit = r.visit as { queueToken: string; department: string; chiefComplaint?: string; admission: AdmissionData };
+      const treatment = r.treatment as { prescriptions?: Array<{ medication: string; dosage: string; frequency: string; duration: string }> } | null;
+      const diagnosis = r.diagnosis as { primary?: string; notes?: string } | null;
       const admission = visit.admission;
       const dayCount = admission.admittedAt
         ? Math.ceil((Date.now() - new Date(admission.admittedAt).getTime()) / (1000 * 60 * 60 * 24))
@@ -54,19 +60,27 @@ export async function GET(request: Request) {
         patientName: patient.fullName,
         age: patient.age,
         gender: patient.gender,
+        phone: patient.phone,
         queueToken: visit.queueToken,
         department: visit.department,
         chiefComplaint: visit.chiefComplaint,
         wardName: admission.wardName || "Unassigned",
         bedLabel: admission.bedLabel || "—",
+        bedId: admission.bedId || null,
         admittedAt: admission.admittedAt,
         admittedBy: admission.admittedBy,
         admissionReason: admission.admissionReason,
+        assignedDoctor: admission.assignedDoctor || null,
+        assignedDoctorName: admission.assignedDoctorName || null,
+        visitingHours: admission.visitingHours || null,
         discharged: admission.discharged || false,
         dischargedAt: admission.dischargedAt,
         dayCount,
         roundsCount: (admission.dailyRounds || []).length,
         lastRound: admission.dailyRounds?.length ? admission.dailyRounds[admission.dailyRounds.length - 1] : null,
+        prescriptions: treatment?.prescriptions || [],
+        diagnosis: diagnosis?.primary || null,
+        diagnosisNotes: diagnosis?.notes || null,
       };
     });
 
@@ -99,11 +113,22 @@ export async function POST(request: Request) {
 
   // Admit patient
   if (action === "admit") {
-    const { recordId, wardName, bedLabel, admissionReason, admittedBy } = body;
+    const { recordId, wardName, bedLabel, bedId, admissionReason, admittedBy, assignedDoctor, assignedDoctorName } = body;
     if (!recordId) return Response.json({ error: "recordId required" }, { status: 400 });
 
     const record = await db.patientRecord.findUnique({ where: { id: recordId } });
     if (!record) return Response.json({ error: "Record not found" }, { status: 404 });
+
+    // If bedId provided, mark it as OCCUPIED in bed management
+    if (bedId) {
+      try {
+        const bed = await db.bed.findUnique({ where: { id: bedId } });
+        if (bed && ["AVAILABLE", "RESERVED"].includes(bed.status)) {
+          await db.bed.update({ where: { id: bedId }, data: { status: "OCCUPIED", patientId: recordId, reservedUntil: null } });
+          await db.bedTransition.create({ data: { bedId, fromStatus: bed.status, toStatus: "OCCUPIED", triggeredBy: admittedBy || "ward_nurse", patientId: recordId } });
+        }
+      } catch { /* bed sync non-blocking */ }
+    }
 
     const visit = record.visit as Record<string, unknown>;
     const updatedVisit = {
@@ -114,7 +139,10 @@ export async function POST(request: Request) {
         admittedBy: admittedBy || "ward_nurse",
         wardName: wardName || "General Ward",
         bedLabel: bedLabel || "",
+        bedId: bedId || null,
         admissionReason: admissionReason || "",
+        assignedDoctor: assignedDoctor || null,
+        assignedDoctorName: assignedDoctorName || null,
         discharged: false,
         dailyRounds: [],
       },
@@ -130,7 +158,7 @@ export async function POST(request: Request) {
       actorId: admittedBy || "ward_nurse",
       hospitalId: hospital.id,
       action: "ward.patient_admitted",
-      metadata: { recordId, wardName, bedLabel },
+      metadata: { recordId, wardName, bedLabel, bedId, assignedDoctor },
       ipAddress: getClientIP(request),
     });
 
@@ -192,8 +220,19 @@ export async function POST(request: Request) {
     const record = await db.patientRecord.findUnique({ where: { id: recordId } });
     if (!record) return Response.json({ error: "Record not found" }, { status: 404 });
 
-    const visit = record.visit as { admission?: { [key: string]: unknown }; [key: string]: unknown };
+    const visit = record.visit as { admission?: { bedId?: string; [key: string]: unknown }; [key: string]: unknown };
     if (!visit.admission) return Response.json({ error: "Patient not admitted" }, { status: 400 });
+
+    // Free the bed in bed management
+    if (visit.admission.bedId) {
+      try {
+        const bed = await db.bed.findUnique({ where: { id: visit.admission.bedId as string } });
+        if (bed && bed.status === "OCCUPIED") {
+          await db.bed.update({ where: { id: bed.id }, data: { status: "CLEANING", patientId: null } });
+          await db.bedTransition.create({ data: { bedId: bed.id, fromStatus: "OCCUPIED", toStatus: "CLEANING", triggeredBy: dischargedBy || "ward_nurse", patientId: recordId } });
+        }
+      } catch { /* bed sync non-blocking */ }
+    }
 
     visit.admission.discharged = true;
     visit.admission.dischargedAt = new Date().toISOString();
@@ -212,6 +251,58 @@ export async function POST(request: Request) {
       action: "ward.patient_discharged",
       metadata: { recordId },
       ipAddress: getClientIP(request),
+    });
+
+    return Response.json({ success: true });
+  }
+
+  // Assign doctor to ward patient
+  if (action === "assign_doctor") {
+    const { recordId, assignedDoctor, assignedDoctorName, assignedBy } = body;
+    if (!recordId || !assignedDoctorName) return Response.json({ error: "recordId and assignedDoctorName required" }, { status: 400 });
+
+    const record = await db.patientRecord.findUnique({ where: { id: recordId } });
+    if (!record) return Response.json({ error: "Record not found" }, { status: 404 });
+
+    const visit = record.visit as { admission?: { [key: string]: unknown }; [key: string]: unknown };
+    if (!visit.admission) return Response.json({ error: "Patient not admitted" }, { status: 400 });
+
+    visit.admission.assignedDoctor = assignedDoctor || null;
+    visit.admission.assignedDoctorName = assignedDoctorName;
+
+    await db.patientRecord.update({
+      where: { id: recordId },
+      data: { visit: JSON.parse(JSON.stringify(visit)) },
+    });
+
+    await logAudit({
+      actorType: "doctor",
+      actorId: assignedBy || assignedDoctor || "doctor",
+      hospitalId: hospital.id,
+      action: "ward.doctor_assigned",
+      metadata: { recordId, assignedDoctorName },
+      ipAddress: getClientIP(request),
+    });
+
+    return Response.json({ success: true });
+  }
+
+  // Set visiting hours for a patient
+  if (action === "set_visiting_hours") {
+    const { recordId, visitingHours } = body;
+    if (!recordId || !visitingHours) return Response.json({ error: "recordId and visitingHours required" }, { status: 400 });
+
+    const record = await db.patientRecord.findUnique({ where: { id: recordId } });
+    if (!record) return Response.json({ error: "Record not found" }, { status: 404 });
+
+    const visit = record.visit as { admission?: { [key: string]: unknown }; [key: string]: unknown };
+    if (!visit.admission) return Response.json({ error: "Patient not admitted" }, { status: 400 });
+
+    visit.admission.visitingHours = visitingHours;
+
+    await db.patientRecord.update({
+      where: { id: recordId },
+      data: { visit: JSON.parse(JSON.stringify(visit)) },
     });
 
     return Response.json({ success: true });

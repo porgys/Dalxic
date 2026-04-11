@@ -300,6 +300,15 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [incomingReferrals, setIncomingReferrals] = useState<{ id: string; recordId: string; patientName: string; queueToken: string; specialty?: string; reason: string; urgency: string; referredBy: string; referredAt: string; status: string; chiefComplaint: string; currentDiagnosis: string | null }[]>([]);
   const [referralCount, setReferralCount] = useState(0);
 
+  // Ward admission state
+  const [showAdmitModal, setShowAdmitModal] = useState(false);
+  const [admitWards, setAdmitWards] = useState<Array<{ id: string; name: string; type: string; rooms: Array<{ id: string; name: string; beds: Array<{ id: string; label: string; status: string }> }> }>>([]);
+  const [admitSelectedWard, setAdmitSelectedWard] = useState("");
+  const [admitSelectedBed, setAdmitSelectedBed] = useState<{ id: string; label: string; wardName: string } | null>(null);
+  const [admitReason, setAdmitReason] = useState("");
+  const [admitting, setAdmitting] = useState(false);
+  const [admitLoadingBeds, setAdmitLoadingBeds] = useState(false);
+
   // Inter-branch referral state
   const [hospitalGroup, setHospitalGroup] = useState<{ groupCode: string; name: string } | null>(null);
   const [groupBranches, setGroupBranches] = useState<{ code: string; name: string; tier: string; activeModules: string[] }[]>([]);
@@ -636,6 +645,63 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
       try { await fetch("/api/billing", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, action: "emit_billable", recordId: activeSession.recordId, serviceType: "CONSULTATION", description: `Consultation: ${diagnosis.primary || "General"}`, renderedBy: doctorId || "doctor" }) }); } catch { /* billing non-blocking */ }
       resetSession();
     } finally { setEnding(false); }
+  };
+
+  // Load available beds for admission modal
+  const loadAdmitBeds = async () => {
+    setAdmitLoadingBeds(true);
+    try {
+      const res = await fetch(`/api/beds?hospitalCode=${HOSPITAL_CODE}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAdmitWards(data.wards || []);
+      }
+    } catch { /* */ }
+    setAdmitLoadingBeds(false);
+  };
+
+  const openAdmitModal = () => {
+    setAdmitReason(diagnosis.primary || activeSession?.visit.chiefComplaint || "");
+    setAdmitSelectedWard("");
+    setAdmitSelectedBed(null);
+    loadAdmitBeds();
+    setShowAdmitModal(true);
+  };
+
+  const admitToWard = async () => {
+    if (!activeSession || !admitSelectedBed) return;
+    setAdmitting(true);
+    try {
+      // Save diagnosis + treatment first
+      const validRx = prescriptions.filter((p) => p.medication);
+      await fetch("/api/records", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: activeSession.recordId, hospitalCode: HOSPITAL_CODE, diagnosis: { primary: diagnosis.primary, secondary: [], icdCodes: [], notes: diagnosis.notes }, treatment: { prescriptions: validRx, procedures: [], followUp: null, nextAppointment: null } }) });
+
+      // Admit to ward
+      await fetch("/api/ward-ipd", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hospitalCode: HOSPITAL_CODE, action: "admit",
+          recordId: activeSession.recordId,
+          wardName: admitSelectedBed.wardName,
+          bedLabel: admitSelectedBed.label,
+          bedId: admitSelectedBed.id,
+          admissionReason: admitReason,
+          admittedBy: operator.operatorName || "doctor",
+          assignedDoctor: doctorId || operator.operatorId || "doctor",
+          assignedDoctorName: operator.operatorName || "Doctor",
+        }),
+      });
+
+      // Advance visit status
+      await fetch("/api/visit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, action: "complete_consultation", recordId: activeSession.recordId, doctorId: doctorId || "doctor", hasPrescriptions: validRx.length > 0 }) });
+
+      // Emit billable
+      try { await fetch("/api/billing", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, action: "emit_billable", recordId: activeSession.recordId, serviceType: "CONSULTATION", description: `Consultation + Ward Admission: ${diagnosis.primary || "General"}`, renderedBy: doctorId || "doctor" }) }); } catch { /* */ }
+
+      setShowAdmitModal(false);
+      resetSession();
+    } catch { /* */ }
+    setAdmitting(false);
   };
 
   const resetSession = () => {
@@ -1251,6 +1317,13 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                   </motion.button>
                 </motion.div>
 
+                {/* ── Admit To Ward ── */}
+                <motion.button type="button" onClick={openAdmitModal}
+                  whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}
+                  style={{ width: "100%", marginTop: 10, padding: "10px 24px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "#A855F7", background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.2)", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  🏥 Admit To Ward
+                </motion.button>
+
                 {/* ── Quick Actions: PDF + WhatsApp ── */}
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                   <button type="button" onClick={() => window.open(`/api/reports?recordId=${activeSession.recordId}&type=patient`, "_blank")}
@@ -1337,6 +1410,109 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
               style={{ flex: 1, padding: "9px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", background: "#F59E0B", border: "none", cursor: "pointer", opacity: handoverSending || !handoverTarget ? 0.5 : 1 }}>
               {handoverSending ? "Transferring..." : "Confirm Handover"}
             </button>
+          </div>
+        </motion.div>
+      </div>
+    )}
+    {/* ── Ward Admission Modal ── */}
+    {showAdmitModal && activeSession && (
+      <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
+        onClick={() => setShowAdmitModal(false)}>
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+          onClick={(e) => e.stopPropagation()}
+          style={{ width: "90%", maxWidth: 560, maxHeight: "80vh", overflow: "auto", padding: 32, borderRadius: 20, background: "rgba(10,10,20,0.95)", border: `1px solid ${COPPER}20`, boxShadow: `0 32px 80px rgba(0,0,0,0.6)` }}>
+          <h3 style={{ fontSize: 18, fontWeight: 800, color: "white", marginBottom: 4 }}>Admit To Ward</h3>
+          <p style={{ fontSize: 12, color: "#64748B", marginBottom: 20 }}>
+            {activeSession.patient?.fullName} — {activeSession.visit.chiefComplaint || "General"}
+          </p>
+
+          {/* Admission Reason */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Admission Reason</label>
+            <input value={admitReason} onChange={(e) => setAdmitReason(e.target.value)} placeholder="Reason for admission..."
+              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, outline: "none", boxSizing: "border-box" }} />
+          </div>
+
+          {/* Ward Selector */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Select Ward</label>
+            {admitLoadingBeds ? (
+              <p style={{ fontSize: 12, color: "#64748B", padding: 12 }}>Loading Wards...</p>
+            ) : admitWards.length === 0 ? (
+              <p style={{ fontSize: 12, color: "#F59E0B", padding: 12 }}>No Wards Configured. Set Up Wards In Bed Management First.</p>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {admitWards.map((w) => {
+                  const available = w.rooms.flatMap((r) => r.beds).filter((b) => b.status === "AVAILABLE").length;
+                  return (
+                    <button key={w.id} type="button" onClick={() => setAdmitSelectedWard(admitSelectedWard === w.id ? "" : w.id)}
+                      style={{
+                        padding: "8px 14px", borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
+                        background: admitSelectedWard === w.id ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.03)",
+                        color: admitSelectedWard === w.id ? "#C084FC" : "#94A3B8",
+                        outline: admitSelectedWard === w.id ? "1px solid rgba(168,85,247,0.3)" : "1px solid rgba(255,255,255,0.06)",
+                      }}>
+                      {w.name} <span style={{ fontSize: 10, opacity: 0.7 }}>({available} Free)</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Bed Picker — shows when a ward is selected */}
+          {admitSelectedWard && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Select Bed</label>
+              {(() => {
+                const ward = admitWards.find((w) => w.id === admitSelectedWard);
+                if (!ward) return null;
+                const availableBeds = ward.rooms.flatMap((r) => r.beds.filter((b) => b.status === "AVAILABLE").map((b) => ({ ...b, roomName: r.name, wardName: ward.name })));
+                if (availableBeds.length === 0) return <p style={{ fontSize: 12, color: "#F59E0B", padding: 8 }}>No Available Beds In This Ward</p>;
+                return (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: 8 }}>
+                    {availableBeds.map((bed) => (
+                      <button key={bed.id} type="button" onClick={() => setAdmitSelectedBed({ id: bed.id, label: bed.label, wardName: bed.wardName })}
+                        style={{
+                          padding: "10px 8px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "none", textAlign: "center",
+                          background: admitSelectedBed?.id === bed.id ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.03)",
+                          color: admitSelectedBed?.id === bed.id ? "#22C55E" : "white",
+                          outline: admitSelectedBed?.id === bed.id ? "1px solid rgba(34,197,94,0.3)" : "1px solid rgba(255,255,255,0.06)",
+                        }}>
+                        <div style={{ fontSize: 14, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{bed.label}</div>
+                        <div style={{ fontSize: 9, color: "#64748B", marginTop: 2 }}>{bed.roomName}</div>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Selected summary */}
+          {admitSelectedBed && (
+            <div style={{ padding: 12, borderRadius: 12, background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", marginBottom: 16 }}>
+              <p style={{ fontSize: 11, color: "#22C55E", fontWeight: 600 }}>
+                ✓ {admitSelectedBed.wardName} — Bed {admitSelectedBed.label}
+              </p>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div style={{ display: "flex", gap: 10 }}>
+            <button type="button" onClick={() => setShowAdmitModal(false)}
+              style={{ flex: 1, padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, color: "#94A3B8", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
+              Cancel
+            </button>
+            <motion.button type="button" onClick={admitToWard} disabled={admitting || !admitSelectedBed}
+              whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}
+              style={{
+                flex: 2, padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, color: "white", cursor: admitting ? "wait" : "pointer",
+                background: "linear-gradient(135deg, #A855F7, #C084FC)",
+                border: "none", opacity: admitting || !admitSelectedBed ? 0.5 : 1, textTransform: "uppercase", letterSpacing: "0.5px",
+              }}>
+              {admitting ? "Admitting..." : "Confirm Admission"}
+            </motion.button>
           </div>
         </motion.div>
       </div>
