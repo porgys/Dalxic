@@ -8,7 +8,7 @@ import { rateLimit } from "@/lib/rate-limit";
 // POST: Register patient and assign queue token
 export async function POST(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
-  const { hospitalCode, patient, chiefComplaint, department, symptomSeverity, symptomDuration, operatorId, operatorName } = body as {
+  const { hospitalCode, patient, chiefComplaint, department, symptomSeverity, symptomDuration, operatorId } = body as {
     hospitalCode: string;
     patient: Patient;
     chiefComplaint: string;
@@ -16,7 +16,6 @@ export async function POST(request: Request) {
     symptomSeverity?: number;
     symptomDuration?: string;
     operatorId?: string;
-    operatorName?: string;
   };
 
   if (!hospitalCode || !patient?.fullName || !chiefComplaint) {
