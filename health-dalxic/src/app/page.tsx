@@ -357,12 +357,12 @@ function Nav() {
         ))}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <button onClick={() => window.location.href = "/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh"} style={{
+        <button style={{
           padding: "8px 20px", borderRadius: 10, fontSize: 13, fontWeight: 700,
-          color: "#fff", border: "none", cursor: "pointer",
+          color: "#fff", border: "none", cursor: "default",
           background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`,
           boxShadow: `0 4px 16px ${COPPER}30`,
-          fontFamily: "inherit",
+          fontFamily: "inherit", opacity: 0.6,
         }}>Enter Platform</button>
       </div>
     </nav>
@@ -425,13 +425,13 @@ export default function HomePage() {
 
             {/* CTAs */}
             <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", animation: "fadeUp 0.6s ease 0.65s both" }}>
-              <button onClick={() => window.location.href = "/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh"} style={{
+              <button style={{
                 padding: "16px 0", width: 240, textAlign: "center", borderRadius: 14, fontSize: 15, fontWeight: 700,
-                letterSpacing: "0.04em", color: "#fff", border: "none", cursor: "pointer",
+                letterSpacing: "0.04em", color: "#fff", border: "none", cursor: "default",
                 background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`,
                 boxShadow: `0 8px 32px ${COPPER}40`,
                 transition: "all 0.3s ease",
-                fontFamily: "inherit",
+                fontFamily: "inherit", opacity: 0.6,
               }}>
                 Enter Platform
               </button>
