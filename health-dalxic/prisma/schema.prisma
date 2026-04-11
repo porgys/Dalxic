@@ -62,6 +62,10 @@ model Hospital {
   servicePrices            ServicePrice[]
   bloodInventory           BloodInventory[]
   patientCards             PatientCard[]
+  drugCatalog              DrugCatalog[]
+  drugStock                DrugStock[]
+  stockMovements           StockMovement[]
+  retailSales              RetailSale[]
 
   @@map("hospitals")
 }
@@ -80,6 +84,7 @@ model MonthlyBook {
   hospital       Hospital        @relation(fields: [hospitalId], references: [id])
   patientRecords PatientRecord[]
   labOrders      LabOrder[]
+  retailSales    RetailSale[]
 
   @@unique([hospitalId, year, month])
   @@map("monthly_books")
@@ -466,6 +471,106 @@ model ChatMessage {
   @@index([hospitalId, toModule, isRead])
   @@index([hospitalId, createdAt])
   @@map("chat_messages")
+}
+
+// ─── Pharmacy Inventory ───
+
+model DrugCatalog {
+  id                   String   @id @default(cuid())
+  hospitalId           String   @map("hospital_id")
+  name                 String
+  genericName          String?  @map("generic_name")
+  category             String   // ANTIBIOTIC | ANALGESIC | ANTIHYPERTENSIVE | ANTIDIABETIC | ANTIMALARIAL | VITAMIN | ANTACID | ANTIHISTAMINE | OTHER
+  unit                 String   // tablet | capsule | bottle | vial | tube | sachet | ampoule
+  defaultPrice         Float    @map("default_price")
+  costPrice            Float    @default(0) @map("cost_price")
+  controlledSubstance  Boolean  @default(false) @map("controlled_substance")
+  requiresPrescription Boolean  @default(true) @map("requires_prescription")
+  minStockThreshold    Int      @default(20) @map("min_stock_threshold")
+  isActive             Boolean  @default(true) @map("is_active")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  hospital   Hospital    @relation(fields: [hospitalId], references: [id])
+  stocks     DrugStock[]
+  movements  StockMovement[]
+
+  @@index([hospitalId, category])
+  @@index([hospitalId, name])
+  @@map("drug_catalog")
+}
+
+model DrugStock {
+  id                String   @id @default(cuid())
+  hospitalId        String   @map("hospital_id")
+  drugCatalogId     String   @map("drug_catalog_id")
+  batchNumber       String   @map("batch_number")
+  expiryDate        DateTime @map("expiry_date")
+  quantityReceived  Int      @map("quantity_received")
+  quantityRemaining Int      @map("quantity_remaining")
+  costPrice         Float    @map("cost_price")
+  sellPrice         Float    @map("sell_price")
+  supplier          String?
+  receivedAt        DateTime @default(now()) @map("received_at")
+  receivedBy        String   @map("received_by")
+  status            String   @default("ACTIVE") // ACTIVE | EXPIRED | DEPLETED
+
+  hospital    Hospital    @relation(fields: [hospitalId], references: [id])
+  drugCatalog DrugCatalog @relation(fields: [drugCatalogId], references: [id])
+  movements   StockMovement[]
+
+  @@index([hospitalId, drugCatalogId])
+  @@index([hospitalId, expiryDate])
+  @@map("drug_stock")
+}
+
+model StockMovement {
+  id            String   @id @default(cuid())
+  hospitalId    String   @map("hospital_id")
+  drugStockId   String?  @map("drug_stock_id")
+  drugCatalogId String   @map("drug_catalog_id")
+  type          String   // RECEIVED | DISPENSED_HOSPITAL | DISPENSED_RETAIL | EXPIRED | ADJUSTED | RETURNED | TRANSFERRED
+  quantity      Int
+  balanceBefore Int      @map("balance_before")
+  balanceAfter  Int      @map("balance_after")
+  reference     String?  // recordId or retailSaleId
+  performedBy   String   @map("performed_by")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  hospital    Hospital     @relation(fields: [hospitalId], references: [id])
+  drugStock   DrugStock?   @relation(fields: [drugStockId], references: [id])
+  drugCatalog DrugCatalog  @relation(fields: [drugCatalogId], references: [id])
+
+  @@index([hospitalId, drugCatalogId])
+  @@index([hospitalId, type])
+  @@map("stock_movements")
+}
+
+model RetailSale {
+  id            String    @id @default(cuid())
+  hospitalId    String    @map("hospital_id")
+  customerName  String?   @map("customer_name")
+  customerPhone String?   @map("customer_phone")
+  items         Json      // Array: { drugCatalogId, drugName, quantity, unitPrice, total, batchId }
+  subtotal      Float
+  discount      Float     @default(0)
+  totalAmount   Float     @map("total_amount")
+  paymentStatus String    @default("PENDING") @map("payment_status") // PENDING | PAID | CANCELLED
+  paymentMethod String?   @map("payment_method") // CASH | MOBILE_MONEY | INSURANCE
+  receiptCode   String    @unique @map("receipt_code") // RX-20260411-0042
+  dispensed     Boolean   @default(false)
+  dispensedAt   DateTime? @map("dispensed_at")
+  dispensedBy   String?   @map("dispensed_by")
+  soldBy        String    @map("sold_by")
+  bookId        String?   @map("book_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  hospital Hospital     @relation(fields: [hospitalId], references: [id])
+  book     MonthlyBook? @relation(fields: [bookId], references: [id])
+
+  @@index([hospitalId, paymentStatus])
+  @@index([hospitalId, createdAt])
+  @@map("retail_sales")
 }
 
 // ─── Blood Bank Inventory ───
