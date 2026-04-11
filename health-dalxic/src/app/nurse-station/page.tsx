@@ -79,6 +79,25 @@ function WorkshopBox({ children, title, icon, delay = 0, className = "" }: {
   );
 }
 
+/* ─── Themed Input ─── */
+function DInput({ label, required, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string; required?: boolean }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && (
+        <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>
+          {label} {required && <span className="text-red-400">*</span>}
+        </label>
+      )}
+      <input
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      />
+    </div>
+  );
+}
+
 /* ─── Types ─── */
 interface NursePatient {
   recordId: string;
@@ -428,25 +447,20 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
                         { key: "weight", label: "Weight (kg)", placeholder: "70" },
                         { key: "height", label: "Height (cm)", placeholder: "170" },
                       ].map((field) => (
-                        <div key={field.key}>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>{field.label}</label>
-                          <input
-                            value={vitalsForm[field.key as keyof typeof vitalsForm]}
-                            onChange={(e) => setVitalsForm({ ...vitalsForm, [field.key]: e.target.value })}
-                            placeholder={field.placeholder}
-                            style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none", fontFamily: "var(--font-jetbrains-mono), monospace" }}
-                          />
-                        </div>
-                      ))}
-                      <div>
-                        <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Notes</label>
-                        <input
-                          value={vitalsForm.notes}
-                          onChange={(e) => setVitalsForm({ ...vitalsForm, notes: e.target.value })}
-                          placeholder="Optional notes..."
-                          style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none" }}
+                        <DInput
+                          key={field.key}
+                          label={field.label}
+                          value={vitalsForm[field.key as keyof typeof vitalsForm]}
+                          onChange={(e) => setVitalsForm({ ...vitalsForm, [field.key]: e.target.value })}
+                          placeholder={field.placeholder}
                         />
-                      </div>
+                      ))}
+                      <DInput
+                        label="Notes"
+                        value={vitalsForm.notes}
+                        onChange={(e) => setVitalsForm({ ...vitalsForm, notes: e.target.value })}
+                        placeholder="Optional notes..."
+                      />
                     </div>
                     <motion.button type="button" onClick={recordVitals} disabled={savingVitals}
                       whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
@@ -527,13 +541,12 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
                     </div>
                     <div style={{ display: "flex", gap: 12, alignItems: "end" }}>
                       <div style={{ flex: 1 }}>
-                        <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Description</label>
-                        <input
+                        <DInput
+                          label="Description"
                           value={taskForm.description}
                           onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
                           onKeyDown={(e) => e.key === "Enter" && addTask()}
                           placeholder="e.g. Administer Paracetamol 500mg PO 8hrly..."
-                          style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none" }}
                         />
                       </div>
                       <motion.button type="button" onClick={addTask} disabled={savingTask || !taskForm.description.trim()}

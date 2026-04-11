@@ -182,16 +182,44 @@ interface CartItem {
   total: number;
 }
 
+/* ─── Themed Input (matches Front Desk gold standard) ─── */
+function DInput({ label, required, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string; required?: boolean }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && (
+        <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>
+          {label} {required && <span className="text-red-400">*</span>}
+        </label>
+      )}
+      <input
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      />
+    </div>
+  );
+}
+
+/* ─── Themed Select ─── */
+function DSelect({ label, options, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string; options: { value: string; label: string }[] }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>{label}</label>}
+      <select
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300 appearance-none"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      >
+        <option value="" style={{ background: t.selectOptionBg }}>Select...</option>
+        {options.map((o) => <option key={o.value} value={o.value} style={{ background: t.selectOptionBg }}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+}
+
 /* ─── Styles ─── */
-const inputStyle: React.CSSProperties = {
-  width: "100%", padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600,
-  background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
-  color: "#F0F4FF", outline: "none", fontFamily: "var(--font-outfit), Outfit, sans-serif",
-};
-const labelStyle: React.CSSProperties = {
-  fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const,
-  color: "#64748B", marginBottom: 4, display: "block",
-};
 const btnCopper: React.CSSProperties = {
   padding: "10px 20px", borderRadius: 10, cursor: "pointer", border: "none",
   background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, color: "#fff",
@@ -613,20 +641,13 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
 
                   {/* Customer info */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-                    <div>
-                      <label style={labelStyle}>Customer Name</label>
-                      <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Optional" style={inputStyle} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Phone</label>
-                      <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Optional" style={inputStyle} />
-                    </div>
+                    <DInput label="Customer Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Optional" />
+                    <DInput label="Phone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Optional" />
                   </div>
 
                   {/* Drug search */}
                   <div style={{ position: "relative", marginBottom: 16 }}>
-                    <label style={labelStyle}>Search Medication</label>
-                    <input value={retailSearch} onChange={(e) => searchRetailDrugs(e.target.value)} placeholder="Type To Search Catalog..." style={inputStyle} />
+                    <DInput label="Search Medication" value={retailSearch} onChange={(e) => searchRetailDrugs(e.target.value)} placeholder="Type To Search Catalog..." />
                     {retailSearchResults.length > 0 && (
                       <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20, background: "rgba(10,10,20,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, maxHeight: 200, overflow: "auto", marginTop: 4 }}>
                         {retailSearchResults.map((d) => (
@@ -665,9 +686,8 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                   {cart.length > 0 && (
                     <>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                        <div>
-                          <label style={labelStyle}>Discount (GHS)</label>
-                          <input value={retailDiscount} onChange={(e) => setRetailDiscount(e.target.value)} placeholder="0" style={{ ...inputStyle, width: 100 }} />
+                        <div style={{ width: 120 }}>
+                          <DInput label="Discount (GHS)" value={retailDiscount} onChange={(e) => setRetailDiscount(e.target.value)} placeholder="0" />
                         </div>
                         <div style={{ textAlign: "right" }}>
                           <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Total</div>
@@ -777,8 +797,8 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
               </div>
 
               {/* Catalog search */}
-              <div style={{ marginBottom: 20 }}>
-                <input value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} placeholder="Search Drug Catalog..." style={{ ...inputStyle, maxWidth: 400 }} />
+              <div style={{ marginBottom: 20, maxWidth: 400 }}>
+                <DInput value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} placeholder="Search Drug Catalog..." />
               </div>
 
               {/* Drug catalog cards */}
@@ -866,41 +886,16 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                       style={{ background: "rgba(15,15,25,0.98)", border: `1px solid ${COPPER}20`, borderRadius: 24, padding: 32, width: 480 }}>
                       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 20 }}>Add Drug To Catalog</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        <div>
-                          <label style={labelStyle}>Drug Name</label>
-                          <input value={addDrugForm.name} onChange={(e) => setAddDrugForm({ ...addDrugForm, name: e.target.value })} style={inputStyle} placeholder="e.g. Amoxicillin 500mg" />
-                        </div>
-                        <div>
-                          <label style={labelStyle}>Generic Name</label>
-                          <input value={addDrugForm.genericName} onChange={(e) => setAddDrugForm({ ...addDrugForm, genericName: e.target.value })} style={inputStyle} placeholder="Optional" />
-                        </div>
+                        <DInput label="Drug Name" value={addDrugForm.name} onChange={(e) => setAddDrugForm({ ...addDrugForm, name: e.target.value })} placeholder="e.g. Amoxicillin 500mg" required />
+                        <DInput label="Generic Name" value={addDrugForm.genericName} onChange={(e) => setAddDrugForm({ ...addDrugForm, genericName: e.target.value })} placeholder="Optional" />
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                          <div>
-                            <label style={labelStyle}>Category</label>
-                            <select value={addDrugForm.category} onChange={(e) => setAddDrugForm({ ...addDrugForm, category: e.target.value })} style={{ ...inputStyle, appearance: "none" as const }}>
-                              {CATEGORIES.map((c) => <option key={c} value={c} style={{ background: "#0a0a14" }}>{c}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <label style={labelStyle}>Unit</label>
-                            <select value={addDrugForm.unit} onChange={(e) => setAddDrugForm({ ...addDrugForm, unit: e.target.value })} style={{ ...inputStyle, appearance: "none" as const }}>
-                              {UNITS.map((u) => <option key={u} value={u} style={{ background: "#0a0a14" }}>{u}</option>)}
-                            </select>
-                          </div>
+                          <DSelect label="Category" value={addDrugForm.category} onChange={(e) => setAddDrugForm({ ...addDrugForm, category: e.target.value })} options={CATEGORIES.map((c) => ({ value: c, label: c }))} />
+                          <DSelect label="Unit" value={addDrugForm.unit} onChange={(e) => setAddDrugForm({ ...addDrugForm, unit: e.target.value })} options={UNITS.map((u) => ({ value: u, label: u }))} />
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-                          <div>
-                            <label style={labelStyle}>Sell Price (GHS)</label>
-                            <input type="number" value={addDrugForm.defaultPrice} onChange={(e) => setAddDrugForm({ ...addDrugForm, defaultPrice: e.target.value })} style={inputStyle} />
-                          </div>
-                          <div>
-                            <label style={labelStyle}>Cost Price (GHS)</label>
-                            <input type="number" value={addDrugForm.costPrice} onChange={(e) => setAddDrugForm({ ...addDrugForm, costPrice: e.target.value })} style={inputStyle} />
-                          </div>
-                          <div>
-                            <label style={labelStyle}>Min Stock Alert</label>
-                            <input type="number" value={addDrugForm.minStockThreshold} onChange={(e) => setAddDrugForm({ ...addDrugForm, minStockThreshold: e.target.value })} style={inputStyle} />
-                          </div>
+                          <DInput label="Sell Price (GHS)" type="number" value={addDrugForm.defaultPrice} onChange={(e) => setAddDrugForm({ ...addDrugForm, defaultPrice: e.target.value })} required />
+                          <DInput label="Cost Price (GHS)" type="number" value={addDrugForm.costPrice} onChange={(e) => setAddDrugForm({ ...addDrugForm, costPrice: e.target.value })} />
+                          <DInput label="Min Stock Alert" type="number" value={addDrugForm.minStockThreshold} onChange={(e) => setAddDrugForm({ ...addDrugForm, minStockThreshold: e.target.value })} />
                         </div>
                         <div style={{ display: "flex", gap: 16, marginTop: 4 }}>
                           <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#94A3B8", cursor: "pointer" }}>
@@ -935,41 +930,17 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                       style={{ background: "rgba(15,15,25,0.98)", border: `1px solid ${BLUE}20`, borderRadius: 24, padding: 32, width: 480 }}>
                       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: BLUE, marginBottom: 20 }}>Receive Stock Batch</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        <div>
-                          <label style={labelStyle}>Drug</label>
-                          <select value={receiveForm.drugCatalogId} onChange={(e) => setReceiveForm({ ...receiveForm, drugCatalogId: e.target.value })} style={{ ...inputStyle, appearance: "none" as const }}>
-                            <option value="" style={{ background: "#0a0a14" }}>Select Drug...</option>
-                            {catalog.map((d) => <option key={d.id} value={d.id} style={{ background: "#0a0a14" }}>{d.name} ({d.unit})</option>)}
-                          </select>
-                        </div>
+                        <DSelect label="Drug" value={receiveForm.drugCatalogId} onChange={(e) => setReceiveForm({ ...receiveForm, drugCatalogId: e.target.value })} options={catalog.map((d) => ({ value: d.id, label: `${d.name} (${d.unit})` }))} />
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                          <div>
-                            <label style={labelStyle}>Batch Number</label>
-                            <input value={receiveForm.batchNumber} onChange={(e) => setReceiveForm({ ...receiveForm, batchNumber: e.target.value })} style={inputStyle} placeholder="e.g. BN-2026-042" />
-                          </div>
-                          <div>
-                            <label style={labelStyle}>Expiry Date</label>
-                            <input type="date" value={receiveForm.expiryDate} onChange={(e) => setReceiveForm({ ...receiveForm, expiryDate: e.target.value })} style={inputStyle} />
-                          </div>
+                          <DInput label="Batch Number" value={receiveForm.batchNumber} onChange={(e) => setReceiveForm({ ...receiveForm, batchNumber: e.target.value })} placeholder="e.g. BN-2026-042" required />
+                          <DInput label="Expiry Date" type="date" value={receiveForm.expiryDate} onChange={(e) => setReceiveForm({ ...receiveForm, expiryDate: e.target.value })} required />
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-                          <div>
-                            <label style={labelStyle}>Quantity</label>
-                            <input type="number" value={receiveForm.quantity} onChange={(e) => setReceiveForm({ ...receiveForm, quantity: e.target.value })} style={inputStyle} />
-                          </div>
-                          <div>
-                            <label style={labelStyle}>Cost Price</label>
-                            <input type="number" value={receiveForm.costPrice} onChange={(e) => setReceiveForm({ ...receiveForm, costPrice: e.target.value })} style={inputStyle} />
-                          </div>
-                          <div>
-                            <label style={labelStyle}>Sell Price</label>
-                            <input type="number" value={receiveForm.sellPrice} onChange={(e) => setReceiveForm({ ...receiveForm, sellPrice: e.target.value })} style={inputStyle} />
-                          </div>
+                          <DInput label="Quantity" type="number" value={receiveForm.quantity} onChange={(e) => setReceiveForm({ ...receiveForm, quantity: e.target.value })} required />
+                          <DInput label="Cost Price" type="number" value={receiveForm.costPrice} onChange={(e) => setReceiveForm({ ...receiveForm, costPrice: e.target.value })} />
+                          <DInput label="Sell Price" type="number" value={receiveForm.sellPrice} onChange={(e) => setReceiveForm({ ...receiveForm, sellPrice: e.target.value })} />
                         </div>
-                        <div>
-                          <label style={labelStyle}>Supplier</label>
-                          <input value={receiveForm.supplier} onChange={(e) => setReceiveForm({ ...receiveForm, supplier: e.target.value })} style={inputStyle} placeholder="e.g. Ernest Chemists" />
-                        </div>
+                        <DInput label="Supplier" value={receiveForm.supplier} onChange={(e) => setReceiveForm({ ...receiveForm, supplier: e.target.value })} placeholder="e.g. Ernest Chemists" />
                         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
                           <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={receiveStock}
                             style={{ ...btnCopper, background: `linear-gradient(135deg, ${BLUE}, #38BDF8)` }}>Receive Stock</motion.button>

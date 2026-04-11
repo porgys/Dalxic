@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { calloutNumber } from "@/lib/voice-callout";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
 import type { OperatorSession } from "@/types";
 
@@ -75,19 +75,53 @@ function GalaxyCanvas() {
   return <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }} />;
 }
 
-/* ─── Compact Dark Input ─── */
+/* ─── Themed Input ─── */
 function DInput({ label, required, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string; required?: boolean }) {
+  const t = useThemeContext();
   return (
     <div>
       {label && (
-        <label style={{ display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>
-          {label} {required && <span style={{ color: "#EF4444" }}>*</span>}
+        <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>
+          {label} {required && <span className="text-red-400">*</span>}
         </label>
       )}
       <input
         {...props}
-        className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white placeholder:text-[#3D4D78] focus:outline-none focus:ring-1 focus:ring-[#B87333]/30 transition-all duration-200"
-        style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(184,115,51,0.1)", ...props.style }}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      />
+    </div>
+  );
+}
+
+/* ─── Themed Select ─── */
+function DSelect({ label, options, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string; options: { value: string; label: string }[] }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>{label}</label>}
+      <select
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300 appearance-none"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      >
+        <option value="" style={{ background: t.selectOptionBg }}>Select...</option>
+        {options.map((o) => <option key={o.value} value={o.value} style={{ background: t.selectOptionBg }}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+}
+
+/* ─── Themed Textarea ─── */
+function DTextarea({ label, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>{label}</label>}
+      <textarea
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300 resize-none"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
       />
     </div>
   );
@@ -1032,15 +1066,8 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                     </div>
                     <DInput label="Primary Diagnosis" placeholder="e.g. Plasmodium Falciparum Malaria" value={diagnosis.primary} onChange={(e) => setDiagnosis((d) => ({ ...d, primary: e.target.value }))} required />
                     <div style={{ marginTop: 10 }}>
-                      <label style={{ display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Clinical Notes</label>
-                      <textarea
-                        rows={3}
-                        className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white placeholder:text-[#3D4D78] focus:outline-none focus:ring-1 focus:ring-[#B87333]/30 resize-none transition-all duration-200"
-                        style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(184,115,51,0.1)" }}
-                        placeholder="History, examination findings, observations..."
-                        value={diagnosis.notes}
-                        onChange={(e) => setDiagnosis((d) => ({ ...d, notes: e.target.value }))}
-                      />
+                      <DTextarea label="Clinical Notes" rows={3} placeholder="History, examination findings, observations..."
+                        value={diagnosis.notes} onChange={(e) => setDiagnosis((d) => ({ ...d, notes: e.target.value }))} />
                     </div>
                   </motion.div>
 
@@ -1134,19 +1161,10 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                   {showReferralPanel && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        <DSelect label="Specialty" value={referralSpecialty} onChange={(e) => setReferralSpecialty(e.target.value)}
+                          options={["Cardiologist", "Neurologist", "Orthopedic", "Dermatologist", "Pediatrician", "Gynecologist", "Surgeon", "Ophthalmologist", "ENT Specialist", "Psychiatrist", "Urologist", "Oncologist", "Pulmonologist", "Endocrinologist"].map((s) => ({ value: s.toLowerCase().replace(/\s+/g, "_"), label: s }))} />
                         <div>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Specialty</label>
-                          <select value={referralSpecialty} onChange={(e) => setReferralSpecialty(e.target.value)}
-                            className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white focus:outline-none focus:ring-1 focus:ring-[#0EA5E9]/30 appearance-none"
-                            style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(14,165,233,0.1)" }}>
-                            <option value="" style={{ background: theme.selectOptionBg }}>Select Specialty...</option>
-                            {["Cardiologist", "Neurologist", "Orthopedic", "Dermatologist", "Pediatrician", "Gynecologist", "Surgeon", "Ophthalmologist", "ENT Specialist", "Psychiatrist", "Urologist", "Oncologist", "Pulmonologist", "Endocrinologist"].map((s) => (
-                              <option key={s} value={s.toLowerCase().replace(/\s+/g, "_")} style={{ background: theme.selectOptionBg }}>{s}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Urgency</label>
+                          <label className="block text-xs font-medium font-body mb-1.5" style={{ color: "#94A3B8" }}>Urgency</label>
                           <div style={{ display: "flex", gap: 6 }}>
                             {(["routine", "urgent", "stat"] as const).map((u) => (
                               <button key={u} type="button" onClick={() => setReferralUrgency(u)}
@@ -1164,9 +1182,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                       </div>
                       <DInput label="Reason For Referral" placeholder="e.g. Suspected cardiac arrhythmia, needs ECG and specialist evaluation" required
                         value={referralReason} onChange={(e) => setReferralReason(e.target.value)} />
-                      <textarea rows={2} placeholder="Additional notes for the receiving specialist..."
-                        className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white placeholder:text-[#3D4D78] focus:outline-none focus:ring-1 focus:ring-[#0EA5E9]/30 resize-none"
-                        style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(14,165,233,0.1)" }}
+                      <DTextarea label="Additional Notes" rows={2} placeholder="Additional notes for the receiving specialist..."
                         value={referralNotes} onChange={(e) => setReferralNotes(e.target.value)} />
                       <button type="button" onClick={sendReferral} disabled={referralSending || !referralReason.trim()}
                         style={{
@@ -1200,32 +1216,14 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                     {showInterBranchPanel && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Destination Branch</label>
-                            <select value={ibDest} onChange={(e) => setIbDest(e.target.value)}
-                              className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white focus:outline-none appearance-none"
-                              style={{ background: "rgba(255,255,255,0.03)", borderColor: `${COPPER}20` }}>
-                              <option value="" style={{ background: theme.selectOptionBg }}>Select Branch...</option>
-                              {groupBranches.map((b) => (
-                                <option key={b.code} value={b.code} style={{ background: theme.selectOptionBg }}>{b.code} — {b.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Department</label>
-                            <select value={ibDept} onChange={(e) => setIbDept(e.target.value)}
-                              className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white focus:outline-none appearance-none"
-                              style={{ background: "rgba(255,255,255,0.03)", borderColor: `${COPPER}20` }}>
-                              <option value="" style={{ background: theme.selectOptionBg }}>Select Department...</option>
-                              {["Doctor", "Lab", "Pharmacy", "CT/Radiology", "Ultrasound", "Ward", "ICU", "Maternity", "Blood Bank", "Emergency"].map((d) => (
-                                <option key={d} value={d} style={{ background: theme.selectOptionBg }}>{d}</option>
-                              ))}
-                            </select>
-                          </div>
+                          <DSelect label="Destination Branch" value={ibDest} onChange={(e) => setIbDest(e.target.value)}
+                            options={groupBranches.map((b) => ({ value: b.code, label: `${b.code} — ${b.name}` }))} />
+                          <DSelect label="Department" value={ibDept} onChange={(e) => setIbDept(e.target.value)}
+                            options={["Doctor", "Lab", "Pharmacy", "CT/Radiology", "Ultrasound", "Ward", "ICU", "Maternity", "Blood Bank", "Emergency"].map((d) => ({ value: d, label: d }))} />
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                           <div>
-                            <label style={{ display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Type</label>
+                            <label className="block text-xs font-medium font-body mb-1.5" style={{ color: "#94A3B8" }}>Type</label>
                             <div style={{ display: "flex", gap: 4 }}>
                               {(["OUTPATIENT", "ADMISSION", "EMERGENCY", "BLOOD_REQUEST"] as const).map((t) => (
                                 <button key={t} type="button" onClick={() => setIbType(t)}
@@ -1241,7 +1239,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                             </div>
                           </div>
                           <div>
-                            <label style={{ display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 4 }}>Priority</label>
+                            <label className="block text-xs font-medium font-body mb-1.5" style={{ color: "#94A3B8" }}>Priority</label>
                             <div style={{ display: "flex", gap: 6 }}>
                               {(["ROUTINE", "URGENT", "CRITICAL"] as const).map((p) => (
                                 <button key={p} type="button" onClick={() => setIbPriority(p)}
@@ -1259,9 +1257,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                         </div>
                         <DInput label="Clinical Reason" placeholder="e.g. Requires CT scan not available at this branch" required
                           value={ibReason} onChange={(e) => setIbReason(e.target.value)} />
-                        <textarea rows={2} placeholder="Additional notes..."
-                          className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white placeholder:text-[#3D4D78] focus:outline-none resize-none"
-                          style={{ background: "rgba(255,255,255,0.03)", borderColor: `${COPPER}20` }}
+                        <DTextarea label="Additional Notes" rows={2} placeholder="Additional notes..."
                           value={ibNotes} onChange={(e) => setIbNotes(e.target.value)} />
                         {ibPriority === "CRITICAL" && (
                           <div style={{ fontSize: 10, color: "#F87171", padding: "6px 10px", borderRadius: 6, background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.15)" }}>
@@ -1338,8 +1334,9 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                 {/* WhatsApp phone input */}
                 {waPhone !== "" && (
                   <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
-                    <input value={waPhone} onChange={(e) => setWaPhone(e.target.value)} placeholder="Phone (e.g. 0244123456)"
-                      style={{ flex: 1, padding: "7px 10px", borderRadius: 8, fontSize: 11, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(37,211,102,0.15)", color: "white", outline: "none" }} />
+                    <div style={{ flex: 1 }}>
+                      <DInput value={waPhone} onChange={(e) => setWaPhone(e.target.value)} placeholder="Phone (e.g. 0244123456)" />
+                    </div>
                     <button type="button" onClick={handleWhatsAppSend} disabled={waSending || !waPhone.trim()}
                       style={{ padding: "7px 14px", borderRadius: 8, fontSize: 11, fontWeight: 600, color: "white", background: "#25D366", border: "none", cursor: "pointer", opacity: waSending ? 0.6 : 1 }}>
                       {waSending ? "Sending..." : "Send"}
@@ -1389,17 +1386,11 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
           <h3 style={{ fontSize: 16, fontWeight: 800, color: "#F59E0B", marginBottom: 16 }}>🔄 Shift Handover</h3>
           <p style={{ fontSize: 11, color: "#94A3B8", marginBottom: 16 }}>Transfer all your active patients to the incoming doctor. Your status will be set to Off Duty.</p>
           <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", letterSpacing: "0.1em", textTransform: "uppercase" }}>Incoming Doctor</label>
-            <select value={handoverTarget} onChange={(e) => setHandoverTarget(e.target.value)}
-              style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, fontSize: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "white", outline: "none" }}>
-              <option value="">Select Doctor...</option>
-              {handoverDoctors.map(d => <option key={d.id} value={d.id}>{d.name} — {d.specialty} ({d.status})</option>)}
-            </select>
+            <DSelect label="Incoming Doctor" value={handoverTarget} onChange={(e) => setHandoverTarget(e.target.value)}
+              options={handoverDoctors.map(d => ({ value: d.id, label: `${d.name} — ${d.specialty} (${d.status})` }))} />
           </div>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", letterSpacing: "0.1em", textTransform: "uppercase" }}>Handover Notes</label>
-            <textarea value={handoverNotes} onChange={(e) => setHandoverNotes(e.target.value)} placeholder="Key observations, pending actions..."
-              style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, fontSize: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "white", outline: "none", minHeight: 70, resize: "vertical" }} />
+            <DTextarea label="Handover Notes" value={handoverNotes} onChange={(e) => setHandoverNotes(e.target.value)} placeholder="Key observations, pending actions..." rows={3} />
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button type="button" onClick={() => setShowHandover(false)}
@@ -1428,9 +1419,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
 
           {/* Admission Reason */}
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Admission Reason</label>
-            <input value={admitReason} onChange={(e) => setAdmitReason(e.target.value)} placeholder="Reason for admission..."
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, outline: "none", boxSizing: "border-box" }} />
+            <DInput label="Admission Reason" value={admitReason} onChange={(e) => setAdmitReason(e.target.value)} placeholder="Reason for admission..." required />
           </div>
 
           {/* Ward Selector */}

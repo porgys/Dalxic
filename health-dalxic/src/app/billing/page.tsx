@@ -78,6 +78,25 @@ function WorkshopBox({ children, title, icon, delay = 0, className = "" }: {
   );
 }
 
+/* ─── Themed Input ─── */
+function DInput({ label, required, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string; required?: boolean }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && (
+        <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>
+          {label} {required && <span className="text-red-400">*</span>}
+        </label>
+      )}
+      <input
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      />
+    </div>
+  );
+}
+
 /* ─── Types ─── */
 interface BillableItem {
   id: string;
@@ -391,13 +410,12 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
               <WorkshopBox title="Find Patient" icon="🔍" delay={0}>
                 <div style={{ display: "flex", gap: 12, alignItems: "end" }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Patient ID</label>
-                    <input
+                    <DInput
+                      label="Patient ID"
                       value={patientSearch}
                       onChange={(e) => setPatientSearch(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && searchPatient()}
                       placeholder="Enter Patient Record ID..."
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none" }}
                     />
                   </div>
                   <motion.button type="button" onClick={searchPatient} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
@@ -648,22 +666,20 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: 12, alignItems: "end" }}>
                   <div>
-                    <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Service Name</label>
-                    <input
+                    <DInput
+                      label="Service Name"
                       value={priceForm.name}
                       onChange={(e) => setPriceForm({ ...priceForm, name: e.target.value })}
                       placeholder="e.g. General Consultation, Full Blood Count..."
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none" }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Unit Cost (GHS)</label>
-                    <input
+                    <DInput
+                      label="Unit Cost (GHS)"
                       type="number" min="0" step="0.01"
                       value={priceForm.unitCost}
                       onChange={(e) => setPriceForm({ ...priceForm, unitCost: e.target.value })}
                       placeholder="0.00"
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none", fontFamily: "var(--font-jetbrains-mono), monospace" }}
                     />
                   </div>
                   <motion.button type="button" onClick={savePrice} disabled={savingPrice || !priceForm.name || !priceForm.unitCost}

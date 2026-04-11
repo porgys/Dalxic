@@ -76,6 +76,58 @@ function WorkshopBox({ children, title, icon, delay = 0, className = "" }: {
   );
 }
 
+/* ─── Themed Input ─── */
+function DInput({ label, required, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string; required?: boolean }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && (
+        <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>
+          {label} {required && <span className="text-red-400">*</span>}
+        </label>
+      )}
+      <input
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      />
+    </div>
+  );
+}
+
+/* ─── Themed Select ─── */
+function DSelect({ label, options, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string; options: { value: string; label: string }[] }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>{label}</label>}
+      <select
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300 appearance-none"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      >
+        <option value="" style={{ background: t.selectOptionBg }}>Select...</option>
+        {options.map((o) => <option key={o.value} value={o.value} style={{ background: t.selectOptionBg }}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+}
+
+/* ─── Themed Textarea ─── */
+function DTextarea({ label, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>{label}</label>}
+      <textarea
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300 resize-none"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      />
+    </div>
+  );
+}
+
 interface Inpatient {
   recordId: string;
   patientName: string;
@@ -354,21 +406,13 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
               <WorkshopBox title="Admit Patient" icon="➕">
                 {/* Record ID + Reason */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Patient Record ID</label>
-                    <input value={admitForm.recordId} onChange={(e) => setAdmitForm({ ...admitForm, recordId: e.target.value })} placeholder="Enter record ID..."
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, outline: "none", boxSizing: "border-box" }} />
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Admission Reason</label>
-                    <input value={admitForm.admissionReason} onChange={(e) => setAdmitForm({ ...admitForm, admissionReason: e.target.value })} placeholder="Reason for admission..."
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, outline: "none", boxSizing: "border-box" }} />
-                  </div>
+                  <DInput label="Patient Record ID" value={admitForm.recordId} onChange={(e) => setAdmitForm({ ...admitForm, recordId: e.target.value })} placeholder="Enter record ID..." required />
+                  <DInput label="Admission Reason" value={admitForm.admissionReason} onChange={(e) => setAdmitForm({ ...admitForm, admissionReason: e.target.value })} placeholder="Reason for admission..." />
                 </div>
 
                 {/* Ward Selector */}
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>Select Ward</label>
+                  <label className="block text-xs font-medium font-body mb-2" style={{ color: "#94A3B8" }}>Select Ward</label>
                   {loadingWards ? (
                     <p style={{ fontSize: 12, color: "#64748B", padding: 12 }}>Loading Wards...</p>
                   ) : wards.length === 0 ? (
@@ -401,7 +445,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                 {/* Bed Grid — shows when ward selected */}
                 {selectedWardId && (
                   <div style={{ marginBottom: 16 }}>
-                    <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>Select Bed</label>
+                    <label className="block text-xs font-medium font-body mb-2" style={{ color: "#94A3B8" }}>Select Bed</label>
                     {(() => {
                       const ward = wards.find((w) => w.id === selectedWardId);
                       if (!ward) return null;
@@ -564,9 +608,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                       {/* Expanded: Daily round */}
                       {isSelected && expandedSection === "round" && !p.discharged && (
                         <div style={{ marginTop: 12, padding: 16, borderRadius: 12, background: theme.navInactiveBg, border: "1px solid rgba(184,115,51,0.08)" }}>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Round Notes</label>
-                          <textarea value={roundNotes} onChange={(e) => setRoundNotes(e.target.value)} rows={3} placeholder="Patient observations, progress notes..."
-                            style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}15`, outline: "none", resize: "vertical", boxSizing: "border-box" }} />
+                          <DTextarea label="Round Notes" value={roundNotes} onChange={(e) => setRoundNotes(e.target.value)} rows={3} placeholder="Patient observations, progress notes..." />
                           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                             <motion.button type="button" onClick={recordRound} disabled={savingRound || !roundNotes.trim()} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
                               style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: savingRound ? "wait" : "pointer", textTransform: "uppercase", opacity: savingRound || !roundNotes.trim() ? 0.5 : 1 }}>
@@ -583,9 +625,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                       {/* Expanded: Assign Doctor */}
                       {isSelected && expandedSection === "doctor" && !p.discharged && (
                         <div style={{ marginTop: 12, padding: 16, borderRadius: 12, background: theme.navInactiveBg, border: "1px solid rgba(168,85,247,0.1)" }}>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Doctor Name</label>
-                          <input value={doctorName} onChange={(e) => setDoctorName(e.target.value)} placeholder="Enter doctor name..."
-                            style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(168,85,247,0.15)", outline: "none", boxSizing: "border-box" }} />
+                          <DInput label="Doctor Name" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} placeholder="Enter doctor name..." required />
                           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                             <motion.button type="button" onClick={() => assignDoctor(p.recordId)} disabled={assigningDoctor || !doctorName.trim()} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
                               style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: "linear-gradient(135deg, #A855F7, #C084FC)", border: "none", cursor: assigningDoctor ? "wait" : "pointer", textTransform: "uppercase", opacity: assigningDoctor || !doctorName.trim() ? 0.5 : 1 }}>
@@ -615,8 +655,9 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                               </button>
                             ))}
                           </div>
-                          <input value={visitHours} onChange={(e) => setVisitHours(e.target.value)} placeholder="Or type custom hours..."
-                            style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(245,158,11,0.15)", outline: "none", boxSizing: "border-box", marginBottom: 10 }} />
+                          <div style={{ marginBottom: 10 }}>
+                            <DInput value={visitHours} onChange={(e) => setVisitHours(e.target.value)} placeholder="Or type custom hours..." />
+                          </div>
                           <div style={{ display: "flex", gap: 8 }}>
                             <motion.button type="button" onClick={() => saveVisitingHours(p.recordId)} disabled={savingVisitHours || !visitHours.trim()} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
                               style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: "linear-gradient(135deg, #F59E0B, #FBBF24)", border: "none", cursor: savingVisitHours ? "wait" : "pointer", textTransform: "uppercase", opacity: savingVisitHours || !visitHours.trim() ? 0.5 : 1 }}>
@@ -633,9 +674,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                       {/* Expanded: Discharge */}
                       {isSelected && expandedSection === "discharge" && !p.discharged && (
                         <div style={{ marginTop: 12, padding: 16, borderRadius: 12, background: theme.navInactiveBg, border: "1px solid rgba(34,197,94,0.1)" }}>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Discharge Summary</label>
-                          <textarea value={dischargeSummary} onChange={(e) => setDischargeSummary(e.target.value)} rows={3} placeholder="Discharge summary, instructions..."
-                            style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(34,197,94,0.1)", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
+                          <DTextarea label="Discharge Summary" value={dischargeSummary} onChange={(e) => setDischargeSummary(e.target.value)} rows={3} placeholder="Discharge summary, instructions..." />
                           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                             <motion.button type="button" onClick={dischargePatient} disabled={discharging} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
                               style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: "linear-gradient(135deg, #22C55E, #4ADE80)", border: "none", cursor: discharging ? "wait" : "pointer", textTransform: "uppercase" }}>

@@ -79,6 +79,21 @@ function WorkshopBox({ children, title, icon, delay = 0, className = "" }: {
   );
 }
 
+/* ─── Themed Textarea ─── */
+function DTextarea({ label, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>{label}</label>}
+      <textarea
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300 resize-none"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      />
+    </div>
+  );
+}
+
 interface ImagingOrder {
   id: string;
   modality: string;
@@ -261,16 +276,10 @@ function RadiologyContent({ operator }: { operator: OperatorSession }) {
                   <p style={{ fontSize: 11, color: "#64748B" }}>Body Part: {reportingOrder.bodyPart} — Indication: {reportingOrder.clinicalIndication}</p>
                 </div>
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Findings</label>
-                  <textarea value={reportForm.findings} onChange={(e) => setReportForm({ ...reportForm, findings: e.target.value })} rows={4}
-                    placeholder="Describe scan findings..."
-                    style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none", resize: "vertical" }} />
+                  <DTextarea label="Findings" value={reportForm.findings} onChange={(e) => setReportForm({ ...reportForm, findings: e.target.value })} rows={4} placeholder="Describe scan findings..." />
                 </div>
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Impression</label>
-                  <textarea value={reportForm.impression} onChange={(e) => setReportForm({ ...reportForm, impression: e.target.value })} rows={2}
-                    placeholder="Radiologist impression / conclusion..."
-                    style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none", resize: "vertical" }} />
+                  <DTextarea label="Impression" value={reportForm.impression} onChange={(e) => setReportForm({ ...reportForm, impression: e.target.value })} rows={2} placeholder="Radiologist impression / conclusion..." />
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <motion.button type="button" onClick={submitReport} disabled={!!processingId} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}

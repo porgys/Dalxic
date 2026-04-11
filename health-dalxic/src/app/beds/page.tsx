@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate } from "@/components/station-gate";
+import { useStationTheme, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
@@ -75,6 +76,43 @@ function WorkshopBox({ children, title, icon, delay = 0, className = "" }: {
   );
 }
 
+/* ─── Themed Input ─── */
+function DInput({ label, required, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string; required?: boolean }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && (
+        <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>
+          {label} {required && <span className="text-red-400">*</span>}
+        </label>
+      )}
+      <input
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      />
+    </div>
+  );
+}
+
+/* ─── Themed Select ─── */
+function DSelect({ label, options, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string; options: { value: string; label: string }[] }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>{label}</label>}
+      <select
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300 appearance-none"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      >
+        <option value="" style={{ background: t.selectOptionBg }}>Select...</option>
+        {options.map((o) => <option key={o.value} value={o.value} style={{ background: t.selectOptionBg }}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+}
+
 /* ─── Types ─── */
 interface Ward {
   id: string;
@@ -126,6 +164,7 @@ export default function BedManagementPage() {
 }
 
 function BedManagementContent() {
+  const theme = useStationTheme();
   const [activeNav, setActiveNav] = useState<"dashboard" | "manage" | "transitions">("dashboard");
   const [wards, setWards] = useState<Ward[]>([]);
   const [summary, setSummary] = useState({ totalBeds: 0, totalAvailable: 0, totalOccupied: 0 });
@@ -190,6 +229,7 @@ function BedManagementContent() {
   ];
 
   return (
+    <StationThemeProvider theme={theme}>
     <div style={{ minHeight: "100vh", background: "radial-gradient(ellipse 120% 80% at 55% 40%, rgba(20,12,8,1) 0%, rgba(8,5,15,1) 50%, rgba(2,4,12,1) 100%)", position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 55% 35%, rgba(184,115,51,0.04) 0%, transparent 50%)", pointerEvents: "none" }} />
       <GalaxyCanvas />
@@ -318,26 +358,9 @@ function BedManagementContent() {
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
                     <WorkshopBox title="New Ward" icon="🏥" className="mb-4">
                       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 12, alignItems: "end" }}>
-                        <div>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, textTransform: "uppercase", color: "#64748B", marginBottom: 4, letterSpacing: "0.5px" }}>Ward Name</label>
-                          <input value={newWardForm.name} onChange={(e) => setNewWardForm({ ...newWardForm, name: e.target.value })} placeholder="e.g. General Ward A"
-                            className="w-full rounded-lg border px-3 py-2 text-[13px] text-white placeholder:text-[#3D4D78] focus:outline-none focus:ring-1 focus:ring-[#B87333]/30"
-                            style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(184,115,51,0.1)" }} />
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, textTransform: "uppercase", color: "#64748B", marginBottom: 4, letterSpacing: "0.5px" }}>Type</label>
-                          <select value={newWardForm.type} onChange={(e) => setNewWardForm({ ...newWardForm, type: e.target.value })}
-                            className="w-full rounded-lg border px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-1 focus:ring-[#B87333]/30 appearance-none"
-                            style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(184,115,51,0.1)" }}>
-                            {WARD_TYPES.map((t) => <option key={t.value} value={t.value} style={{ background: "#0a0a14" }}>{t.icon} {t.label}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, textTransform: "uppercase", color: "#64748B", marginBottom: 4, letterSpacing: "0.5px" }}>Floor</label>
-                          <input type="number" min={1} value={newWardForm.floor} onChange={(e) => setNewWardForm({ ...newWardForm, floor: parseInt(e.target.value) || 1 })}
-                            className="w-full rounded-lg border px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-1 focus:ring-[#B87333]/30"
-                            style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(184,115,51,0.1)" }} />
-                        </div>
+                        <DInput label="Ward Name" value={newWardForm.name} onChange={(e) => setNewWardForm({ ...newWardForm, name: e.target.value })} placeholder="e.g. General Ward A" />
+                        <DSelect label="Type" value={newWardForm.type} onChange={(e) => setNewWardForm({ ...newWardForm, type: e.target.value })} options={WARD_TYPES.map(t => ({ value: t.value, label: `${t.icon} ${t.label}` }))} />
+                        <DInput label="Floor" type="number" min={1} value={newWardForm.floor} onChange={(e) => setNewWardForm({ ...newWardForm, floor: parseInt(e.target.value) || 1 })} />
                         <button type="button" onClick={createWard}
                           style={{ fontSize: 12, fontWeight: 600, padding: "8px 20px", borderRadius: 8, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, color: "white", border: "none", cursor: "pointer" }}>
                           Create
@@ -396,10 +419,10 @@ function BedManagementContent() {
                           {addingBed === room.id && (
                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                               style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
-                              <input value={newBedLabel} onChange={(e) => setNewBedLabel(e.target.value)} placeholder="e.g. Bed 1A"
-                                className="rounded-lg border px-3 py-1.5 text-[12px] text-white placeholder:text-[#3D4D78] focus:outline-none focus:ring-1 focus:ring-[#B87333]/30 flex-1"
-                                style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(184,115,51,0.1)" }}
-                                onKeyDown={(e) => { if (e.key === "Enter") createBed(room.id); }} />
+                              <div className="flex-1">
+                                <DInput value={newBedLabel} onChange={(e) => setNewBedLabel(e.target.value)} placeholder="e.g. Bed 1A"
+                                  onKeyDown={(e) => { if (e.key === "Enter") createBed(room.id); }} />
+                              </div>
                               <button type="button" onClick={() => createBed(room.id)}
                                 style={{ fontSize: 11, fontWeight: 600, padding: "6px 12px", borderRadius: 6, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, color: "white", border: "none", cursor: "pointer" }}>
                                 Add
@@ -413,10 +436,10 @@ function BedManagementContent() {
                     {/* Add room */}
                     {addingRoom === ward.id ? (
                       <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
-                        <input value={newRoomName} onChange={(e) => setNewRoomName(e.target.value)} placeholder="e.g. Room 101"
-                          className="rounded-lg border px-3 py-1.5 text-[12px] text-white placeholder:text-[#3D4D78] focus:outline-none focus:ring-1 focus:ring-[#B87333]/30 flex-1"
-                          style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(184,115,51,0.1)" }}
-                          onKeyDown={(e) => { if (e.key === "Enter") createRoom(ward.id); }} />
+                        <div className="flex-1">
+                          <DInput value={newRoomName} onChange={(e) => setNewRoomName(e.target.value)} placeholder="e.g. Room 101"
+                            onKeyDown={(e) => { if (e.key === "Enter") createRoom(ward.id); }} />
+                        </div>
                         <button type="button" onClick={() => createRoom(ward.id)}
                           style={{ fontSize: 11, fontWeight: 600, padding: "6px 12px", borderRadius: 6, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, color: "white", border: "none", cursor: "pointer" }}>
                           Add Room
@@ -449,5 +472,6 @@ function BedManagementContent() {
         </AnimatePresence>
       </main>
     </div>
+    </StationThemeProvider>
   );
 }

@@ -39,6 +39,25 @@ function WorkshopBox({ children, title, icon, delay = 0, className = "" }: { chi
   );
 }
 
+/* ─── Themed Input ─── */
+function DInput({ label, required, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string; required?: boolean }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && (
+        <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>
+          {label} {required && <span className="text-red-400">*</span>}
+        </label>
+      )}
+      <input
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      />
+    </div>
+  );
+}
+
 interface ICUPatient {
   recordId: string; patientName: string; age?: number; gender?: string; queueToken: string; bedLabel: string;
   diagnosis: string; ventilator: boolean; ventilatorMode: string; admittedAt?: string; dayCount: number;
@@ -165,11 +184,7 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
               <WorkshopBox title="ICU Admission" icon="➕">
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
                   {[{ key: "recordId", label: "Patient Record ID", placeholder: "Enter record ID..." }, { key: "bedLabel", label: "ICU Bed", placeholder: "e.g. ICU-3" }, { key: "diagnosis", label: "Diagnosis", placeholder: "Primary diagnosis..." }].map((f) => (
-                    <div key={f.key}>
-                      <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>{f.label}</label>
-                      <input value={admitForm[f.key as keyof typeof admitForm] as string} onChange={(e) => setAdmitForm({ ...admitForm, [f.key]: e.target.value })} placeholder={f.placeholder}
-                        style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none" }} />
-                    </div>
+                    <DInput key={f.key} label={f.label} value={admitForm[f.key as keyof typeof admitForm] as string} onChange={(e) => setAdmitForm({ ...admitForm, [f.key]: e.target.value })} placeholder={f.placeholder} />
                   ))}
                   <div style={{ display: "flex", alignItems: "end" }}>
                     <motion.button type="button" onClick={() => setAdmitForm({ ...admitForm, ventilator: !admitForm.ventilator })} whileHover={{ y: -1 }}
@@ -245,16 +260,11 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
                               { key: "rr", label: "RR (/min)", ph: "16" }, { key: "fio2", label: "FiO2 (%)", ph: "21" },
                               { key: "gcs", label: "GCS (/15)", ph: "15" }, { key: "urine", label: "Urine (ml/h)", ph: "50" },
                             ].map((f) => (
-                              <div key={f.key}>
-                                <label style={{ display: "block", fontSize: 9, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>{f.label}</label>
-                                <input value={obsForm[f.key as keyof typeof obsForm]} onChange={(e) => setObsForm({ ...obsForm, [f.key]: e.target.value })} placeholder={f.ph}
-                                  style={{ width: "100%", padding: "8px 10px", borderRadius: 10, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
-                              </div>
+                              <DInput key={f.key} label={f.label} value={obsForm[f.key as keyof typeof obsForm]} onChange={(e) => setObsForm({ ...obsForm, [f.key]: e.target.value })} placeholder={f.ph} />
                             ))}
                           </div>
                           <div style={{ marginBottom: 12 }}>
-                            <input value={obsForm.notes} onChange={(e) => setObsForm({ ...obsForm, notes: e.target.value })} placeholder="Notes..."
-                              style={{ width: "100%", padding: "8px 12px", borderRadius: 10, fontSize: 12, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none" }} />
+                            <DInput value={obsForm.notes} onChange={(e) => setObsForm({ ...obsForm, notes: e.target.value })} placeholder="Notes..." />
                           </div>
                           <motion.button type="button" onClick={recordObs} disabled={savingObs} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
                             style={{ width: "100%", padding: "12px 24px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: savingObs ? "wait" : "pointer", textTransform: "uppercase", opacity: savingObs ? 0.5 : 1 }}>

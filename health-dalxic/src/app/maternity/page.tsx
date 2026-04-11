@@ -39,6 +39,25 @@ function WorkshopBox({ children, title, icon, delay = 0, className = "" }: { chi
   );
 }
 
+/* ─── Themed Input ─── */
+function DInput({ label, required, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string; required?: boolean }) {
+  const t = useThemeContext();
+  return (
+    <div>
+      {label && (
+        <label className="block text-xs font-medium font-body mb-1.5" style={{ color: t.textLabel, transition: "color 0.4s ease" }}>
+          {label} {required && <span className="text-red-400">*</span>}
+        </label>
+      )}
+      <input
+        {...props}
+        className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body focus:outline-none focus:ring-2 transition-all duration-300"
+        style={{ background: t.inputBg, borderColor: t.inputBorder, color: t.inputText, transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease" }}
+      />
+    </div>
+  );
+}
+
 interface MaternityPatient {
   recordId: string; patientName: string; age?: number; queueToken: string; stage: string;
   edd?: string; gravida?: number; para?: number; gestationalWeeks?: number; admittedAt?: string;
@@ -197,11 +216,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
                     { key: "para", label: "Para", placeholder: "Number of deliveries", type: "number" },
                     { key: "gestationalWeeks", label: "Gestational Weeks", placeholder: "Current weeks", type: "number" },
                   ].map((f) => (
-                    <div key={f.key}>
-                      <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>{f.label}</label>
-                      <input type={f.type} value={regForm[f.key as keyof typeof regForm]} onChange={(e) => setRegForm({ ...regForm, [f.key]: e.target.value })} placeholder={f.placeholder}
-                        style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none", colorScheme: "dark" }} />
-                    </div>
+                    <DInput key={f.key} label={f.label} type={f.type} value={regForm[f.key as keyof typeof regForm]} onChange={(e) => setRegForm({ ...regForm, [f.key]: e.target.value })} placeholder={f.placeholder} />
                   ))}
                 </div>
                 <motion.button type="button" onClick={registerPatient} disabled={registering || !regForm.recordId.trim()} whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
@@ -243,11 +258,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
                     { key: "babyGender", label: "Baby Gender", placeholder: "Male / Female" },
                     { key: "apgarScores", label: "APGAR Scores", placeholder: "8/9" },
                   ].map((f) => (
-                    <div key={f.key}>
-                      <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>{f.label}</label>
-                      <input value={delForm[f.key as keyof typeof delForm]} onChange={(e) => setDelForm({ ...delForm, [f.key]: e.target.value })} placeholder={f.placeholder}
-                        style={{ width: "100%", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none" }} />
-                    </div>
+                    <DInput key={f.key} label={f.label} value={delForm[f.key as keyof typeof delForm]} onChange={(e) => setDelForm({ ...delForm, [f.key]: e.target.value })} placeholder={f.placeholder} />
                   ))}
                 </div>
 
@@ -299,8 +310,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
                             </motion.button>
                             {visitRecordId === p.recordId && (
                               <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-                                <input value={visitNotes} onChange={(e) => setVisitNotes(e.target.value)} onKeyDown={(e) => e.key === "Enter" && recordVisit()} placeholder="Visit notes..."
-                                  style={{ flex: 1, padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none" }} />
+                                <div style={{ flex: 1 }}><DInput value={visitNotes} onChange={(e) => setVisitNotes(e.target.value)} onKeyDown={(e) => e.key === "Enter" && recordVisit()} placeholder="Visit notes..." /></div>
                                 <motion.button type="button" onClick={recordVisit} disabled={savingVisit} whileHover={{ y: -1 }}
                                   style={{ padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: "pointer", textTransform: "uppercase", opacity: savingVisit ? 0.5 : 1 }}>
                                   Save
