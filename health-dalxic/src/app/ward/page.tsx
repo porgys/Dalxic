@@ -96,7 +96,7 @@ function DInput({ label, required, ...props }: React.InputHTMLAttributes<HTMLInp
 }
 
 /* ─── Themed Select ─── */
-function DSelect({ label, options, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string; options: { value: string; label: string }[] }) {
+function _DSelect({ label, options, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string; options: { value: string; label: string }[] }) {
   const t = useThemeContext();
   return (
     <div>
