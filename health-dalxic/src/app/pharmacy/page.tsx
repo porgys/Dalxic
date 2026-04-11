@@ -249,7 +249,7 @@ const NAV_ITEMS = [
   { id: "reports", icon: "📊", label: "Reports" },
 ];
 
-const CATEGORIES = ["ANTIBIOTIC", "ANALGESIC", "ANTIHYPERTENSIVE", "ANTIDIABETIC", "ANTIMALARIAL", "VITAMIN", "ANTACID", "ANTIHISTAMINE", "OTHER"];
+const CATEGORIES = ["ANTIBIOTIC", "ANALGESIC", "ANTIHYPERTENSIVE", "ANTIDIABETIC", "ANTIMALARIAL", "VITAMIN", "ANTACID", "ANTIHISTAMINE"];
 const UNITS = ["tablet", "capsule", "bottle", "vial", "tube", "sachet", "ampoule"];
 
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
@@ -281,6 +281,8 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
   const [catalogSearch, setCatalogSearch] = useState("");
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [addDrugForm, setAddDrugForm] = useState({ name: "", genericName: "", category: "ANTIBIOTIC", unit: "tablet", defaultPrice: "", costPrice: "", controlledSubstance: false, requiresPrescription: true, minStockThreshold: "20" });
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
+  const [customCategoryName, setCustomCategoryName] = useState("");
 
   // ═══ Stock state ═══
   const [inventory, setInventory] = useState<StockBatch[]>([]);
@@ -1000,7 +1002,19 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                         <DInput label="Drug Name" value={addDrugForm.name} onChange={(e) => setAddDrugForm({ ...addDrugForm, name: e.target.value })} placeholder="e.g. Amoxicillin 500mg" required />
                         <DInput label="Generic Name" value={addDrugForm.genericName} onChange={(e) => setAddDrugForm({ ...addDrugForm, genericName: e.target.value })} placeholder="Optional" />
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                          <DSelect label="Category" value={addDrugForm.category} onChange={(e) => setAddDrugForm({ ...addDrugForm, category: e.target.value })} options={CATEGORIES.map((c) => ({ value: c, label: c }))} />
+                          <DSelect label="Category" value={addDrugForm.category} onChange={(e) => {
+                            if (e.target.value === "__other__") {
+                              setShowCustomCategory(true);
+                              setCustomCategoryName("");
+                            } else {
+                              setAddDrugForm({ ...addDrugForm, category: e.target.value });
+                            }
+                          }} options={[
+                            ...CATEGORIES.map((c) => ({ value: c, label: c })),
+                            ...(addDrugForm.category && !CATEGORIES.includes(addDrugForm.category)
+                              ? [{ value: addDrugForm.category, label: `✦ ${addDrugForm.category}` }] : []),
+                            { value: "__other__", label: "Other..." },
+                          ]} />
                           <DSelect label="Unit" value={addDrugForm.unit} onChange={(e) => setAddDrugForm({ ...addDrugForm, unit: e.target.value })} options={UNITS.map((u) => ({ value: u, label: u }))} />
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
@@ -1024,6 +1038,51 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                           <button onClick={() => setShowAddDrug(false)}
                             style={{ padding: "10px 20px", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8", fontWeight: 700, fontSize: 12 }}>Cancel</button>
                         </div>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* ═══ Custom Category Modal ═══ */}
+              <AnimatePresence>
+                {showCustomCategory && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    style={{ position: "fixed", inset: 0, zIndex: 110, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}
+                    onClick={() => setShowCustomCategory(false)}>
+                    <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ background: "rgba(12,8,18,0.95)", border: `1px solid ${COPPER}30`, borderRadius: 20, padding: 24, width: 400, boxShadow: `0 24px 80px rgba(0,0,0,0.5)` }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                        <span style={{ fontSize: 16 }}>📦</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Custom Drug Category</span>
+                      </div>
+                      <p style={{ fontSize: 12, color: "#94A3B8", marginBottom: 14 }}>Enter The Name Of The Drug Category Not Listed In The Dropdown.</p>
+                      <DInput label="Category Name" placeholder="e.g. ANTIFUNGAL, ANTIRETROVIRAL, STEROID..."
+                        value={customCategoryName}
+                        onChange={(e) => setCustomCategoryName(e.target.value.toUpperCase())}
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && customCategoryName.trim()) {
+                            setAddDrugForm({ ...addDrugForm, category: customCategoryName.trim() });
+                            setShowCustomCategory(false);
+                          }
+                        }}
+                      />
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
+                        <button onClick={() => setShowCustomCategory(false)}
+                          style={{ padding: "8px 16px", borderRadius: 10, fontSize: 12, color: "#94A3B8", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
+                          Cancel
+                        </button>
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                          disabled={!customCategoryName.trim()}
+                          onClick={() => {
+                            setAddDrugForm({ ...addDrugForm, category: customCategoryName.trim() });
+                            setShowCustomCategory(false);
+                          }}
+                          style={{ padding: "8px 20px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "#fff", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", opacity: !customCategoryName.trim() ? 0.4 : 1 }}>
+                          Confirm
+                        </motion.button>
                       </div>
                     </motion.div>
                   </motion.div>
