@@ -3,14 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
-const COPPER = "#B87333";
-
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -94,7 +92,7 @@ function WorkshopBox({ children, title, icon, delay = 0, className = "" }: {
     >
       <div className="flex items-center gap-2 mb-4">
         <span className="text-lg">{icon}</span>
-        <h3 style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{title}</h3>
+        <h3 style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: "#D4956B", fontFamily: fontFamily.mono }}>{title}</h3>
       </div>
       {children}
     </motion.div>
@@ -275,7 +273,7 @@ function LabContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <span style={{ fontSize: 13, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </time>
         </div>
@@ -318,7 +316,7 @@ function LabContent({ operator }: { operator: OperatorSession }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                   <span style={{
                     fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800,
-                    fontFamily: "var(--font-jetbrains-mono), monospace",
+                    fontFamily: fontFamily.mono,
                     background: `linear-gradient(135deg, ${COPPER}, #D4956B)`,
                     WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                   }}>
@@ -433,7 +431,7 @@ function LabContent({ operator }: { operator: OperatorSession }) {
                       backdropFilter: "blur(12px)",
                     }}
                   >
-                    <p style={{ fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stat.accent ? COPPER : "white" }}>
+                    <p style={{ fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800, fontFamily: fontFamily.mono, color: stat.accent ? COPPER : "white" }}>
                       {stat.value}
                     </p>
                     <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: "#94A3B8", marginTop: 4 }}>{stat.label}</p>
@@ -473,7 +471,7 @@ function LabContent({ operator }: { operator: OperatorSession }) {
                       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                         <span style={{
                           fontSize: 20, fontWeight: 700,
-                          fontFamily: "var(--font-jetbrains-mono), monospace",
+                          fontFamily: fontFamily.mono,
                           background: `linear-gradient(135deg, ${COPPER}, #D4956B)`,
                           WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                         }}>
@@ -489,7 +487,7 @@ function LabContent({ operator }: { operator: OperatorSession }) {
                           {order.status === "pending" ? "Pending" : "Completed"}
                         </span>
                       </div>
-                      <span style={{ fontSize: 12, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#64748B" }}>
+                      <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: "#64748B" }}>
                         {new Date(order.orderedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>

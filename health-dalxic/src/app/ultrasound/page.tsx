@@ -3,12 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
-const COPPER = "#B87333";
 const MODALITY = "ultrasound";
 const STATION_TITLE = "Ultrasound";
 
@@ -214,7 +213,7 @@ function UltrasoundContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <span style={{ fontSize: 13, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </time>
         </div>
@@ -231,7 +230,7 @@ function UltrasoundContent({ operator }: { operator: OperatorSession }) {
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
-              <p style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stat.color }}>{stat.value}</p>
+              <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
             </motion.div>
           ))}
         </div>
@@ -290,7 +289,7 @@ function UltrasoundContent({ operator }: { operator: OperatorSession }) {
                       style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ fontSize: 14, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER }}>{order.queueToken}</span>
+                          <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{order.queueToken}</span>
                           <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{order.patientName}</span>
                           <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", background: statusInfo.bg, border: `1px solid ${statusInfo.border}`, color: statusInfo.text }}>{order.status.replace("_", " ")}</span>
                         </div>

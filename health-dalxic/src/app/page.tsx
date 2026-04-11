@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { COPPER, COPPER_LIGHT, fontFamily } from "@/hooks/use-station-theme"
 
 /* ─── Cross-platform URLs ─── */
 const MAIN_URL  = process.env.NEXT_PUBLIC_MAIN_URL  || "http://localhost:3000"
@@ -226,9 +227,6 @@ function Ticker({ text }: { text: string }) {
   )
 }
 
-const COPPER = "#B87333";
-const COPPER_LIGHT = "#D4956B";
-
 /* ─── Ticker with glowing country names ─── */
 function TickerMulti() {
   const items = [
@@ -334,8 +332,8 @@ function Nav() {
       borderBottom: scrolled ? "1px solid var(--nl-border)" : "1px solid transparent",
     }}>
       <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-        <span style={{ fontWeight: 300, fontSize: 14, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Dalxic</span>
-        <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }} className="text-gradient-blue">Health</span>
+        <span style={{ fontWeight: 300, fontSize: 14, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: fontFamily.primary }}>Dalxic</span>
+        <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: fontFamily.primary }} className="text-gradient-blue">Health</span>
       </Link>
       <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
         {[
@@ -405,16 +403,16 @@ export default function HomePage() {
 
             {/* Headline */}
             <h1 style={{ marginBottom: 28, lineHeight: 1.05, animation: "fadeUp 0.6s ease 0.35s both" }}>
-              <span style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif", fontWeight: 800, fontSize: "clamp(2.8rem, 5.5vw, 5.2rem)", letterSpacing: -2, color: "var(--nl-tx)", display: "block" }}>
+              <span style={{ fontFamily: fontFamily.primary, fontWeight: 800, fontSize: "clamp(2.8rem, 5.5vw, 5.2rem)", letterSpacing: -2, color: "var(--nl-tx)", display: "block" }}>
                 Worlds Best Hospital
               </span>
-              <span style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif", fontWeight: 800, fontSize: "clamp(1.6rem, 3vw, 2.6rem)", letterSpacing: -1, display: "block", marginTop: 4 }} className="text-gradient-copper">
+              <span style={{ fontFamily: fontFamily.primary, fontWeight: 800, fontSize: "clamp(1.6rem, 3vw, 2.6rem)", letterSpacing: -1, display: "block", marginTop: 4 }} className="text-gradient-copper">
                 Management System
               </span>
             </h1>
 
             {/* Tagline */}
-            <p style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif", fontWeight: 500, fontSize: "clamp(1.1rem, 2.2vw, 1.6rem)", letterSpacing: -0.3, color: "var(--nl-txM)", margin: "16px auto 8px", animation: "fadeUp 0.6s ease 0.45s both" }}>
+            <p style={{ fontFamily: fontFamily.primary, fontWeight: 500, fontSize: "clamp(1.1rem, 2.2vw, 1.6rem)", letterSpacing: -0.3, color: "var(--nl-txM)", margin: "16px auto 8px", animation: "fadeUp 0.6s ease 0.45s both" }}>
               Built For Africa. Powered By Nexus-7™
             </p>
 
@@ -484,7 +482,7 @@ export default function HomePage() {
             {/* Text */}
             <Reveal delay={0.15}>
               <div className="section-label" style={{ marginBottom: 14 }}>Seamless Integration</div>
-              <h2 style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.6rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 20, lineHeight: 1.1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+              <h2 style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.6rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 20, lineHeight: 1.1, fontFamily: fontFamily.primary }}>
                 Every Department.{" "}<span className="text-gradient-copper">One Nervous System.</span>
               </h2>
               <p style={{ fontSize: 15, color: "var(--nl-txM)", lineHeight: 1.8, marginBottom: 28 }}>
@@ -517,7 +515,7 @@ export default function HomePage() {
         <div style={{ maxWidth: 1240, margin: "0 auto", padding: "0 32px" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 64 }}>
             <div className="section-label" style={{ marginBottom: 12 }}>Full Hospital Coverage</div>
-            <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 3rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 16, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+            <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 3rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 16, fontFamily: fontFamily.primary }}>
               Every Workstation.{" "}<span className="text-gradient-blue">One Platform.</span>
             </h2>
             <p style={{ color: "var(--nl-txM)", maxWidth: 580, margin: "0 auto", lineHeight: 1.7 }}>
@@ -537,7 +535,7 @@ export default function HomePage() {
                 onMouseLeave={e => { e.currentTarget.style.borderColor = ""; e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "" }}>
                   <div style={{ fontSize: 28, marginBottom: 14 }}>{s.icon}</div>
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: s.color, marginBottom: 6 }}>{s.engine}</div>
-                  <h3 style={{ fontSize: 19, fontWeight: 700, marginBottom: 8, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{s.title}</h3>
+                  <h3 style={{ fontSize: 19, fontWeight: 700, marginBottom: 8, fontFamily: fontFamily.primary }}>{s.title}</h3>
                   <p style={{ fontSize: 13.5, color: "var(--nl-txM)", lineHeight: 1.7, flex: 1 }}>{s.desc}</p>
                   <div style={{ marginTop: 16, height: 2, background: `linear-gradient(90deg, ${s.color}80, transparent)`, borderRadius: 1 }} />
                 </div>
@@ -565,7 +563,7 @@ export default function HomePage() {
               ].map(s => (
                 <div key={s.label}>
                   <div style={{
-                    fontFamily: "var(--font-outfit), Outfit, sans-serif",
+                    fontFamily: fontFamily.primary,
                     fontWeight: 800, fontSize: "clamp(2.4rem, 4vw, 3.6rem)",
                     letterSpacing: -2, lineHeight: 1,
                     background: `linear-gradient(135deg, ${s.accent}, ${s.accent}99)`,
@@ -593,7 +591,7 @@ export default function HomePage() {
             {/* Text (left this time — alternating layout) */}
             <Reveal>
               <div className="section-label-copper" style={{ marginBottom: 14 }}>Available On Demand</div>
-              <h2 style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.6rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 20, lineHeight: 1.1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+              <h2 style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.6rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 20, lineHeight: 1.1, fontFamily: fontFamily.primary }}>
                 Total Hospital{" "}<span className="text-gradient-blue">Connectivity.</span>
               </h2>
               <p style={{ fontSize: 15, color: "var(--nl-txM)", lineHeight: 1.8, marginBottom: 28 }}>
@@ -634,7 +632,7 @@ export default function HomePage() {
           {/* Centered heading */}
           <Reveal style={{ textAlign: "center", marginBottom: 72 }}>
             <div className="section-label" style={{ marginBottom: 14 }}>Proprietary Technology</div>
-            <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 3rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 20, lineHeight: 1.1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+            <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 3rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 20, lineHeight: 1.1, fontFamily: fontFamily.primary }}>
               Powered By{" "}
               <span className="text-gradient-blue">Nexus-7™</span>
               <br />
@@ -686,7 +684,7 @@ export default function HomePage() {
               <div style={{ width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(14,165,233,0.12) 0%, transparent 70%)", position: "absolute" }} />
               {/* Center text */}
               <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-                <div style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif", display: "flex", alignItems: "baseline" }}>
+                <div style={{ fontFamily: fontFamily.primary, display: "flex", alignItems: "baseline" }}>
                   <span style={{ fontWeight: 300, fontSize: 14, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase" }}>Dalxic</span>
                   <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase" }} className="text-gradient-blue">Health</span>
                 </div>
@@ -739,7 +737,7 @@ export default function HomePage() {
             {/* Text */}
             <Reveal delay={0.15}>
               <div className="section-label" style={{ marginBottom: 14 }}>Intelligence At The Point Of Care</div>
-              <h2 style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.6rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 20, lineHeight: 1.1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+              <h2 style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.6rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 20, lineHeight: 1.1, fontFamily: fontFamily.primary }}>
                 The Patient Record,{" "}<span className="text-gradient-copper">Reimagined.</span>
               </h2>
               <p style={{ fontSize: 15, color: "var(--nl-txM)", lineHeight: 1.8, marginBottom: 28 }}>
@@ -772,7 +770,7 @@ export default function HomePage() {
         <div style={{ maxWidth: 1240, margin: "0 auto", padding: "0 32px" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 72 }}>
             <div className="section-label" style={{ marginBottom: 14 }}>Built For Real Hospitals</div>
-            <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 3rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 16, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+            <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 3rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 16, fontFamily: fontFamily.primary }}>
               We Thought Of{" "}<span className="text-gradient-blue">Everything</span>
             </h2>
             <p style={{ color: "var(--nl-txM)", maxWidth: 560, margin: "0 auto", lineHeight: 1.7 }}>
@@ -834,7 +832,7 @@ export default function HomePage() {
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: COPPER, marginBottom: 12 }}>
                     30+ More Features
                   </div>
-                  <h3 style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif", fontWeight: 800, fontSize: "clamp(1.3rem, 2.5vw, 1.8rem)", letterSpacing: -0.5, marginBottom: 12 }}>
+                  <h3 style={{ fontFamily: fontFamily.primary, fontWeight: 800, fontSize: "clamp(1.3rem, 2.5vw, 1.8rem)", letterSpacing: -0.5, marginBottom: 12 }}>
                     Request A Demo &{" "}
                     <span style={{ background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                       Experience Superiority In Real-Time
@@ -866,7 +864,7 @@ export default function HomePage() {
         <div style={{ maxWidth: 1240, margin: "0 auto", padding: "0 32px" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 64 }}>
             <div className="section-label-copper" style={{ marginBottom: 12 }}>Privileged Access</div>
-            <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 3rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 16, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+            <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 3rem)", fontWeight: 800, letterSpacing: -1, marginBottom: 16, fontFamily: fontFamily.primary }}>
               Command & <span className="text-gradient-copper">Control</span>
             </h2>
             <p style={{ color: "var(--nl-txM)", maxWidth: 520, margin: "0 auto", lineHeight: 1.7 }}>
@@ -884,7 +882,7 @@ export default function HomePage() {
                   onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,115,51,0.4)"; e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 20px 60px rgba(184,115,51,0.12)" }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = ""; e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "" }}>
                     <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "#B87333", marginBottom: 12 }}>{route.role}</div>
-                    <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{route.label}</h3>
+                    <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10, fontFamily: fontFamily.primary }}>{route.label}</h3>
                     <p style={{ fontSize: 14, color: "var(--nl-txM)", lineHeight: 1.7 }}>{route.desc}</p>
                     <div style={{ marginTop: 20, height: 2, background: "linear-gradient(90deg, rgba(184,115,51,0.6), transparent)", borderRadius: 1 }} />
                   </div>
@@ -920,24 +918,24 @@ export default function HomePage() {
               <a href={MAIN_URL} style={{ textDecoration: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, width: 160, height: 80, borderRadius: 14, border: "none", background: "none", transition: "all 0.3s ease", position: "relative", overflow: "hidden" }}
                 onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(184,115,51,0.12) 0%, rgba(210,150,80,0.05) 100%)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(184,115,51,0.15)" }}
                 onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.boxShadow = "none" }}>
-                <span style={{ fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #D4956B, #B87333)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Dalxic</span>
+                <span style={{ fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #D4956B, #B87333)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: fontFamily.primary }}>Dalxic</span>
                 <span style={{ fontSize: 11, color: "var(--nl-txD)" }}>dalxic.com</span>
               </a>
               {/* DalxicHealth — Blue (active) */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, width: 160, height: 80, borderRadius: 14, border: "none", background: "linear-gradient(135deg, rgba(14,165,233,0.1) 0%, rgba(56,189,248,0.04) 100%)", position: "relative", overflow: "hidden", boxShadow: "0 4px 20px rgba(14,165,233,0.08)" }}>
-                <span style={{ fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #38BDF8, #0EA5E9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>DalxicHealth</span>
+                <span style={{ fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #38BDF8, #0EA5E9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: fontFamily.primary }}>DalxicHealth</span>
                 <span style={{ fontSize: 11, color: "var(--nl-txM)" }}>You Are Here</span>
               </div>
               {/* DalxicMedia — Indigo/Violet */}
               <a href={MEDIA_URL} style={{ textDecoration: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, width: 160, height: 80, borderRadius: 14, border: "none", background: "none", transition: "all 0.3s ease", position: "relative", overflow: "hidden" }}
                 onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(167,139,250,0.05) 100%)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(99,102,241,0.15)" }}
                 onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.boxShadow = "none" }}>
-                <span style={{ fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #818CF8, #A78BFA)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>DalxicMedia</span>
+                <span style={{ fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #818CF8, #A78BFA)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: fontFamily.primary }}>DalxicMedia</span>
                 <span style={{ fontSize: 11, color: "var(--nl-txD)" }}>media.dalxic.com</span>
               </a>
               {/* DalxicJudiciary — Ruby Red */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, width: 160, height: 80, borderRadius: 14, border: "none", background: "none", position: "relative", overflow: "hidden", opacity: 0.45 }}>
-                <span style={{ fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #EF4444, #DC2626)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>DalxicJudiciary</span>
+                <span style={{ fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #EF4444, #DC2626)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: fontFamily.primary }}>DalxicJudiciary</span>
                 <span style={{ fontSize: 11, color: "var(--nl-txD)" }}>judiciary.dalxic.com</span>
               </div>
             </div>
@@ -946,8 +944,8 @@ export default function HomePage() {
           {/* Brand */}
           <div style={{ textAlign: "center", marginBottom: 36 }}>
             <div style={{ display: "inline-flex", alignItems: "baseline", marginBottom: 12 }}>
-              <span style={{ fontWeight: 300, fontSize: 14, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Dalxic</span>
-              <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }} className="text-gradient-blue">Health</span>
+              <span style={{ fontWeight: 300, fontSize: 14, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: fontFamily.primary }}>Dalxic</span>
+              <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: fontFamily.primary }} className="text-gradient-blue">Health</span>
             </div>
             <p style={{ fontSize: 13, color: "var(--nl-txD)", maxWidth: 400, margin: "0 auto", lineHeight: 1.7 }}>
               Nexus-7™ hospital management platform. Built for speed. Designed for precision. A Dalxic subsidiary.

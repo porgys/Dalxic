@@ -4,14 +4,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { calloutNumber } from "@/lib/voice-callout";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
-const COPPER = "#B87333";
-
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -138,7 +136,7 @@ function SeverityBadge({ severity }: { severity: number | null }) {
       fontSize: 10, fontWeight: 700, letterSpacing: "0.5px",
       padding: "2px 7px", borderRadius: 4,
       background: `${color}10`, border: `1px solid ${color}20`, color,
-      fontFamily: "var(--font-jetbrains-mono), monospace",
+      fontFamily: fontFamily.mono,
     }}>
       {severity >= 8 && <span style={{ width: 5, height: 5, borderRadius: "50%", background: color, animation: "emergencyPulse 1.5s ease-in-out infinite" }} />}
       {severity}/10 {label}
@@ -918,7 +916,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 12, background: "rgba(184,115,51,0.12)" }} />
           <span style={{ fontSize: 11, color: "#64748B" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 12, background: "rgba(184,115,51,0.12)" }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 11, color: COPPER }}>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 11, color: COPPER }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </time>
         </div>
@@ -943,7 +941,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
           >
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <span style={{
-                fontSize: 16, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace",
+                fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono,
                 background: isER ? "linear-gradient(135deg, #EF4444, #F87171)" : `linear-gradient(135deg, ${COPPER}, #D4956B)`,
                 WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               }}>{activeSession.visit.queueToken}</span>
@@ -972,8 +970,8 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         {/* ─── LEFT: Queue Rail ─── */}
         <div style={{ width: 220, flexShrink: 0, padding: "16px 12px", overflowY: "auto", borderRight: "1px solid rgba(184,115,51,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Queue</span>
-            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "rgba(184,115,51,0.08)", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{queue.length}</span>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: fontFamily.mono }}>Queue</span>
+            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "rgba(184,115,51,0.08)", color: "#D4956B", fontFamily: fontFamily.mono }}>{queue.length}</span>
           </div>
 
           {/* Call next button */}
@@ -1007,8 +1005,8 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-                  <span style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 11, fontWeight: 700, color: item.emergencyFlag ? "#F87171" : item.visitStatus === "lab_results_ready" ? "#38BDF8" : COPPER }}>{item.token}</span>
-                  <span style={{ fontSize: 9, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#3D4D78" }}>
+                  <span style={{ fontFamily: fontFamily.mono, fontSize: 11, fontWeight: 700, color: item.emergencyFlag ? "#F87171" : item.visitStatus === "lab_results_ready" ? "#38BDF8" : COPPER }}>{item.token}</span>
+                  <span style={{ fontSize: 9, fontFamily: fontFamily.mono, color: "#3D4D78" }}>
                     {new Date(item.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </div>
@@ -1034,15 +1032,15 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
           {incomingReferrals.length > 0 && (
             <>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 20, marginBottom: 8 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Referrals</span>
-                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "rgba(14,165,233,0.08)", color: "#38BDF8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{incomingReferrals.length}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: fontFamily.mono }}>Referrals</span>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "rgba(14,165,233,0.08)", color: "#38BDF8", fontFamily: fontFamily.mono }}>{incomingReferrals.length}</span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {incomingReferrals.map((ref, i) => (
                   <motion.div key={ref.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
                     style={{ padding: "10px 10px", borderRadius: 10, background: "rgba(14,165,233,0.03)", border: "1px solid rgba(14,165,233,0.12)" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-                      <span style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 11, fontWeight: 700, color: "#38BDF8" }}>{ref.queueToken}</span>
+                      <span style={{ fontFamily: fontFamily.mono, fontSize: 11, fontWeight: 700, color: "#38BDF8" }}>{ref.queueToken}</span>
                       <span style={{
                         fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 3, textTransform: "uppercase",
                         background: ref.urgency === "stat" ? "rgba(220,38,38,0.1)" : ref.urgency === "urgent" ? "rgba(245,158,11,0.1)" : "rgba(34,197,94,0.1)",
@@ -1066,8 +1064,8 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
           {hospitalGroup && ibIncoming.length > 0 && (
             <>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 20, marginBottom: 8 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>Branch Transfers</span>
-                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: `${COPPER}10`, color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{ibIncoming.length}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: COPPER, fontFamily: fontFamily.mono }}>Branch Transfers</span>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: `${COPPER}10`, color: COPPER, fontFamily: fontFamily.mono }}>{ibIncoming.length}</span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {ibIncoming.map((ref, i) => {
@@ -1076,7 +1074,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                     <motion.div key={ref.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
                       style={{ padding: "10px 10px", borderRadius: 10, background: `${pColor}04`, border: `1px solid ${pColor}15` }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-                        <span style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 10, fontWeight: 700, color: pColor }}>{ref.fromHospitalCode}</span>
+                        <span style={{ fontFamily: fontFamily.mono, fontSize: 10, fontWeight: 700, color: pColor }}>{ref.fromHospitalCode}</span>
                         <span style={{ fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 3, textTransform: "uppercase", background: `${pColor}12`, color: pColor }}>{ref.priority}</span>
                       </div>
                       <p style={{ fontSize: 12, fontWeight: 600, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ref.patientName}</p>
@@ -1133,7 +1131,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                       style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(14,165,233,0.1)", backdropFilter: "blur(12px)", marginBottom: 12 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
                         <span style={{ fontSize: 14 }}>📊</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Vital Signs</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: fontFamily.mono }}>Vital Signs</span>
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
                         <DInput label="BP (mmHg)" placeholder="120/80" value={vitals.bp} onChange={(e) => setVitals(v => ({ ...v, bp: e.target.value }))} />
@@ -1146,7 +1144,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                         <div>
                           <label className="block text-xs font-medium font-body mb-1.5" style={{ color: theme.textLabel, transition: "color 0.4s ease" }}>BMI</label>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", minHeight: 40 }}>
-                            <span style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: calcBmi ? bmiColor : "#3D4D78" }}>{calcBmi || "—"}</span>
+                            <span style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: calcBmi ? bmiColor : "#3D4D78" }}>{calcBmi || "—"}</span>
                             {bmiClass && <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: `${bmiColor}12`, color: bmiColor, textTransform: "uppercase", letterSpacing: "0.04em" }}>{bmiClass}</span>}
                           </div>
                         </div>
@@ -1158,7 +1156,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                       style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)", marginBottom: 12 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
                         <span style={{ fontSize: 14 }}>🩺</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Diagnosis</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: fontFamily.mono }}>Diagnosis</span>
                       </div>
                       {/* SOAP Template Quick-Select */}
                       <div style={{ marginBottom: 10 }}>
@@ -1211,7 +1209,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ fontSize: 14 }}>💊</span>
-                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Prescriptions</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: fontFamily.mono }}>Prescriptions</span>
                         </div>
                         <button type="button" onClick={addPrescription} style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", color: "#64748B", cursor: "pointer" }}>+ Add</button>
                       </div>
@@ -1245,7 +1243,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                       style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(14,165,233,0.1)", backdropFilter: "blur(12px)", marginBottom: 12 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
                         <span style={{ fontSize: 14 }}>🧪</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Lab Orders</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: fontFamily.mono }}>Lab Orders</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: labReferral ? 10 : 0 }}>
                         <input type="checkbox" id="labRef" checked={labReferral} onChange={(e) => setLabReferral(e.target.checked)} style={{ width: 14, height: 14, accentColor: "#0EA5E9" }} />
@@ -1285,7 +1283,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showReferralPanel ? 12 : 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ fontSize: 14 }}>🔗</span>
-                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Refer To Specialist</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: fontFamily.mono }}>Refer To Specialist</span>
                         </div>
                         <button type="button" onClick={() => setShowReferralPanel(!showReferralPanel)}
                           style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: showReferralPanel ? "rgba(14,165,233,0.1)" : "rgba(255,255,255,0.03)", border: `1px solid ${showReferralPanel ? "rgba(14,165,233,0.2)" : "rgba(255,255,255,0.05)"}`, color: showReferralPanel ? "#38BDF8" : "#64748B", cursor: "pointer" }}>
@@ -1329,7 +1327,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showInterBranchPanel ? 12 : 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <span style={{ fontSize: 14 }}>🌐</span>
-                            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>Inter-Branch Referral</span>
+                            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: COPPER, fontFamily: fontFamily.mono }}>Inter-Branch Referral</span>
                             <span style={{ fontSize: 9, color: "#64748B", marginLeft: 4 }}>({hospitalGroup.name})</span>
                           </div>
                           <button type="button" onClick={() => setShowInterBranchPanel(!showInterBranchPanel)}
@@ -1391,14 +1389,14 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                         style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(14,165,233,0.1)", backdropFilter: "blur(12px)" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
                           <span style={{ fontSize: 14 }}>📨</span>
-                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Incoming Referrals</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#38BDF8", fontFamily: fontFamily.mono }}>Incoming Referrals</span>
                           <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "rgba(14,165,233,0.08)", color: "#38BDF8", marginLeft: 4 }}>{incomingReferrals.length}</span>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {incomingReferrals.map((ref) => (
                             <div key={ref.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(14,165,233,0.03)", border: "1px solid rgba(14,165,233,0.1)" }}>
                               <div>
-                                <span style={{ fontSize: 12, fontWeight: 700, color: "#38BDF8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{ref.queueToken}</span>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: "#38BDF8", fontFamily: fontFamily.mono }}>{ref.queueToken}</span>
                                 <span style={{ fontSize: 12, fontWeight: 600, color: "white", marginLeft: 8 }}>{ref.patientName}</span>
                                 <span style={{ fontSize: 10, color: "#64748B", marginLeft: 8 }}>{ref.reason}</span>
                               </div>
@@ -1594,7 +1592,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                           color: admitSelectedBed?.id === bed.id ? "#22C55E" : "white",
                           outline: admitSelectedBed?.id === bed.id ? "1px solid rgba(34,197,94,0.3)" : "1px solid rgba(255,255,255,0.06)",
                         }}>
-                        <div style={{ fontSize: 14, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{bed.label}</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono }}>{bed.label}</div>
                         <div style={{ fontSize: 9, color: "#64748B", marginTop: 2 }}>{bed.roomName}</div>
                       </button>
                     ))}

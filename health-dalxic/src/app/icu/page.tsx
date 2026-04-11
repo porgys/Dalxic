@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
-const COPPER = "#B87333";
+
 
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -147,7 +147,7 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <span style={{ fontSize: 13, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>{currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>{currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
         </div>
       </header>
 
@@ -162,7 +162,7 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
-              <p style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stat.color }}>{stat.value}</p>
+              <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
             </motion.div>
           ))}
         </div>
@@ -213,10 +213,10 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
                       {/* Patient header */}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ fontSize: 14, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER }}>{p.bedLabel}</span>
+                          <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{p.bedLabel}</span>
                           <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{p.patientName}</span>
                           {p.ventilator && <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#EF4444" }}>Ventilator</span>}
-                          <span style={{ padding: "3px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.2)", color: "#38BDF8" }}>Day {p.dayCount}</span>
+                          <span style={{ padding: "3px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, fontFamily: fontFamily.mono, background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.2)", color: "#38BDF8" }}>Day {p.dayCount}</span>
                         </div>
                         <span style={{ fontSize: 10, color: "#64748B" }}>{p.obsCount} Observations</span>
                       </div>
@@ -238,7 +238,7 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
                           ].map((v) => (
                             <div key={v.label} style={{ padding: 8, borderRadius: 8, background: v.warn ? "rgba(239,68,68,0.06)" : "rgba(255,255,255,0.02)", border: `1px solid ${v.warn ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.04)"}`, textAlign: "center" }}>
                               <p style={{ fontSize: 8, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 2 }}>{v.label}</p>
-                              <p style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: v.warn ? "#EF4444" : "white" }}>{v.value}</p>
+                              <p style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: v.warn ? "#EF4444" : "white" }}>{v.value}</p>
                               <p style={{ fontSize: 8, color: "#4A5568" }}>{v.unit}</p>
                             </div>
                           ))}

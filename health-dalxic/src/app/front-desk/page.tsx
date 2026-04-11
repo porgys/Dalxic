@@ -5,14 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { BulkPaste } from "@/components/intake/bulk-paste";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
 import type { ParsedPatientEntry, OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
-const COPPER = "#B87333";
-
 /* ─── Galaxy Canvas (copper, for station pages) ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -675,7 +673,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <OperatorBadge session={operator} onLogout={() => window.location.reload()} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </time>
         </div>
@@ -796,7 +794,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
                       />
                     </div>
                     {cardSearching && (
-                      <span style={{ fontSize: 11, color: "#94A3B8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Searching...</span>
+                      <span style={{ fontSize: 11, color: "#94A3B8", fontFamily: fontFamily.mono }}>Searching...</span>
                     )}
                     {cardFound && (
                       <motion.div
@@ -809,7 +807,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
                         }}
                       >
                         <span style={{ fontSize: 12, color: "#22C55E", fontWeight: 700 }}>Card Member Found</span>
-                        <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{cardFound.cardNumber}</span>
+                        <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: fontFamily.mono }}>{cardFound.cardNumber}</span>
                         <span style={{ fontSize: 10, color: "#64748B" }}>— Details Auto-Filled</span>
                       </motion.div>
                     )}
@@ -1637,7 +1635,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
               {newCardNumber ? (
                 <div style={{ textAlign: "center" }}>
                   <p style={{ fontSize: 12, color: "#22C55E", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12 }}>Card Created</p>
-                  <p style={{ fontSize: 36, fontFamily: "var(--font-jetbrains-mono), monospace", fontWeight: 800, color: "#D4956B", letterSpacing: "0.08em" }}>{newCardNumber}</p>
+                  <p style={{ fontSize: 36, fontFamily: fontFamily.mono, fontWeight: 800, color: "#D4956B", letterSpacing: "0.08em" }}>{newCardNumber}</p>
                   <p style={{ fontSize: 11, color: "#94A3B8", marginTop: 8 }}>Write This Number On The Patient Card</p>
                   <button type="button" onClick={() => { setShowCreateCard(false); setNewCardNumber(null); }}
                     style={{ marginTop: 20, padding: "8px 24px", borderRadius: 10, background: `${COPPER}15`, border: `1px solid ${COPPER}30`, color: "#D4956B", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>

@@ -3,9 +3,8 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { COPPER, COPPER_LIGHT, fontFamily } from "@/hooks/use-station-theme";
 
-const COPPER = "#B87333";
-const COPPER_LIGHT = "#D4956B";
 
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -57,7 +56,7 @@ export default function NotFound() {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-          style={{ fontSize: 140, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.04em", fontFamily: "var(--font-outfit), Outfit, sans-serif", background: `linear-gradient(135deg, ${COPPER}30, ${COPPER}08)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 8 }}
+          style={{ fontSize: 140, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.04em", fontFamily: fontFamily.primary, background: `linear-gradient(135deg, ${COPPER}30, ${COPPER}08)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 8 }}
         >
           404
         </motion.div>
@@ -70,7 +69,7 @@ export default function NotFound() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          style={{ fontSize: 24, fontWeight: 800, color: "#F0F4FF", marginBottom: 12, fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em" }}
+          style={{ fontSize: 24, fontWeight: 800, color: "#F0F4FF", marginBottom: 12, fontFamily: fontFamily.primary, letterSpacing: "-0.02em" }}
         >
           Signal Lost
         </motion.h1>
@@ -80,7 +79,7 @@ export default function NotFound() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          style={{ fontSize: 14, color: "#64748B", lineHeight: 1.7, fontFamily: "var(--font-outfit), Outfit, sans-serif", marginBottom: 36 }}
+          style={{ fontSize: 14, color: "#64748B", lineHeight: 1.7, fontFamily: fontFamily.primary, marginBottom: 36 }}
         >
           The page you are looking for does not exist, has been moved, or is behind an encrypted access point. If you believe this is an error, contact your system administrator.
         </motion.p>
@@ -96,7 +95,7 @@ export default function NotFound() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              style={{ width: "100%", padding: "14px 0", borderRadius: 14, cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+              style={{ width: "100%", padding: "14px 0", borderRadius: 14, cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: fontFamily.primary }}
             >
               Return Home
             </motion.button>
@@ -105,7 +104,7 @@ export default function NotFound() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => window.history.back()}
-            style={{ flex: 1, maxWidth: 200, padding: "14px 0", borderRadius: 14, cursor: "pointer", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${COPPER}20`, color: COPPER_LIGHT, fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+            style={{ flex: 1, maxWidth: 200, padding: "14px 0", borderRadius: 14, cursor: "pointer", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${COPPER}20`, color: COPPER_LIGHT, fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: fontFamily.primary }}
           >
             Go Back
           </motion.button>
@@ -119,10 +118,10 @@ export default function NotFound() {
         transition={{ delay: 1 }}
         style={{ position: "absolute", bottom: 32, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}
       >
-        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, fontFamily: fontFamily.primary }}>
           Dalxic Health
         </span>
-        <span style={{ fontSize: 9, color: "#4A3728", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+        <span style={{ fontSize: 9, color: "#4A3728", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: fontFamily.primary }}>
           Worlds Best Hospital Management System
         </span>
       </motion.div>

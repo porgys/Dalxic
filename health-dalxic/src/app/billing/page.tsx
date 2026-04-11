@@ -3,13 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
-const COPPER = "#B87333";
-
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -346,7 +344,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <span style={{ fontSize: 13, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </time>
         </div>
@@ -382,7 +380,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                   <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                     style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
                     <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
-                    <p style={{ fontSize: 28, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stat.color }}>{stat.value}</p>
+                    <p style={{ fontSize: 28, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
                   </motion.div>
                 ))}
               </div>
@@ -392,11 +390,11 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
                     <p style={{ fontSize: 10, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>Total Unpaid Across All Patients</p>
-                    <p style={{ fontSize: 36, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#F59E0B" }}>{formatCurrency(stats.pendingAmount)}</p>
+                    <p style={{ fontSize: 36, fontWeight: 800, fontFamily: fontFamily.mono, color: "#F59E0B" }}>{formatCurrency(stats.pendingAmount)}</p>
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <p style={{ fontSize: 10, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>Bills Pending</p>
-                    <p style={{ fontSize: 36, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#F59E0B" }}>{stats.pendingBillsCount}</p>
+                    <p style={{ fontSize: 36, fontWeight: 800, fontFamily: fontFamily.mono, color: "#F59E0B" }}>{stats.pendingBillsCount}</p>
                   </div>
                 </div>
               </WorkshopBox>
@@ -466,9 +464,9 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                                       {item.serviceType}
                                     </td>
                                     <td style={{ padding: "10px 12px", fontSize: 12, color: "white" }}>{item.description}</td>
-                                    <td style={{ padding: "10px 12px", fontSize: 13, color: "#94A3B8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{formatCurrency(item.unitCost)}</td>
+                                    <td style={{ padding: "10px 12px", fontSize: 13, color: "#94A3B8", fontFamily: fontFamily.mono }}>{formatCurrency(item.unitCost)}</td>
                                     <td style={{ padding: "10px 12px", fontSize: 13, color: "#94A3B8", textAlign: "center" }}>{item.quantity}</td>
-                                    <td style={{ padding: "10px 12px", fontSize: 12, color: "white", fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{formatCurrency(item.totalCost)}</td>
+                                    <td style={{ padding: "10px 12px", fontSize: 12, color: "white", fontWeight: 700, fontFamily: fontFamily.mono }}>{formatCurrency(item.totalCost)}</td>
                                     <td style={{ padding: "10px 12px", fontSize: 11, color: "#64748B" }}>{formatTime(item.renderedAt)}</td>
                                   </tr>
                                 ))}
@@ -480,18 +478,18 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                           <div style={{ marginTop: 20, padding: 16, borderRadius: 12, background: theme.navInactiveBg, border: "1px solid rgba(184,115,51,0.08)" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                               <span style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Subtotal</span>
-                              <span style={{ fontSize: 18, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: "white" }}>{formatCurrency(unbilledTotal)}</span>
+                              <span style={{ fontSize: 18, fontWeight: 800, fontFamily: fontFamily.mono, color: "white" }}>{formatCurrency(unbilledTotal)}</span>
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                               <label style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", whiteSpace: "nowrap" }}>Discount (GHS)</label>
                               <input
                                 type="number" min="0" step="0.01" value={discount || ""}
                                 onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                                style={{ flex: 1, maxWidth: 140, padding: "8px 12px", borderRadius: 10, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none", fontFamily: "var(--font-jetbrains-mono), monospace" }}
+                                style={{ flex: 1, maxWidth: 140, padding: "8px 12px", borderRadius: 10, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none", fontFamily: fontFamily.mono }}
                               />
                               <div style={{ marginLeft: "auto", textAlign: "right" }}>
                                 <span style={{ fontSize: 10, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block" }}>Bill Total</span>
-                                <span style={{ fontSize: 24, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#22C55E" }}>{formatCurrency(Math.max(0, unbilledTotal - discount))}</span>
+                                <span style={{ fontSize: 24, fontWeight: 800, fontFamily: fontFamily.mono, color: "#22C55E" }}>{formatCurrency(Math.max(0, unbilledTotal - discount))}</span>
                               </div>
                             </div>
                             <motion.button type="button" onClick={assembleBill} disabled={assembling || unbilledItems.length === 0}
@@ -520,7 +518,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                                 {/* Bill header */}
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                    <span style={{ fontSize: 14, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER }}>{bill.billNumber}</span>
+                                    <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{bill.billNumber}</span>
                                     <span style={{ padding: "3px 10px", borderRadius: 8, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", background: sc.bg, border: `1px solid ${sc.border}`, color: sc.text }}>{bill.status}</span>
                                   </div>
                                   <span style={{ fontSize: 11, color: "#64748B" }}>{formatDate(bill.createdAt)}</span>
@@ -530,17 +528,17 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                                 <div style={{ display: "flex", gap: 24, marginBottom: 10 }}>
                                   <div>
                                     <span style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Subtotal</span>
-                                    <p style={{ fontSize: 13, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#94A3B8" }}>{formatCurrency(bill.subtotal)}</p>
+                                    <p style={{ fontSize: 13, fontFamily: fontFamily.mono, color: "#94A3B8" }}>{formatCurrency(bill.subtotal)}</p>
                                   </div>
                                   {bill.discount > 0 && (
                                     <div>
                                       <span style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Discount</span>
-                                      <p style={{ fontSize: 13, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#F59E0B" }}>-{formatCurrency(bill.discount)}</p>
+                                      <p style={{ fontSize: 13, fontFamily: fontFamily.mono, color: "#F59E0B" }}>-{formatCurrency(bill.discount)}</p>
                                     </div>
                                   )}
                                   <div>
                                     <span style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Total</span>
-                                    <p style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: "white" }}>{formatCurrency(bill.total)}</p>
+                                    <p style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: "white" }}>{formatCurrency(bill.total)}</p>
                                   </div>
                                   {bill.paymentMethod && (
                                     <div>
@@ -588,7 +586,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                                             type="number" min="0" step="0.01" value={paidAmount}
                                             onChange={(e) => setPaidAmount(e.target.value)}
                                             placeholder={bill.total.toFixed(2)}
-                                            style={{ flex: 1, maxWidth: 160, padding: "8px 12px", borderRadius: 10, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(34,197,94,0.15)", outline: "none", fontFamily: "var(--font-jetbrains-mono), monospace" }}
+                                            style={{ flex: 1, maxWidth: 160, padding: "8px 12px", borderRadius: 10, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(34,197,94,0.15)", outline: "none", fontFamily: fontFamily.mono }}
                                           />
                                         </div>
                                         <div style={{ display: "flex", gap: 8 }}>

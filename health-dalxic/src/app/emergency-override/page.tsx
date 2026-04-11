@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { COPPER, fontFamily } from "@/hooks/use-station-theme";
 
 const HOSPITAL_CODE = "KBH";
-const COPPER = "#B87333";
 const EMERGENCY_RED = "#DC2626";
 
 /* ─── Galaxy Canvas (red-copper tinted for emergency) ─── */
@@ -92,7 +92,7 @@ function WorkshopBox({ children, title, icon, delay = 0, red = false, className 
         <h3 style={{
           fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase",
           color: red ? "#F87171" : "#D4956B",
-          fontFamily: "var(--font-jetbrains-mono), monospace",
+          fontFamily: fontFamily.mono,
         }}>{title}</h3>
       </div>
       {children}
@@ -256,7 +256,7 @@ export default function EmergencyOverridePage() {
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#F87171" }}>Emergency Override</span>
           <div style={{ width: 1, height: 16, background: "rgba(220,38,38,0.15)" }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: "#F87171" }}>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: "#F87171" }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </time>
         </div>
@@ -372,7 +372,7 @@ export default function EmergencyOverridePage() {
                     </span>
                     <p style={{ fontSize: 14.5, fontWeight: 500, color: "#94A3B8", marginTop: 10 }}>
                       Read-Only Access. Expires In{" "}
-                      <span style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontWeight: 800, color: "#F87171" }}>{expiresIn}</span> Minutes.
+                      <span style={{ fontFamily: fontFamily.mono, fontWeight: 800, color: "#F87171" }}>{expiresIn}</span> Minutes.
                     </p>
                   </div>
                   <motion.button
@@ -423,13 +423,13 @@ export default function EmergencyOverridePage() {
                         <div style={{ textAlign: "right" }}>
                           {record.visit.queueToken && (
                             <span style={{
-                              fontFamily: "var(--font-jetbrains-mono), monospace",
+                              fontFamily: fontFamily.mono,
                               fontSize: 14, fontWeight: 700, color: COPPER,
                             }}>
                               {record.visit.queueToken}
                             </span>
                           )}
-                          <p style={{ fontSize: 11, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#4A5568", marginTop: 2 }}>
+                          <p style={{ fontSize: 11, fontFamily: fontFamily.mono, color: "#4A5568", marginTop: 2 }}>
                             {new Date(record.createdAt).toLocaleDateString("en-GB")}
                           </p>
                         </div>

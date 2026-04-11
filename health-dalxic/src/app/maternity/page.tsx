@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
-const COPPER = "#B87333";
+
 
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -173,7 +173,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <span style={{ fontSize: 13, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>{currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>{currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
         </div>
       </header>
 
@@ -189,7 +189,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
-              <p style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stat.color }}>{stat.value}</p>
+              <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
             </motion.div>
           ))}
         </div>
@@ -284,7 +284,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <span style={{ fontSize: 16 }}>{sc.icon}</span>
-                            <span style={{ fontSize: 14, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER }}>{p.queueToken}</span>
+                            <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{p.queueToken}</span>
                             <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{p.patientName}</span>
                             {p.age && <span style={{ fontSize: 11, color: "#64748B" }}>{p.age}y</span>}
                             <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", background: sc.bg, border: `1px solid ${sc.border}`, color: sc.text }}>{p.stage}</span>
@@ -293,7 +293,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
                         </div>
 
                         <div style={{ display: "flex", gap: 20, marginBottom: 12 }}>
-                          {p.gestationalWeeks && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Weeks</p><p style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#D4956B" }}>{p.gestationalWeeks}</p></div>}
+                          {p.gestationalWeeks && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Weeks</p><p style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: "#D4956B" }}>{p.gestationalWeeks}</p></div>}
                           {p.gravida != null && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>G</p><p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{p.gravida}</p></div>}
                           {p.para != null && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>P</p><p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{p.para}</p></div>}
                           {p.edd && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>EDD</p><p style={{ fontSize: 13, color: "#94A3B8" }}>{new Date(p.edd).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</p></div>}

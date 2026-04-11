@@ -3,13 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
-const COPPER = "#B87333";
-
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -138,7 +136,7 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <span style={{ fontSize: 13, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>{currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>{currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
         </div>
       </header>
 
@@ -154,7 +152,7 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
-              <p style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stat.color }}>{stat.value}</p>
+              <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
             </motion.div>
           ))}
         </div>
@@ -180,8 +178,8 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
                     return (
                       <motion.div key={bg.bloodGroup} whileHover={{ y: -2 }}
                         style={{ padding: 16, borderRadius: 14, background: theme.navInactiveBg, border: "1px solid rgba(255,255,255,0.04)", textAlign: "center" }}>
-                        <p style={{ fontSize: 24, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color, marginBottom: 8 }}>{bg.bloodGroup}</p>
-                        <p style={{ fontSize: 28, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: "white", marginBottom: 8 }}>{total}</p>
+                        <p style={{ fontSize: 24, fontWeight: 800, fontFamily: fontFamily.mono, color, marginBottom: 8 }}>{bg.bloodGroup}</p>
+                        <p style={{ fontSize: 28, fontWeight: 800, fontFamily: fontFamily.mono, color: "white", marginBottom: 8 }}>{total}</p>
                         <div style={{ display: "flex", gap: 4, justifyContent: "center", fontSize: 9, color: "#64748B" }}>
                           <span>WB:{bg.wholeBlood}</span>
                           <span>RBC:{bg.packedRBC}</span>
@@ -214,9 +212,9 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
                         style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: `1px solid ${req.urgency === "stat" ? "rgba(239,68,68,0.15)" : "rgba(184,115,51,0.1)"}`, backdropFilter: "blur(12px)" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <span style={{ fontSize: 20, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color }}>{req.bloodGroup}</span>
+                            <span style={{ fontSize: 20, fontWeight: 800, fontFamily: fontFamily.mono, color }}>{req.bloodGroup}</span>
                             <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{req.patientName}</span>
-                            <span style={{ fontSize: 12, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER }}>{req.queueToken}</span>
+                            <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: COPPER }}>{req.queueToken}</span>
                             <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", background: ss.bg, border: `1px solid ${ss.border}`, color: ss.text }}>{req.status.replace("_", " ")}</span>
                             {req.urgency === "stat" && <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", background: "rgba(239,68,68,0.08)", color: "#EF4444" }}>STAT</span>}
                           </div>
@@ -225,7 +223,7 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
 
                         <div style={{ display: "flex", gap: 20, marginBottom: 12 }}>
                           <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase" }}>Component</p><p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{req.component.replace("_", " ")}</p></div>
-                          <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase" }}>Units</p><p style={{ fontSize: 14, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#D4956B" }}>{req.units}</p></div>
+                          <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase" }}>Units</p><p style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: "#D4956B" }}>{req.units}</p></div>
                           <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase" }}>Requested By</p><p style={{ fontSize: 13, color: "#94A3B8" }}>{req.requestedBy}</p></div>
                         </div>
 

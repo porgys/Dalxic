@@ -3,13 +3,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, COPPER_LIGHT, BLUE, fontFamily } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
-const COPPER = "#B87333";
+
 
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
@@ -298,7 +298,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <span style={{ fontSize: 13, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </time>
         </div>
@@ -316,7 +316,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
-              <p style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stat.color }}>{stat.value}</p>
+              <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
             </motion.div>
           ))}
         </div>
@@ -355,7 +355,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
                         style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: `1px solid ${hasUrgent ? "rgba(239,68,68,0.15)" : needsVitals ? "rgba(245,158,11,0.15)" : "rgba(184,115,51,0.1)"}`, cursor: "pointer", transition: "all 0.3s" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <span style={{ fontSize: 13, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER }}>{p.queueToken}</span>
+                            <span style={{ fontSize: 13, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{p.queueToken}</span>
                             <div>
                               <p style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{p.patientName}</p>
                               <p style={{ fontSize: 10, color: "#64748B" }}>{p.age ? `${p.age}y` : ""} {p.gender || ""} — {p.department} {p.chiefComplaint ? `— ${p.chiefComplaint}` : ""}</p>
@@ -372,7 +372,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
                               <span style={{ padding: "3px 10px", borderRadius: 8, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.2)", color: "#38BDF8" }}>{p.pendingTasks} Task{p.pendingTasks > 1 ? "s" : ""}</span>
                             )}
                             {p.latestVitals && (
-                              <div style={{ display: "flex", gap: 8, fontSize: 10, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#94A3B8" }}>
+                              <div style={{ display: "flex", gap: 8, fontSize: 10, fontFamily: fontFamily.mono, color: "#94A3B8" }}>
                                 {p.latestVitals.temperature && <span>🌡️ {p.latestVitals.temperature}°C</span>}
                                 {p.latestVitals.bloodPressure && <span>🫀 {p.latestVitals.bloodPressure}</span>}
                                 {p.latestVitals.pulse && <span>💓 {p.latestVitals.pulse}</span>}
@@ -428,7 +428,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
                         ].map((v) => (
                           <div key={v.label} style={{ padding: 12, borderRadius: 10, background: v.warn ? "rgba(239,68,68,0.04)" : "rgba(255,255,255,0.02)", border: `1px solid ${v.warn ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.04)"}` }}>
                             <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>{v.icon} {v.label}</p>
-                            <p style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: v.warn ? "#EF4444" : "white" }}>{v.value}</p>
+                            <p style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: v.warn ? "#EF4444" : "white" }}>{v.value}</p>
                           </div>
                         ))}
                       </div>

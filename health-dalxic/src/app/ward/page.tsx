@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
-const COPPER = "#B87333";
+
 
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -345,7 +345,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <span style={{ fontSize: 13, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </time>
         </div>
@@ -362,7 +362,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
-              <p style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stat.color }}>{stat.value}</p>
+              <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
             </motion.div>
           ))}
         </div>
@@ -448,7 +448,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                                   outline: isSelected ? "1.5px solid rgba(34,197,94,0.4)" : "1px solid rgba(255,255,255,0.06)",
                                   opacity: isAvailable ? 1 : 0.35,
                                 }}>
-                                <div style={{ fontSize: 15, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: isSelected ? "#22C55E" : isAvailable ? "white" : "#64748B" }}>{bed.label}</div>
+                                <div style={{ fontSize: 15, fontWeight: 800, fontFamily: fontFamily.mono, color: isSelected ? "#22C55E" : isAvailable ? "white" : "#64748B" }}>{bed.label}</div>
                                 <div style={{ fontSize: 9, color: "#64748B", marginTop: 2 }}>{bed.roomName}</div>
                                 <div style={{ fontSize: 8, marginTop: 3, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px",
                                   color: bed.status === "AVAILABLE" ? "#22C55E" : bed.status === "OCCUPIED" ? "#38BDF8" : bed.status === "CLEANING" ? "#FB923C" : bed.status === "MAINTENANCE" ? "#A855F7" : "#F59E0B",
@@ -498,12 +498,12 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                       {/* Header */}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ fontSize: 14, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER }}>{p.queueToken}</span>
+                          <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{p.queueToken}</span>
                           <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{p.patientName}</span>
                           {p.age && <span style={{ fontSize: 11, color: "#64748B" }}>{p.age}y {p.gender || ""}</span>}
                         </div>
                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <span style={{ padding: "3px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.2)", color: "#38BDF8" }}>Day {p.dayCount}</span>
+                          <span style={{ padding: "3px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, fontFamily: fontFamily.mono, background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.2)", color: "#38BDF8" }}>Day {p.dayCount}</span>
                           <span style={{ fontSize: 11, color: "#64748B" }}>{p.roundsCount} Rounds</span>
                         </div>
                       </div>

@@ -3,11 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TIER_DEFAULTS, ALL_WORKSTATIONS, UTILITY_STATIONS, type TierKey } from "@/lib/tier-defaults";
+import { COPPER, COPPER_LIGHT, BLUE, fontSize, fontWeight, fontFamily, radius, spacing, getStyles } from "@/hooks/use-station-theme";
 
 /* ─── Constants ─── */
-const COPPER = "#B87333";
-const COPPER_LIGHT = "#D4956B";
-const BLUE = "#0EA5E9";
 const OPS_KEY = "dalxic_ops_session";
 
 /** Master role list — professional titles, module mapping drives contextual sorting */
@@ -166,16 +164,16 @@ function EncryptedGate({ onUnlock }: { onUnlock: (session: OpsSession) => void }
           </div>
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.35em", textTransform: "uppercase", color: COPPER, marginBottom: 8, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Dalxic Health</div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#F0F4FF", marginBottom: 6, fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em" }}>Operating Platform</h1>
-          <p style={{ fontSize: 11, color: "#4A5568", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{isFirstTime ? "First Time Setup" : "Encrypted Access Required"}</p>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.35em", textTransform: "uppercase", color: COPPER, marginBottom: 8, fontFamily: fontFamily.primary }}>Dalxic Health</div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#F0F4FF", marginBottom: 6, fontFamily: fontFamily.primary, letterSpacing: "-0.02em" }}>Operating Platform</h1>
+          <p style={{ fontSize: 13, color: "#4A5568", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: fontFamily.primary }}>{isFirstTime ? "First Time Setup" : "Encrypted Access Required"}</p>
         </motion.div>
         {/* Mode toggle — Owner / Staff */}
         {!isFirstTime && isFirstTime !== null && (
           <div style={{ display: "flex", gap: 0, margin: "24px auto 20px", borderRadius: 10, overflow: "hidden", border: `1px solid ${COPPER}15`, maxWidth: 280 }}>
             {(["owner", "staff"] as const).map(m => (
               <button key={m} onClick={() => { setMode(m); setError(null); setPassphrase(""); setStaffEmail(""); setStaffPin(""); }}
-                style={{ flex: 1, padding: "10px 0", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", border: "none", fontFamily: "var(--font-outfit), Outfit, sans-serif", background: mode === m ? `${COPPER}15` : "transparent", color: mode === m ? COPPER_LIGHT : "#475569", transition: "all 0.2s" }}>
+                style={{ flex: 1, padding: "10px 0", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", border: "none", fontFamily: fontFamily.primary, background: mode === m ? `${COPPER}15` : "transparent", color: mode === m ? COPPER_LIGHT : "#475569", transition: "all 0.2s" }}>
                 {m === "owner" ? "🔐 Owner" : "👤 Staff"}
               </button>
             ))}
@@ -186,10 +184,10 @@ function EncryptedGate({ onUnlock }: { onUnlock: (session: OpsSession) => void }
           <div style={{ padding: 20, textAlign: "center", color: "#64748B", fontSize: 12 }}>Checking...</div>
         ) : mode === "owner" || isFirstTime ? (
         <motion.form onSubmit={handleOwnerSubmit} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} key="owner-form">
-          {isFirstTime && <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 10, background: "rgba(184,115,51,0.06)", border: `1px solid ${COPPER}15`, fontSize: 11, color: COPPER_LIGHT, fontWeight: 500 }}>Create your master password to secure the Ops platform.</div>}
+          {isFirstTime && <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 10, background: "rgba(184,115,51,0.06)", border: `1px solid ${COPPER}15`, fontSize: 13, color: COPPER_LIGHT, fontWeight: 500 }}>Create your master password to secure the Ops platform.</div>}
           <div style={{ position: "relative", marginBottom: isFirstTime ? 12 : 20 }}>
             <input ref={inputRef} type="password" value={passphrase} onChange={e => { setPassphrase(e.target.value); setError(null); }} placeholder={isFirstTime ? "Create Password (8+ Characters)" : "Enter Owner Password"} disabled={verifying && !error} autoComplete="off" spellCheck={false}
-              style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 14, fontWeight: 500, color: "#E2E8F0", letterSpacing: "0.04em", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${error ? "rgba(239,68,68,0.4)" : passphrase ? COPPER + "30" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+              style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 14, fontWeight: 500, color: "#E2E8F0", letterSpacing: "0.04em", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${error ? "rgba(239,68,68,0.4)" : passphrase ? COPPER + "30" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: fontFamily.mono }} />
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={passphrase ? COPPER : "#4A5568"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)" }}>
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
@@ -197,14 +195,14 @@ function EncryptedGate({ onUnlock }: { onUnlock: (session: OpsSession) => void }
           {isFirstTime && (
             <div style={{ position: "relative", marginBottom: 20 }}>
               <input type="password" value={confirmPass} onChange={e => { setConfirmPass(e.target.value); setError(null); }} placeholder="Confirm Password" disabled={verifying && !error} autoComplete="off" spellCheck={false}
-                style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 14, fontWeight: 500, color: "#E2E8F0", letterSpacing: "0.04em", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${confirmPass && confirmPass === passphrase ? "rgba(34,197,94,0.3)" : confirmPass ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+                style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 14, fontWeight: 500, color: "#E2E8F0", letterSpacing: "0.04em", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${confirmPass && confirmPass === passphrase ? "rgba(34,197,94,0.3)" : confirmPass ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: fontFamily.mono }} />
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={confirmPass === passphrase && confirmPass ? "#22C55E" : "#4A5568"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)" }}>
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
               </svg>
             </div>
           )}
           <motion.button type="submit" disabled={!passphrase.trim() || (isFirstTime && passphrase !== confirmPass) || (verifying && !error)} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-            style={{ width: "100%", padding: "15px 0", borderRadius: 14, cursor: "pointer", background: unlocked ? "linear-gradient(135deg, #22C55E, #16A34A)" : `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", opacity: !passphrase.trim() || (isFirstTime && passphrase !== confirmPass) ? 0.4 : 1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+            style={{ width: "100%", padding: "15px 0", borderRadius: 14, cursor: "pointer", background: unlocked ? "linear-gradient(135deg, #22C55E, #16A34A)" : `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", opacity: !passphrase.trim() || (isFirstTime && passphrase !== confirmPass) ? 0.4 : 1, fontFamily: fontFamily.primary }}>
             {unlocked ? "Access Granted" : verifying && !error ? "Verifying..." : isFirstTime ? "Set Password & Enter" : "Authenticate"}
           </motion.button>
         </motion.form>
@@ -212,32 +210,32 @@ function EncryptedGate({ onUnlock }: { onUnlock: (session: OpsSession) => void }
         <motion.form onSubmit={handleStaffSubmit} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} key="staff-form">
           <div style={{ position: "relative", marginBottom: 12 }}>
             <input ref={staffEmailRef} type="email" value={staffEmail} onChange={e => { setStaffEmail(e.target.value); setError(null); }} placeholder="Staff Email" disabled={verifying && !error} autoComplete="off" spellCheck={false}
-              style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 14, fontWeight: 500, color: "#E2E8F0", letterSpacing: "0.02em", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${error ? "rgba(239,68,68,0.4)" : staffEmail ? COPPER + "30" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+              style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 14, fontWeight: 500, color: "#E2E8F0", letterSpacing: "0.02em", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${error ? "rgba(239,68,68,0.4)" : staffEmail ? COPPER + "30" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: fontFamily.mono }} />
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={staffEmail ? COPPER : "#4A5568"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)" }}>
               <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
             </svg>
           </div>
           <div style={{ position: "relative", marginBottom: 20 }}>
             <input type="password" value={staffPin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) { setStaffPin(e.target.value); setError(null); } }} placeholder="4-Digit PIN" maxLength={4} disabled={verifying && !error} autoComplete="off"
-              style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 18, fontWeight: 600, color: "#E2E8F0", letterSpacing: "0.4em", textAlign: "center", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${error ? "rgba(239,68,68,0.4)" : staffPin ? COPPER + "30" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+              style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 18, fontWeight: 600, color: "#E2E8F0", letterSpacing: "0.4em", textAlign: "center", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${error ? "rgba(239,68,68,0.4)" : staffPin ? COPPER + "30" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: fontFamily.mono }} />
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={staffPin ? COPPER : "#4A5568"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)" }}>
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
           </div>
           <motion.button type="submit" disabled={!staffEmail.trim() || staffPin.length !== 4 || (verifying && !error)} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-            style={{ width: "100%", padding: "15px 0", borderRadius: 14, cursor: "pointer", background: unlocked ? "linear-gradient(135deg, #22C55E, #16A34A)" : `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", opacity: !staffEmail.trim() || staffPin.length !== 4 ? 0.4 : 1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+            style={{ width: "100%", padding: "15px 0", borderRadius: 14, cursor: "pointer", background: unlocked ? "linear-gradient(135deg, #22C55E, #16A34A)" : `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", opacity: !staffEmail.trim() || staffPin.length !== 4 ? 0.4 : 1, fontFamily: fontFamily.primary }}>
             {unlocked ? "Access Granted" : verifying && !error ? "Verifying..." : "Staff Login"}
           </motion.button>
         </motion.form>
         )}
         <AnimatePresence>
-          {error && <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={{ marginTop: 16, fontSize: 11, color: "#EF4444", fontWeight: 600, padding: "10px 16px", borderRadius: 10, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)" }}>{error}</motion.div>}
+          {error && <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={{ marginTop: 16, fontSize: 13, color: "#EF4444", fontWeight: 600, padding: "10px 16px", borderRadius: 10, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)" }}>{error}</motion.div>}
         </AnimatePresence>
         <AnimatePresence>
           {unlocked && <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} style={{ marginTop: 16, fontSize: 12, color: "#22C55E", fontWeight: 600, letterSpacing: "0.1em" }}>Decrypting Platform...</motion.div>}
         </AnimatePresence>
       </motion.div>
-      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} style={{ position: "absolute", bottom: 28, fontSize: 9, color: "#1E293B", letterSpacing: "0.25em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} style={{ position: "absolute", bottom: 28, fontSize: 9, color: "#1E293B", letterSpacing: "0.25em", textTransform: "uppercase", fontFamily: fontFamily.primary }}>
         Dalxic &mdash; Classified
       </motion.p>
     </div>
@@ -878,8 +876,9 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
     return crumbs;
   })();
 
-  const inputStyle = { width: "100%", padding: "12px 14px", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.03)", border: `1px solid ${COPPER}12`, color: "#E2E8F0", outline: "none", fontFamily: "var(--font-outfit), Outfit, sans-serif" };
-  const labelStyle = { display: "block" as const, fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "#64748B", marginBottom: 6 };
+  const DS = getStyles(false); // ops is always dark mode
+  const inputStyle = DS.input;
+  const labelStyle = DS.label;
 
   return (
     <div style={{ minHeight: "100vh", background: "radial-gradient(ellipse 120% 80% at 55% 20%, rgba(15,9,5,1) 0%, rgba(6,3,12,1) 45%, rgba(2,3,10,1) 100%)", position: "relative", overflow: "hidden", color: "#E2E8F0" }}>
@@ -890,7 +889,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
       <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, padding: "14px 36px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${COPPER}08`, background: "rgba(3,5,15,0.5)", backdropFilter: "blur(16px)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: COPPER, boxShadow: `0 0 12px ${COPPER}60` }} />
-          <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: "0.04em", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+          <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: "0.04em", fontFamily: fontFamily.primary }}>
             <span style={{ color: "#F0F4FF" }}>Dalxic</span>{" "}
             <span style={{ color: COPPER }}>OPS</span>
           </span>
@@ -903,11 +902,11 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
               {i > 0 && <span style={{ color: "#334155", fontSize: 10 }}>›</span>}
               {crumb.onClick ? (
                 <motion.button whileHover={{ scale: 1.03 }} onClick={crumb.onClick}
-                  style={{ background: "none", border: "none", color: i === breadcrumb.length - 1 ? COPPER_LIGHT : "#64748B", fontSize: 11, fontWeight: 700, cursor: "pointer", letterSpacing: "0.04em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+                  style={{ background: "none", border: "none", color: i === breadcrumb.length - 1 ? COPPER_LIGHT : "#64748B", fontSize: 11, fontWeight: 700, cursor: "pointer", letterSpacing: "0.04em", textTransform: "uppercase", fontFamily: fontFamily.primary }}>
                   {crumb.label}
                 </motion.button>
               ) : (
-                <span style={{ color: COPPER_LIGHT, fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{crumb.label}</span>
+                <span style={{ color: COPPER_LIGHT, fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", fontFamily: fontFamily.primary }}>{crumb.label}</span>
               )}
             </div>
           ))}
@@ -924,7 +923,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
             const label = s === "create-hospitals" ? "Create" : s;
             return (
             <motion.button key={s} whileHover={{ scale: 1.05 }} onClick={() => { if (s === "hospitals") { setScreen("hospitals"); setDetailHospital(null); setConfigModule(null); } else { setScreen(s as OpsScreen); } if (s === "audit") loadAuditLogs(); if (s !== "access") setAccessUnlocked(false); }}
-              style={{ background: isActive ? `${COPPER}10` : "none", border: isActive ? `1px solid ${COPPER}20` : "1px solid transparent", color: isActive ? COPPER_LIGHT : "#475569", fontSize: 10, fontWeight: 700, padding: "6px 12px", borderRadius: 8, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+              style={{ background: isActive ? `${COPPER}10` : "none", border: isActive ? `1px solid ${COPPER}20` : "1px solid transparent", color: isActive ? COPPER_LIGHT : "#475569", fontSize: 10, fontWeight: 700, padding: "6px 12px", borderRadius: 8, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: fontFamily.primary }}>
               {s === "create-hospitals" ? "➕" : s === "hospitals" ? "🏥" : s === "operators" ? "👥" : s === "audit" ? "📋" : "🔑"} {label}
             </motion.button>
             );
@@ -934,7 +933,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
           <span style={{ fontSize: 10, fontWeight: 600, color: isOwner ? COPPER_LIGHT : "#38BDF8", padding: "4px 10px", borderRadius: 6, background: isOwner ? `${COPPER}08` : "rgba(56,189,248,0.06)", border: `1px solid ${isOwner ? COPPER + "15" : "rgba(56,189,248,0.12)"}` }}>
             {isOwner ? "🔐 Owner" : `👤 ${actorName}`}
           </span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#334155", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#334155", fontFamily: fontFamily.mono }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </span>
           <motion.button whileHover={{ scale: 1.05 }} onClick={onLogout}
@@ -955,7 +954,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
             <motion.div key="tiers" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
               <div style={{ textAlign: "center", marginBottom: 24 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.4em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Deployment Builder</div>
-                <h1 style={{ fontSize: 32, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em", marginBottom: 6 }}>Select A Tier Template</h1>
+                <h1 style={{ fontSize: 32, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary, letterSpacing: "-0.02em", marginBottom: 6 }}>Select A Tier Template</h1>
                 <p style={{ fontSize: 12, color: "#64748B", maxWidth: 480, margin: "0 auto" }}>Each tier is a starting point. Select one, then freely add or remove modules.</p>
               </div>
 
@@ -967,7 +966,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                   { label: "Total Patients", value: totalPatients.toLocaleString(), color: BLUE },
                 ].map(s => (
                   <div key={s.label} style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: s.color, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{s.value}</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: s.color, fontFamily: fontFamily.primary }}>{s.value}</div>
                     <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B", marginTop: 4 }}>{s.label}</div>
                   </div>
                 ))}
@@ -1000,12 +999,12 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                       <div style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: 2, background: `linear-gradient(90deg, transparent, ${color}40, transparent)` }} />
 
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                        <div style={{ fontSize: 32, fontWeight: 800, color, fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em" }}>{tier}</div>
+                        <div style={{ fontSize: 32, fontWeight: 800, color, fontFamily: fontFamily.primary, letterSpacing: "-0.02em" }}>{tier}</div>
                         <div style={{ padding: "4px 10px", borderRadius: 8, background: `${color}10`, border: `1px solid ${color}20`, fontSize: 10, fontWeight: 700, color }}>{def.maxDevices === 999 ? "Unlimited" : `${def.maxDevices} Devices`}</div>
                       </div>
 
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "#F0F4FF", marginBottom: 4, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{def.label}</div>
-                      <div style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5, marginBottom: 10 }}>{def.description}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#F0F4FF", marginBottom: 4, fontFamily: fontFamily.primary }}>{def.label}</div>
+                      <div style={{ fontSize: 13, color: "#64748B", lineHeight: 1.5, marginBottom: 10 }}>{def.description}</div>
 
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -1045,7 +1044,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                     <div style={{ fontSize: 28 }}>⚡</div>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
-                        <span style={{ fontSize: 24, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em" }}>The Master</span>
+                        <span style={{ fontSize: 24, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary, letterSpacing: "-0.02em" }}>The Master</span>
                         <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT }}>Privileged Access</span>
                       </div>
                       <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.6, maxWidth: 600 }}>
@@ -1055,7 +1054,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 28, fontWeight: 800, color: COPPER, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{ALL_WORKSTATIONS.length + UTILITY_STATIONS.length}</div>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: COPPER, fontFamily: fontFamily.primary }}>{ALL_WORKSTATIONS.length + UTILITY_STATIONS.length}</div>
                       <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A5568" }}>Modules</div>
                     </div>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={COPPER} strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
@@ -1078,7 +1077,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 36 }}>
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Module Configuration</div>
-                  <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+                  <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary }}>
                     {selectedTier} — {TIER_DEFAULTS[selectedTier].label}
                   </h2>
                   <p style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>{activeModules.length} modules active. Click any module to configure operators and access.</p>
@@ -1128,7 +1127,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                             <div style={{ fontSize: 10, color: "#64748B" }}>{ws.role}</div>
                           </div>
                         </div>
-                        <div style={{ fontSize: 11, color: "#64748B", marginBottom: 14, lineHeight: 1.5 }}>{ws.desc}</div>
+                        <div style={{ fontSize: 13, color: "#64748B", marginBottom: 14, lineHeight: 1.5 }}>{ws.desc}</div>
                       </motion.div>
 
                       {/* Toggle + Enter buttons */}
@@ -1189,7 +1188,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                   <span style={{ fontSize: 40 }}>{configWs.icon}</span>
                   <div>
                     <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 4 }}>Module Configuration</div>
-                    <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{configWs.title}</h2>
+                    <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary }}>{configWs.title}</h2>
                     <p style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>{configWs.desc} — Managed by {configWs.role}</p>
                   </div>
                 </div>
@@ -1225,7 +1224,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                         <label style={labelStyle}>PIN</label>
                         <input placeholder="4 digits" type="password" maxLength={4} value={newOp.pin}
                           onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setNewOp(o => ({ ...o, pin: e.target.value })); }}
-                          style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.3em", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+                          style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.3em", fontFamily: fontFamily.mono }} />
                       </div>
                       <div>
                         <label style={labelStyle}>Role</label>
@@ -1247,7 +1246,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                         {addingOp ? "Adding..." : "Add"}
                       </motion.button>
                     </div>
-                    {opMsg && <div style={{ marginTop: 12, fontSize: 11, fontWeight: 600, color: opMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{opMsg.text}</div>}
+                    {opMsg && <div style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: opMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{opMsg.text}</div>}
                   </div>
 
                   {/* Operator list */}
@@ -1262,12 +1261,12 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                           <div style={{ width: 8, height: 8, borderRadius: "50%", background: op.isActive ? "#22C55E" : "#EF4444", boxShadow: op.isActive ? "0 0 6px rgba(34,197,94,0.3)" : "none" }} />
                           <div>
                             <span style={{ fontSize: 13, fontWeight: 700, color: "#F0F4FF" }}>{op.name}</span>
-                            {op.phone && <span style={{ fontSize: 11, color: "#475569", marginLeft: 8 }}>{op.phone}</span>}
+                            {op.phone && <span style={{ fontSize: 13, color: "#475569", marginLeft: 8 }}>{op.phone}</span>}
                           </div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ padding: "3px 10px", borderRadius: 6, background: `${BLUE}10`, border: `1px solid ${BLUE}20`, fontSize: 10, fontWeight: 700, color: BLUE, textTransform: "uppercase", letterSpacing: "0.06em" }}>{op.role.replace(/_/g, " ")}</span>
-                          {op.lastLoginAt && <span style={{ fontSize: 10, color: "#475569", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{new Date(op.lastLoginAt).toLocaleDateString("en-GB")}</span>}
+                          {op.lastLoginAt && <span style={{ fontSize: 10, color: "#475569", fontFamily: fontFamily.mono }}>{new Date(op.lastLoginAt).toLocaleDateString("en-GB")}</span>}
                           <motion.button whileHover={{ scale: 1.08 }} onClick={() => { setEditOp(op); setEditOpForm({ name: op.name, phone: op.phone || "", role: op.role, newPin: "" }); setEditOpMsg(null); }}
                             style={{ padding: "4px 10px", borderRadius: 6, cursor: "pointer", background: `${COPPER}08`, border: `1px solid ${COPPER}15`, color: COPPER_LIGHT, fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Edit</motion.button>
                           <motion.button whileHover={{ scale: 1.08 }} onClick={() => handleToggleOperator(op)}
@@ -1290,7 +1289,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
                             <div>
                               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 6 }}>Edit Operator</div>
-                              <h3 style={{ fontSize: 20, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", margin: 0 }}>{editOp.name}</h3>
+                              <h3 style={{ fontSize: 20, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary, margin: 0 }}>{editOp.name}</h3>
                             </div>
                             <motion.button whileHover={{ scale: 1.1 }} onClick={() => setEditOp(null)} style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#64748B", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</motion.button>
                           </div>
@@ -1298,13 +1297,13 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                             <div><label style={labelStyle}>Full Name</label><input value={editOpForm.name} onChange={e => setEditOpForm(f => ({ ...f, name: e.target.value }))} style={inputStyle} /></div>
                             <div><label style={labelStyle}>Phone</label><input value={editOpForm.phone} onChange={e => setEditOpForm(f => ({ ...f, phone: e.target.value }))} style={inputStyle} /></div>
                             <div><label style={labelStyle}>Role</label><select value={editOpForm.role} onChange={e => setEditOpForm(f => ({ ...f, role: e.target.value }))} style={{ ...inputStyle, appearance: "none" }}>{ROLE_OPTIONS.map(r => <option key={r.value} value={r.value} style={{ background: "#0a0a14" }}>{r.label}</option>)}</select></div>
-                            <div><label style={{ ...labelStyle, color: "#EF4444" }}>Reset PIN (Leave Blank To Keep)</label><input value={editOpForm.newPin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setEditOpForm(f => ({ ...f, newPin: e.target.value })); }} placeholder="••••" type="password" maxLength={4} style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.3em", fontFamily: "var(--font-jetbrains-mono), monospace", background: "rgba(239,68,68,0.03)", border: "1px solid rgba(239,68,68,0.12)" }} /></div>
+                            <div><label style={{ ...labelStyle, color: "#EF4444" }}>Reset PIN (Leave Blank To Keep)</label><input value={editOpForm.newPin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setEditOpForm(f => ({ ...f, newPin: e.target.value })); }} placeholder="••••" type="password" maxLength={4} style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.3em", fontFamily: fontFamily.mono, background: "rgba(239,68,68,0.03)", border: "1px solid rgba(239,68,68,0.12)" }} /></div>
                           </div>
                           <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
                             <motion.button whileHover={{ scale: 1.02 }} onClick={handleEditOperator} style={{ flex: 1, padding: "12px 0", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none" }}>Save Changes</motion.button>
                             <motion.button whileHover={{ scale: 1.02 }} onClick={() => setEditOp(null)} style={{ padding: "12px 20px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "#64748B", cursor: "pointer", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>Cancel</motion.button>
                           </div>
-                          {editOpMsg && <div style={{ marginTop: 12, fontSize: 11, fontWeight: 600, textAlign: "center", color: editOpMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{editOpMsg.text}</div>}
+                          {editOpMsg && <div style={{ marginTop: 12, fontSize: 13, fontWeight: 600, textAlign: "center", color: editOpMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{editOpMsg.text}</div>}
                         </motion.div>
                       </motion.div>
                     )}
@@ -1336,7 +1335,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
             <motion.div key="create-hospitals" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
               <div style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Deployment</div>
-                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Create Hospital</h2>
+                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary }}>Create Hospital</h2>
               </div>
 
               {/* Create hospital */}
@@ -1361,7 +1360,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                     {addingHospital ? "Creating..." : "Create Hospital"}
                   </motion.button>
                 </div>
-                {hospitalMsg && <div style={{ marginTop: 12, fontSize: 11, fontWeight: 600, color: hospitalMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{hospitalMsg.text}</div>}
+                {hospitalMsg && <div style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: hospitalMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{hospitalMsg.text}</div>}
               </div>
 
               {/* Create group */}
@@ -1377,7 +1376,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                     {creatingGroup ? "..." : "Create"}
                   </motion.button>
                 </div>
-                {groupMsg && <div style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: groupMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{groupMsg.text}</div>}
+                {groupMsg && <div style={{ marginTop: 10, fontSize: 13, fontWeight: 600, color: groupMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{groupMsg.text}</div>}
               </div>
             </motion.div>
           )}
@@ -1389,7 +1388,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
             <motion.div key="hospitals" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
               <div style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Hospital Management</div>
-                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Hospitals & Groups</h2>
+                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary }}>Hospitals & Groups</h2>
               </div>
 
               {/* Compact stats bar */}
@@ -1405,7 +1404,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                       <span style={{ fontSize: 13 }}>{s.icon}</span>
                       <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748B" }}>{s.label}</span>
                     </div>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: s.color, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{s.value}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: s.color, fontFamily: fontFamily.primary }}>{s.value}</div>
                   </div>
                 ))}
               </div>
@@ -1440,14 +1439,14 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                           </div>
                           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT }}>Cluster · {g.hospitals.length} Branch{g.hospitals.length > 1 ? "es" : ""}</span>
                         </div>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", marginBottom: 4 }}>{g.groupName}</div>
-                        <div style={{ fontSize: 11, color: "#64748B", marginBottom: 16 }}>{g.groupCode} · {totalPatientsInGroup.toLocaleString()} Total Patients · {totalModulesInGroup} Modules</div>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary, marginBottom: 4 }}>{g.groupName}</div>
+                        <div style={{ fontSize: 13, color: "#64748B", marginBottom: 16 }}>{g.groupCode} · {totalPatientsInGroup.toLocaleString()} Total Patients · {totalModulesInGroup} Modules</div>
 
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                           {g.hospitals.map(h => (
                             <div key={h.code} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                               <div style={{ width: 6, height: 6, borderRadius: "50%", background: h.active ? "#22C55E" : "#EF4444" }} />
-                              <span style={{ fontSize: 9, fontWeight: 700, color: "#4A5568", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.code}</span>
+                              <span style={{ fontSize: 9, fontWeight: 700, color: "#4A5568", fontFamily: fontFamily.mono }}>{h.code}</span>
                             </div>
                           ))}
                           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
@@ -1474,10 +1473,10 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                                     style={{ padding: "20px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: `1px solid rgba(255,255,255,0.05)`, cursor: "pointer", position: "relative", overflow: "hidden" }}>
                                     <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: 2, borderRadius: "2px 2px 0 0", background: hTierColor, opacity: 0.5 }} />
                                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                                      <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, color: COPPER, background: `${COPPER}08`, border: `1px solid ${COPPER}12`, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.code}</span>
+                                      <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, color: COPPER, background: `${COPPER}08`, border: `1px solid ${COPPER}12`, fontFamily: fontFamily.mono }}>{h.code}</span>
                                       <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: hTierColor }}>{h.tier} — {TIER_DEFAULTS[h.tier as TierKey]?.label || h.tier}</span>
                                     </div>
-                                    <div style={{ fontSize: 15, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", marginBottom: 4 }}>{h.name}</div>
+                                    <div style={{ fontSize: 15, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary, marginBottom: 4 }}>{h.name}</div>
                                     <div style={{ fontSize: 10, color: "#4A5568", marginBottom: 12 }}>{h._count.patientRecords} Patients · {(h.activeModules || []).length} Modules · {h._count.devices} Devices</div>
                                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                                       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -1523,15 +1522,15 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
 
                       {/* Top: code badge + tier label */}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 800, color: COPPER, background: `${COPPER}08`, border: `1px solid ${COPPER}15`, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.code}</span>
+                        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 800, color: COPPER, background: `${COPPER}08`, border: `1px solid ${COPPER}15`, fontFamily: fontFamily.mono }}>{h.code}</span>
                         <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: tierColor }}>{h.tier} — {TIER_DEFAULTS[h.tier as TierKey]?.label || h.tier}</span>
                       </div>
 
                       {/* Name */}
-                      <div style={{ fontSize: 18, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", marginBottom: 4 }}>{h.name}</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary, marginBottom: 4 }}>{h.name}</div>
 
                       {/* Description line */}
-                      <div style={{ fontSize: 11, color: "#64748B", marginBottom: 18 }}>
+                      <div style={{ fontSize: 13, color: "#64748B", marginBottom: 18 }}>
                         {h.tagline || `${h.subdomain}.health.dalxic.com`}
                       </div>
 
@@ -1543,7 +1542,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                           { label: "Devices", value: h._count.devices, color: "#22C55E" },
                         ].map(stat => (
                           <div key={stat.label} style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                            <span style={{ fontSize: 18, fontWeight: 800, color: stat.color, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{stat.value}</span>
+                            <span style={{ fontSize: 18, fontWeight: 800, color: stat.color, fontFamily: fontFamily.primary }}>{stat.value}</span>
                             <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A5568" }}>{stat.label}</span>
                           </div>
                         ))}
@@ -1589,17 +1588,17 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                   <div style={{ flex: 1 }}>
                     {!editingDetails ? (
                       <>
-                        <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em", margin: 0 }}>{detailHospital.name}</h2>
+                        <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary, letterSpacing: "-0.02em", margin: 0 }}>{detailHospital.name}</h2>
                         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
                           <span style={{ padding: "4px 12px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: `${tierColor}10`, border: `1px solid ${tierColor}25`, color: tierColor, textTransform: "uppercase", letterSpacing: "0.06em" }}>{detailHospital.tier} — {tierDef?.label || detailHospital.tier}</span>
-                          <span style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, color: COPPER_LIGHT, background: `${COPPER}08`, fontFamily: "var(--font-jetbrains-mono), monospace", letterSpacing: "0.04em" }}>{detailHospital.code}</span>
+                          <span style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, color: COPPER_LIGHT, background: `${COPPER}08`, fontFamily: fontFamily.mono, letterSpacing: "0.04em" }}>{detailHospital.code}</span>
                           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                             <div style={{ width: 8, height: 8, borderRadius: "50%", background: detailHospital.active ? "#22C55E" : "#EF4444", boxShadow: detailHospital.active ? "0 0 8px rgba(34,197,94,0.4)" : "none" }} />
                             <span style={{ fontSize: 10, fontWeight: 700, color: detailHospital.active ? "#22C55E" : "#EF4444", textTransform: "uppercase", letterSpacing: "0.08em" }}>{detailHospital.active ? "Active" : "Suspended"}</span>
                           </div>
                         </div>
                         {detailHospital.tagline && <p style={{ fontSize: 13, color: "#94A3B8", marginTop: 8, fontStyle: "italic" }}>{detailHospital.tagline}</p>}
-                        <p style={{ fontSize: 11, color: "#475569", marginTop: 6, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                        <p style={{ fontSize: 13, color: "#475569", marginTop: 6, fontFamily: fontFamily.mono }}>
                           <span style={{ cursor: "text" }} onClick={() => window.open(`${window.location.origin}/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh`, "_blank")}>ID {detailHospital.id?.slice(0, 8) || detailHospital.code.toLowerCase()}</span>
                         </p>
                       </>
@@ -1623,7 +1622,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                           <motion.button whileHover={{ scale: 1.03 }} onClick={() => setEditingDetails(false)}
                             style={{ padding: "10px 24px", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8", fontWeight: 700, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Cancel</motion.button>
                         </div>
-                        {detailEditMsg && <div style={{ fontSize: 11, fontWeight: 600, color: detailEditMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{detailEditMsg.text}</div>}
+                        {detailEditMsg && <div style={{ fontSize: 13, fontWeight: 600, color: detailEditMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{detailEditMsg.text}</div>}
                       </div>
                     )}
                   </div>
@@ -1652,12 +1651,12 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                       onClick={() => handleDetailToggleModule("__select_all__")}
-                      style={{ width: 120, padding: "8px 0", borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: "pointer", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", color: "#22C55E", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "var(--font-outfit), Outfit, sans-serif", textAlign: "center" }}>Unlock All</motion.button>
+                      style={{ width: 120, padding: "8px 0", borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: "pointer", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", color: "#22C55E", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: fontFamily.primary, textAlign: "center" }}>Unlock All</motion.button>
                     <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                       onClick={() => handleDetailToggleModule("__deselect_all__")}
-                      style={{ width: 120, padding: "8px 0", borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: "pointer", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", color: "#EF4444", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "var(--font-outfit), Outfit, sans-serif", textAlign: "center" }}>Lock All</motion.button>
+                      style={{ width: 120, padding: "8px 0", borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: "pointer", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", color: "#EF4444", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: fontFamily.primary, textAlign: "center" }}>Lock All</motion.button>
                     <select value={moduleFilter} onChange={e => setModuleFilter(e.target.value as "all" | "active" | "inactive")}
-                      style={{ width: 120, padding: "8px 0", borderRadius: 8, fontSize: 10, fontWeight: 700, color: moduleFilter === "active" ? "#22C55E" : moduleFilter === "inactive" ? "#EF4444" : COPPER_LIGHT, background: "rgba(255,255,255,0.03)", border: `1px solid ${moduleFilter === "active" ? "rgba(34,197,94,0.3)" : moduleFilter === "inactive" ? "rgba(239,68,68,0.3)" : COPPER + "18"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", appearance: "none", fontFamily: "var(--font-outfit), Outfit, sans-serif", textAlign: "center" }}>
+                      style={{ width: 120, padding: "8px 0", borderRadius: 8, fontSize: 10, fontWeight: 700, color: moduleFilter === "active" ? "#22C55E" : moduleFilter === "inactive" ? "#EF4444" : COPPER_LIGHT, background: "rgba(255,255,255,0.03)", border: `1px solid ${moduleFilter === "active" ? "rgba(34,197,94,0.3)" : moduleFilter === "inactive" ? "rgba(239,68,68,0.3)" : COPPER + "18"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", appearance: "none", fontFamily: fontFamily.primary, textAlign: "center" }}>
                       <option value="all" style={{ background: "#0a0a14" }}>All</option>
                       <option value="active" style={{ background: "#0a0a14" }}>Active</option>
                       <option value="inactive" style={{ background: "#0a0a14" }}>Inactive</option>
@@ -1702,8 +1701,8 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                           </div>
 
                           {/* Title */}
-                          <div style={{ fontSize: 15, fontWeight: 800, color: isActive ? "#F0F4FF" : "#475569", fontFamily: "var(--font-outfit), Outfit, sans-serif", marginBottom: 4 }}>{ws.title}</div>
-                          <div style={{ fontSize: 11, color: isActive ? "#64748B" : "#334155", lineHeight: 1.5 }}>{ws.desc}</div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: isActive ? "#F0F4FF" : "#475569", fontFamily: fontFamily.primary, marginBottom: 4 }}>{ws.title}</div>
+                          <div style={{ fontSize: 13, color: isActive ? "#64748B" : "#334155", lineHeight: 1.5 }}>{ws.desc}</div>
 
                           {/* Status dot + operators + toggle */}
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
@@ -1760,8 +1759,8 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                             <span style={{ fontSize: 36 }}>{popupWs.icon}</span>
                             <div>
                               <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 4 }}>{popupWs.role}</div>
-                              <div style={{ fontSize: 22, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{popupWs.title}</div>
-                              <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>{popupWs.desc}</div>
+                              <div style={{ fontSize: 22, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary }}>{popupWs.title}</div>
+                              <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>{popupWs.desc}</div>
                             </div>
                           </div>
 
@@ -1769,7 +1768,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                           <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10`, marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={COPPER} strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
                             <span style={{ fontSize: 12, fontWeight: 700, color: "#F0F4FF" }}>{detailHospital.name}</span>
-                            <span style={{ fontSize: 10, color: "#475569", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{detailHospital.code}</span>
+                            <span style={{ fontSize: 10, color: "#475569", fontFamily: fontFamily.mono }}>{detailHospital.code}</span>
                           </div>
 
                           {/* Add operator form — no Role dropdown */}
@@ -1790,7 +1789,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                                 <label style={labelStyle}>PIN</label>
                                 <input placeholder="4 digits" type="password" maxLength={4} value={popupOp.pin}
                                   onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setPopupOp(o => ({ ...o, pin: e.target.value })); }}
-                                  style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.3em", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+                                  style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.3em", fontFamily: fontFamily.mono }} />
                               </div>
                               <motion.button onClick={handlePopupAddOperator} disabled={popupAdding || !popupOp.name || popupOp.pin.length !== 4}
                                 whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
@@ -1798,7 +1797,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                                 {popupAdding ? "Adding..." : "Add"}
                               </motion.button>
                             </div>
-                            {popupMsg && <div style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: popupMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{popupMsg.text}</div>}
+                            {popupMsg && <div style={{ marginTop: 10, fontSize: 13, fontWeight: 600, color: popupMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{popupMsg.text}</div>}
                           </div>
                         </div>
                       </motion.div>
@@ -1820,7 +1819,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                     { label: "Active Modules", value: hospitalModules.length, color: "#22C55E" },
                   ].map(stat => (
                     <div key={stat.label} style={{ textAlign: "center", padding: "18px 12px", borderRadius: 14, background: `${stat.color}06`, border: `1px solid ${stat.color}12` }}>
-                      <div style={{ fontSize: 28, fontWeight: 800, color: stat.color, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{stat.value.toLocaleString()}</div>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: stat.color, fontFamily: fontFamily.primary }}>{stat.value.toLocaleString()}</div>
                       <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#64748B", marginTop: 4 }}>{stat.label}</div>
                     </div>
                   ))}
@@ -1829,9 +1828,9 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                 {/* Tier info card */}
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "20px 24px", borderRadius: 16, background: `${tierColor}06`, border: `1px solid ${tierColor}12` }}>
                   <div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: tierColor, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{detailHospital.tier} — {tierDef?.label || detailHospital.tier}</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: tierColor, fontFamily: fontFamily.primary }}>{detailHospital.tier} — {tierDef?.label || detailHospital.tier}</div>
                     <p style={{ fontSize: 12, color: "#94A3B8", margin: "6px 0 10px" }}>{tierDef?.description || ""}</p>
-                    <div style={{ display: "flex", gap: 20, fontSize: 11, color: "#64748B" }}>
+                    <div style={{ display: "flex", gap: 20, fontSize: 13, color: "#64748B" }}>
                       <span>Max Devices: <strong style={{ color: "#F0F4FF" }}>{tierDef?.maxDevices || "—"}</strong></span>
                       <span>WhatsApp Bundle: <strong style={{ color: "#F0F4FF" }}>{tierDef?.whatsappBundlePerMonth?.toLocaleString() || "—"}/mo</strong></span>
                       <span>Modules: <strong style={{ color: "#F0F4FF" }}>{tierDef?.modules?.length || "—"}</strong></span>
@@ -1883,7 +1882,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
             <motion.div key="operators" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
               <div style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Personnel Management</div>
-                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Operators</h2>
+                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary }}>Operators</h2>
               </div>
 
               {/* Hospital selector + filter */}
@@ -1943,7 +1942,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                           {/* Status dot + Name */}
                           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                             <div style={{ width: 8, height: 8, borderRadius: "50%", background: op.isActive ? "#22C55E" : "#EF4444", flexShrink: 0 }} />
-                            <div style={{ fontSize: 15, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{op.name}</div>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary }}>{op.name}</div>
                           </div>
 
                           {/* Role badge */}
@@ -2013,7 +2012,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                       <div><label style={labelStyle}>New PIN (Leave Empty To Keep Current)</label><input type="password" maxLength={4} placeholder="····" value={opsPageEditForm.newPin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setOpsPageEditForm(f => ({ ...f, newPin: e.target.value })); }} style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.3em" }} /></div>
                     </div>
 
-                    {opsPageEditMsg && <div style={{ marginTop: 12, fontSize: 11, fontWeight: 600, color: opsPageEditMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{opsPageEditMsg.text}</div>}
+                    {opsPageEditMsg && <div style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: opsPageEditMsg.type === "ok" ? "#22C55E" : "#EF4444" }}>{opsPageEditMsg.text}</div>}
 
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
                       <motion.button whileHover={{ scale: 1.03 }} onClick={() => setOpsPageEditOp(null)}
@@ -2036,7 +2035,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>System Records</div>
-                  <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Audit Trail</h2>
+                  <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary }}>Audit Trail</h2>
                   <p style={{ fontSize: 12, color: "#475569", marginTop: 6 }}>Immutable log. Cannot be edited or deleted by any user level.</p>
                 </div>
                 <motion.button whileHover={{ scale: 1.03 }} onClick={handleExportAuditCSV}
@@ -2068,7 +2067,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                           {log.hospital && <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 6px", borderRadius: 4, background: `${COPPER}10`, color: COPPER_LIGHT }}>{log.hospital.code}</span>}
                         </div>
                         <div style={{ fontSize: 10, color: "#475569", marginTop: 2 }}>Actor: {log.actorId} · IP: {log.ipAddress} · {new Date(log.timestamp).toLocaleString()}</div>
-                        {log.metadata && Object.keys(log.metadata).length > 0 && <div style={{ fontSize: 9, color: "#334155", marginTop: 2, fontFamily: "var(--font-jetbrains-mono), monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{JSON.stringify(log.metadata)}</div>}
+                        {log.metadata && Object.keys(log.metadata).length > 0 && <div style={{ fontSize: 9, color: "#334155", marginTop: 2, fontFamily: fontFamily.mono, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{JSON.stringify(log.metadata)}</div>}
                       </div>
                     </div>
                   );
@@ -2084,7 +2083,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
             <motion.div key="access" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
               <div style={{ marginBottom: 32 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Security & Access Control</div>
-                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Access Management</h2>
+                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: fontFamily.primary }}>Access Management</h2>
               </div>
 
               {/* ─── Access Gate: re-authenticate before showing sensitive controls ─── */}
@@ -2095,17 +2094,17 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><rect x="10" y="10" width="4" height="5" rx="0.5" /><circle cx="12" cy="8.5" r="1.5" />
                     </svg>
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "#F0F4FF", marginBottom: 6, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Owner Authentication Required</div>
-                  <div style={{ fontSize: 11, color: "#64748B", marginBottom: 24 }}>Re-enter your Ops password to access security controls.</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#F0F4FF", marginBottom: 6, fontFamily: fontFamily.primary }}>Owner Authentication Required</div>
+                  <div style={{ fontSize: 13, color: "#64748B", marginBottom: 24 }}>Re-enter your Ops password to access security controls.</div>
                   <form onSubmit={e => { e.preventDefault(); handleAccessGateUnlock(); }}>
                     <input type="password" value={accessGatePass} onChange={e => { setAccessGatePass(e.target.value); setAccessGateError(""); }} placeholder="Enter Ops Password" autoFocus
-                      style={{ width: "100%", padding: "14px 18px", borderRadius: 12, fontSize: 13, fontWeight: 500, color: "#E2E8F0", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${accessGateError ? "rgba(239,68,68,0.4)" : accessGatePass ? COPPER + "30" : "rgba(255,255,255,0.06)"}`, outline: "none", fontFamily: "var(--font-jetbrains-mono), monospace", marginBottom: 12 }} />
+                      style={{ width: "100%", padding: "14px 18px", borderRadius: 12, fontSize: 13, fontWeight: 500, color: "#E2E8F0", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${accessGateError ? "rgba(239,68,68,0.4)" : accessGatePass ? COPPER + "30" : "rgba(255,255,255,0.06)"}`, outline: "none", fontFamily: fontFamily.mono, marginBottom: 12 }} />
                     <motion.button type="submit" disabled={!accessGatePass.trim() || accessGateLoading} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                      style={{ width: "100%", padding: "13px 0", borderRadius: 12, cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", opacity: !accessGatePass.trim() ? 0.4 : 1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+                      style={{ width: "100%", padding: "13px 0", borderRadius: 12, cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", opacity: !accessGatePass.trim() ? 0.4 : 1, fontFamily: fontFamily.primary }}>
                       {accessGateLoading ? "Verifying..." : "Unlock Access Controls"}
                     </motion.button>
                   </form>
-                  {accessGateError && <div style={{ marginTop: 12, fontSize: 11, color: "#EF4444", fontWeight: 600, padding: "8px 14px", borderRadius: 8, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)" }}>{accessGateError}</div>}
+                  {accessGateError && <div style={{ marginTop: 12, fontSize: 13, color: "#EF4444", fontWeight: 600, padding: "8px 14px", borderRadius: 8, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)" }}>{accessGateError}</div>}
                 </div>
               ) : (
               <>
@@ -2117,15 +2116,15 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                   <div style={{ fontSize: 13, fontWeight: 800, color: COPPER_LIGHT, letterSpacing: "0.06em", textTransform: "uppercase" }}>Ops Master Password</div>
                   <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 4, background: opsPassIsSet ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)", color: opsPassIsSet ? "#22C55E" : "#F59E0B" }}>{opsPassIsSet ? "Set" : "Not Set"}</span>
                 </div>
-                <div style={{ fontSize: 11, color: "#64748B", marginBottom: 14 }}>This password protects the entire Ops platform. {opsPassIsSet ? "Enter your current password to change it." : "Set a password to secure access."}</div>
+                <div style={{ fontSize: 13, color: "#64748B", marginBottom: 14 }}>This password protects the entire Ops platform. {opsPassIsSet ? "Enter your current password to change it." : "Set a password to secure access."}</div>
                 <div style={{ display: "grid", gridTemplateColumns: opsPassIsSet ? "1fr 1fr 1fr" : "1fr 1fr", gap: 10 }}>
-                  {opsPassIsSet && <input type="password" value={opsPassCurrent} onChange={e => { setOpsPassCurrent(e.target.value); setOpsPassMsg(null); }} placeholder="Current Password" style={{ ...inputStyle, padding: "10px 12px", fontSize: 12 }} />}
-                  <input type="password" value={opsPassNew} onChange={e => { setOpsPassNew(e.target.value); setOpsPassMsg(null); }} placeholder="New Password (8+ Characters)" style={{ ...inputStyle, padding: "10px 12px", fontSize: 12 }} />
-                  <input type="password" value={opsPassConfirm} onChange={e => { setOpsPassConfirm(e.target.value); setOpsPassMsg(null); }} placeholder="Confirm Password" style={{ ...inputStyle, padding: "10px 12px", fontSize: 12, borderColor: opsPassConfirm && opsPassConfirm === opsPassNew ? "rgba(34,197,94,0.3)" : opsPassConfirm ? "rgba(239,68,68,0.3)" : undefined }} />
+                  {opsPassIsSet && <input type="password" value={opsPassCurrent} onChange={e => { setOpsPassCurrent(e.target.value); setOpsPassMsg(null); }} placeholder="Current Password" style={{ ...inputStyle, padding: "12px 14px", fontSize: 14 }} />}
+                  <input type="password" value={opsPassNew} onChange={e => { setOpsPassNew(e.target.value); setOpsPassMsg(null); }} placeholder="New Password (8+ Characters)" style={{ ...inputStyle, padding: "12px 14px", fontSize: 14 }} />
+                  <input type="password" value={opsPassConfirm} onChange={e => { setOpsPassConfirm(e.target.value); setOpsPassMsg(null); }} placeholder="Confirm Password" style={{ ...inputStyle, padding: "12px 14px", fontSize: 14, borderColor: opsPassConfirm && opsPassConfirm === opsPassNew ? "rgba(34,197,94,0.3)" : opsPassConfirm ? "rgba(239,68,68,0.3)" : undefined }} />
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
                   <motion.button whileHover={{ scale: 1.02 }} onClick={handleSetOpsPassword} style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none" }}>{opsPassIsSet ? "Change Password" : "Set Password"}</motion.button>
-                  {opsPassMsg && <span style={{ fontSize: 11, fontWeight: 600, color: opsPassMsg.type === "ok" ? "#22C55E" : "#F87171" }}>{opsPassMsg.text}</span>}
+                  {opsPassMsg && <span style={{ fontSize: 13, fontWeight: 600, color: opsPassMsg.type === "ok" ? "#22C55E" : "#F87171" }}>{opsPassMsg.text}</span>}
                 </div>
               </div>
 
@@ -2135,16 +2134,16 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                   <span style={{ fontSize: 16 }}>🗝️</span>
                   <div style={{ fontSize: 13, fontWeight: 800, color: COPPER_LIGHT, letterSpacing: "0.06em", textTransform: "uppercase" }}>Hospital Master PINs</div>
                 </div>
-                <div style={{ fontSize: 11, color: "#64748B", marginBottom: 14 }}>A 4-digit master PIN that unlocks ALL workstations at a hospital as Super Admin. Use this for Dalxic staff access or emergency override.</div>
+                <div style={{ fontSize: 13, color: "#64748B", marginBottom: 14 }}>A 4-digit master PIN that unlocks ALL workstations at a hospital as Super Admin. Use this for Dalxic staff access or emergency override.</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 120px auto", gap: 10, alignItems: "end" }}>
-                  <select value={masterPinHospital} onChange={e => setMasterPinHospital(e.target.value)} style={{ ...inputStyle, padding: "10px 12px", fontSize: 12 }}>
+                  <select value={masterPinHospital} onChange={e => setMasterPinHospital(e.target.value)} style={{ ...inputStyle, padding: "12px 14px", fontSize: 14 }}>
                     <option value="">Select Hospital...</option>
                     {hospitals.map(h => <option key={h.id} value={h.id}>{h.code} — {h.name}</option>)}
                   </select>
-                  <input type="password" value={masterPinValue} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setMasterPinValue(e.target.value); setMasterPinMsg(null); }} placeholder="4-Digit PIN" maxLength={4} style={{ ...inputStyle, padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-jetbrains-mono), monospace", textAlign: "center", letterSpacing: "0.3em" }} />
+                  <input type="password" value={masterPinValue} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setMasterPinValue(e.target.value); setMasterPinMsg(null); }} placeholder="4-Digit PIN" maxLength={4} style={{ ...inputStyle, padding: "10px 12px", fontSize: 14, fontFamily: fontFamily.mono, textAlign: "center", letterSpacing: "0.3em" }} />
                   <motion.button whileHover={{ scale: 1.02 }} onClick={handleSetMasterPin} style={{ padding: "10px 18px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", whiteSpace: "nowrap" as const }}>Set PIN</motion.button>
                 </div>
-                {masterPinMsg && <div style={{ fontSize: 11, fontWeight: 600, color: masterPinMsg.type === "ok" ? "#22C55E" : "#F87171", marginTop: 8 }}>{masterPinMsg.text}</div>}
+                {masterPinMsg && <div style={{ fontSize: 13, fontWeight: 600, color: masterPinMsg.type === "ok" ? "#22C55E" : "#F87171", marginTop: 8 }}>{masterPinMsg.text}</div>}
                 {/* Active master PINs */}
                 {hospitals.filter(h => masterPinMap[h.id]).length > 0 && (
                   <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 6 }}>
@@ -2152,8 +2151,8 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                     {hospitals.filter(h => masterPinMap[h.id]).map(h => (
                       <div key={h.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", borderRadius: 8, background: "rgba(255,255,255,0.015)", border: `1px solid ${COPPER}08` }}>
                         <div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: "#E2E8F0", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.code}</span>
-                          <span style={{ fontSize: 11, color: "#64748B", marginLeft: 8 }}>{h.name}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: "#E2E8F0", fontFamily: fontFamily.mono }}>{h.code}</span>
+                          <span style={{ fontSize: 13, color: "#64748B", marginLeft: 8 }}>{h.name}</span>
                           <span style={{ marginLeft: 10, fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 3, background: "rgba(34,197,94,0.1)", color: "#22C55E" }}>PIN SET</span>
                         </div>
                         <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleRemoveMasterPin(h.id)} style={{ padding: "4px 10px", borderRadius: 5, fontSize: 10, fontWeight: 600, color: "#EF4444", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)", cursor: "pointer" }}>Remove</motion.button>
@@ -2169,17 +2168,17 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                   <span style={{ fontSize: 16 }}>👤</span>
                   <div style={{ fontSize: 13, fontWeight: 800, color: COPPER_LIGHT, letterSpacing: "0.06em", textTransform: "uppercase" }}>Staff Access Grants</div>
                 </div>
-                <div style={{ fontSize: 11, color: "#64748B", marginBottom: 14 }}>Grant temporary access for Dalxic staff to view or manage hospital data.</div>
+                <div style={{ fontSize: 13, color: "#64748B", marginBottom: 14 }}>Grant temporary access for Dalxic staff to view or manage hospital data.</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <input value={newGrant.staffId} onChange={e => setNewGrant(g => ({ ...g, staffId: e.target.value }))} placeholder="Dalxic Staff ID" style={{ ...inputStyle, padding: "9px 12px", fontSize: 12 }} />
-                  <select value={newGrant.hospitalId} onChange={e => setNewGrant(g => ({ ...g, hospitalId: e.target.value }))} style={{ ...inputStyle, padding: "9px 12px", fontSize: 12 }}><option value="">Select Hospital...</option>{hospitals.map(h => <option key={h.id} value={h.id}>{h.code} — {h.name}</option>)}</select>
-                  <select value={newGrant.role} onChange={e => setNewGrant(g => ({ ...g, role: e.target.value }))} style={{ ...inputStyle, padding: "9px 12px", fontSize: 12 }}><option value="viewer">Viewer (Read Only)</option><option value="support">Support (Read + Notes)</option><option value="admin">Admin (Full Access)</option></select>
-                  <select value={newGrant.hours} onChange={e => setNewGrant(g => ({ ...g, hours: e.target.value }))} style={{ ...inputStyle, padding: "9px 12px", fontSize: 12 }}><option value="1">1 Hour</option><option value="4">4 Hours</option><option value="8">8 Hours</option><option value="24">24 Hours</option><option value="72">3 Days</option><option value="168">7 Days</option></select>
+                  <input value={newGrant.staffId} onChange={e => setNewGrant(g => ({ ...g, staffId: e.target.value }))} placeholder="Dalxic Staff ID" style={{ ...inputStyle, padding: "12px 14px", fontSize: 14 }} />
+                  <select value={newGrant.hospitalId} onChange={e => setNewGrant(g => ({ ...g, hospitalId: e.target.value }))} style={{ ...inputStyle, padding: "12px 14px", fontSize: 14 }}><option value="">Select Hospital...</option>{hospitals.map(h => <option key={h.id} value={h.id}>{h.code} — {h.name}</option>)}</select>
+                  <select value={newGrant.role} onChange={e => setNewGrant(g => ({ ...g, role: e.target.value }))} style={{ ...inputStyle, padding: "12px 14px", fontSize: 14 }}><option value="viewer">Viewer (Read Only)</option><option value="support">Support (Read + Notes)</option><option value="admin">Admin (Full Access)</option></select>
+                  <select value={newGrant.hours} onChange={e => setNewGrant(g => ({ ...g, hours: e.target.value }))} style={{ ...inputStyle, padding: "12px 14px", fontSize: 14 }}><option value="1">1 Hour</option><option value="4">4 Hours</option><option value="8">8 Hours</option><option value="24">24 Hours</option><option value="72">3 Days</option><option value="168">7 Days</option></select>
                 </div>
-                <input value={newGrant.reason} onChange={e => setNewGrant(g => ({ ...g, reason: e.target.value }))} placeholder="Reason for access grant" style={{ ...inputStyle, padding: "9px 12px", fontSize: 12, marginTop: 10 }} />
+                <input value={newGrant.reason} onChange={e => setNewGrant(g => ({ ...g, reason: e.target.value }))} placeholder="Reason for access grant" style={{ ...inputStyle, padding: "12px 14px", fontSize: 14, marginTop: 10 }} />
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
                   <motion.button whileHover={{ scale: 1.02 }} onClick={handleCreateGrant} style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none" }}>Grant Access</motion.button>
-                  {grantMsg && <span style={{ fontSize: 11, fontWeight: 600, color: grantMsg.type === "ok" ? "#22C55E" : "#F87171" }}>{grantMsg.text}</span>}
+                  {grantMsg && <span style={{ fontSize: 13, fontWeight: 600, color: grantMsg.type === "ok" ? "#22C55E" : "#F87171" }}>{grantMsg.text}</span>}
                 </div>
               </div>
 
@@ -2195,7 +2194,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                           {grant.dalxicStaff?.name || grant.dalxicStaffId}
                           <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: grant.grantedRole === "admin" ? "rgba(239,68,68,0.1)" : grant.grantedRole === "support" ? "rgba(245,158,11,0.1)" : "rgba(14,165,233,0.1)", color: grant.grantedRole === "admin" ? "#F87171" : grant.grantedRole === "support" ? "#F59E0B" : "#38BDF8" }}>{grant.grantedRole.toUpperCase()}</span>
                         </div>
-                        <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>{grant.hospital?.name || "All"} — {grant.reason}</div>
+                        <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>{grant.hospital?.name || "All"} — {grant.reason}</div>
                         <div style={{ fontSize: 10, color: "#475569", marginTop: 2 }}>Granted: {new Date(grant.grantedAt).toLocaleString()} · Expires: {new Date(grant.expiresAt).toLocaleString()}{expired && <span style={{ color: "#EF4444", fontWeight: 700 }}> · EXPIRED</span>}{grant.revokedAt && <span style={{ color: "#EF4444", fontWeight: 700 }}> · REVOKED</span>}</div>
                       </div>
                       {grant.isActive && !expired && (
@@ -2214,18 +2213,18 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                   <div style={{ fontSize: 13, fontWeight: 800, color: COPPER_LIGHT, letterSpacing: "0.06em", textTransform: "uppercase" }}>Ops Staff Accounts</div>
                   <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, color: "#64748B" }}>{opsStaffList.filter(s => s.isActive).length} Active</span>
                 </div>
-                <div style={{ fontSize: 11, color: "#64748B", marginBottom: 14 }}>Add staff members who can log into Ops with their own email + PIN. Assign which screens they can access.</div>
+                <div style={{ fontSize: 13, color: "#64748B", marginBottom: 14 }}>Add staff members who can log into Ops with their own email + PIN. Assign which screens they can access.</div>
 
                 {/* Add Staff Form */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 100px", gap: 10 }}>
-                  <input value={newStaff.name} onChange={e => setNewStaff(s => ({ ...s, name: e.target.value }))} placeholder="Full Name" style={{ ...inputStyle, padding: "10px 12px", fontSize: 12 }} />
-                  <input value={newStaff.email} onChange={e => setNewStaff(s => ({ ...s, email: e.target.value }))} placeholder="Email Address" type="email" style={{ ...inputStyle, padding: "10px 12px", fontSize: 12 }} />
-                  <input value={newStaff.pin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setNewStaff(s => ({ ...s, pin: e.target.value })); }} placeholder="PIN" maxLength={4} style={{ ...inputStyle, padding: "10px 12px", fontSize: 13, fontFamily: "var(--font-jetbrains-mono), monospace", textAlign: "center", letterSpacing: "0.3em" }} />
+                  <input value={newStaff.name} onChange={e => setNewStaff(s => ({ ...s, name: e.target.value }))} placeholder="Full Name" style={{ ...inputStyle, padding: "12px 14px", fontSize: 14 }} />
+                  <input value={newStaff.email} onChange={e => setNewStaff(s => ({ ...s, email: e.target.value }))} placeholder="Email Address" type="email" style={{ ...inputStyle, padding: "12px 14px", fontSize: 14 }} />
+                  <input value={newStaff.pin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setNewStaff(s => ({ ...s, pin: e.target.value })); }} placeholder="PIN" maxLength={4} style={{ ...inputStyle, padding: "10px 12px", fontSize: 13, fontFamily: fontFamily.mono, textAlign: "center", letterSpacing: "0.3em" }} />
                 </div>
                 {/* Screen checkboxes */}
                 <div style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
                   {[{ key: "create-hospitals", label: "Create" }, { key: "hospitals", label: "Hospitals" }, { key: "operators", label: "Operators" }, { key: "audit", label: "Audit" }].map(sc => (
-                    <label key={sc.key} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 11, fontWeight: 600, color: newStaff.screens.includes(sc.key) ? COPPER_LIGHT : "#64748B" }}>
+                    <label key={sc.key} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, fontWeight: 600, color: newStaff.screens.includes(sc.key) ? COPPER_LIGHT : "#64748B" }}>
                       <input type="checkbox" checked={newStaff.screens.includes(sc.key)} onChange={e => setNewStaff(s => ({ ...s, screens: e.target.checked ? [...s.screens, sc.key] : s.screens.filter(x => x !== sc.key) }))} style={{ accentColor: COPPER }} />
                       {sc.label}
                     </label>
@@ -2233,7 +2232,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
                   <motion.button whileHover={{ scale: 1.02 }} onClick={handleCreateOpsStaff} style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none" }}>Add Staff</motion.button>
-                  {staffMsg && <span style={{ fontSize: 11, fontWeight: 600, color: staffMsg.type === "ok" ? "#22C55E" : "#F87171" }}>{staffMsg.text}</span>}
+                  {staffMsg && <span style={{ fontSize: 13, fontWeight: 600, color: staffMsg.type === "ok" ? "#22C55E" : "#F87171" }}>{staffMsg.text}</span>}
                 </div>
 
                 {/* Staff List */}
@@ -2246,7 +2245,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <div style={{ width: 7, height: 7, borderRadius: "50%", background: staff.isActive ? "#22C55E" : "#EF4444" }} />
                             <span style={{ fontSize: 13, fontWeight: 700, color: "#E2E8F0" }}>{staff.name}</span>
-                            <span style={{ fontSize: 10, color: "#64748B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{staff.email}</span>
+                            <span style={{ fontSize: 10, color: "#64748B", fontFamily: fontFamily.mono }}>{staff.email}</span>
                           </div>
                           <div style={{ display: "flex", gap: 6, marginTop: 6, marginLeft: 15 }}>
                             {(staff.allowedScreens || []).map((sc: string) => (
@@ -2275,17 +2274,17 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                       <div style={{ fontSize: 14, fontWeight: 800, color: COPPER_LIGHT, marginBottom: 20 }}>Edit Staff Member</div>
                       <div style={{ marginBottom: 10 }}>
                         <div style={labelStyle}>Name</div>
-                        <input value={editStaff.name} onChange={e => setEditStaff(s => s ? { ...s, name: e.target.value } : s)} style={{ ...inputStyle, padding: "10px 12px", fontSize: 12 }} />
+                        <input value={editStaff.name} onChange={e => setEditStaff(s => s ? { ...s, name: e.target.value } : s)} style={{ ...inputStyle, padding: "12px 14px", fontSize: 14 }} />
                       </div>
                       <div style={{ marginBottom: 10 }}>
                         <div style={labelStyle}>Reset PIN (Leave Empty To Keep)</div>
-                        <input value={editStaff.resetPin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setEditStaff(s => s ? { ...s, resetPin: e.target.value } : s); }} placeholder="New 4-Digit PIN" maxLength={4} style={{ ...inputStyle, padding: "10px 12px", fontSize: 13, fontFamily: "var(--font-jetbrains-mono), monospace", textAlign: "center", letterSpacing: "0.3em" }} />
+                        <input value={editStaff.resetPin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setEditStaff(s => s ? { ...s, resetPin: e.target.value } : s); }} placeholder="New 4-Digit PIN" maxLength={4} style={{ ...inputStyle, padding: "10px 12px", fontSize: 13, fontFamily: fontFamily.mono, textAlign: "center", letterSpacing: "0.3em" }} />
                       </div>
                       <div style={{ marginBottom: 16 }}>
                         <div style={labelStyle}>Allowed Screens</div>
                         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 6 }}>
                           {[{ key: "create-hospitals", label: "Create" }, { key: "hospitals", label: "Hospitals" }, { key: "operators", label: "Operators" }, { key: "audit", label: "Audit" }].map(sc => (
-                            <label key={sc.key} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 11, fontWeight: 600, color: editStaff.screens.includes(sc.key) ? COPPER_LIGHT : "#64748B" }}>
+                            <label key={sc.key} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, fontWeight: 600, color: editStaff.screens.includes(sc.key) ? COPPER_LIGHT : "#64748B" }}>
                               <input type="checkbox" checked={editStaff.screens.includes(sc.key)} onChange={e => setEditStaff(s => s ? { ...s, screens: e.target.checked ? [...s.screens, sc.key] : s.screens.filter(x => x !== sc.key) } : s)} style={{ accentColor: COPPER }} />
                               {sc.label}
                             </label>
@@ -2295,7 +2294,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                         <motion.button whileHover={{ scale: 1.02 }} onClick={handleEditOpsStaff} style={{ padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none" }}>Save Changes</motion.button>
                         <motion.button whileHover={{ scale: 1.02 }} onClick={() => setEditStaff(null)} style={{ padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "#64748B", cursor: "pointer", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>Cancel</motion.button>
-                        {editStaffMsg && <span style={{ fontSize: 11, fontWeight: 600, color: editStaffMsg.type === "ok" ? "#22C55E" : "#F87171" }}>{editStaffMsg.text}</span>}
+                        {editStaffMsg && <span style={{ fontSize: 13, fontWeight: 600, color: editStaffMsg.type === "ok" ? "#22C55E" : "#F87171" }}>{editStaffMsg.text}</span>}
                       </div>
                     </motion.div>
                   </motion.div>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
 import { ALL_WORKSTATIONS, UTILITY_STATIONS, getTierDefaults } from "@/lib/tier-defaults"
+import { COPPER, fontFamily } from "@/hooks/use-station-theme"
 
 /* ─── Scroll-triggered reveal ─── */
 function useReveal(threshold = 0.05) {
@@ -191,7 +192,6 @@ function GalaxyCanvas({ isDayMode }: { isDayMode: boolean }) {
 
 const HOSPITAL_CODE = "KBH"
 
-const COPPER = "#B87333"
 const COPPER_GLOW = "rgba(184,115,51,0.5)"
 
 export default function PlatformPage() {
@@ -280,8 +280,8 @@ export default function PlatformPage() {
         transition: "background 0.4s ease, border-bottom 0.4s ease",
       }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-          <span style={{ fontWeight: 300, fontSize: 14, color: isDayMode ? "#6B7280" : "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif", transition: "color 0.4s ease" }}>Dalxic</span>
-          <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
+          <span style={{ fontWeight: 300, fontSize: 14, color: isDayMode ? "#6B7280" : "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: fontFamily.primary, transition: "color 0.4s ease" }}>Dalxic</span>
+          <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: fontFamily.primary, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {/* Day/Night Toggle */}
@@ -311,7 +311,7 @@ export default function PlatformPage() {
               <span style={{ fontSize: 12, lineHeight: 1 }}>{isDayMode ? "☀️" : "🌙"}</span>
             </div>
           </button>
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), 'JetBrains Mono', monospace", fontSize: 13, color: "var(--nl-txM)", letterSpacing: 0.5 }}>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 13, color: "var(--nl-txM)", letterSpacing: 0.5 }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </time>
         </div>
@@ -355,12 +355,12 @@ export default function PlatformPage() {
           <div className="section-label-copper" style={{ marginBottom: 14, fontSize: 12, fontWeight: 700 }}>Select Workstation</div>
           {tierLabel && (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 14px", borderRadius: 20, marginBottom: 12, background: isDayMode ? "rgba(184,115,51,0.08)" : "rgba(184,115,51,0.06)", border: `1px solid ${isDayMode ? "rgba(184,115,51,0.15)" : "rgba(184,115,51,0.12)"}` }}>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{tierLabel}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: COPPER, fontFamily: fontFamily.mono }}>{tierLabel}</span>
               <span style={{ fontSize: 10, color: isDayMode ? "#6B7280" : "#64748B" }}>•</span>
               <span style={{ fontSize: 10, fontWeight: 600, color: isDayMode ? "#6B7280" : "#64748B" }}>{STATIONS.length} Workstations</span>
             </div>
           )}
-          <h1 style={{ fontSize: "clamp(2.2rem, 5vw, 3.6rem)", fontWeight: 800, letterSpacing: -2, lineHeight: 1.1, marginBottom: 16, fontFamily: "var(--font-outfit), Outfit, sans-serif", color: isDayMode ? "#1A1714" : undefined, transition: "color 0.4s ease" }}>
+          <h1 style={{ fontSize: "clamp(2.2rem, 5vw, 3.6rem)", fontWeight: 800, letterSpacing: -2, lineHeight: 1.1, marginBottom: 16, fontFamily: fontFamily.primary, color: isDayMode ? "#1A1714" : undefined, transition: "color 0.4s ease" }}>
             Choose Your <span className="text-gradient-copper">Workstation</span>
           </h1>
           <p style={{ color: "var(--nl-txM)", maxWidth: 480, margin: "0 auto", lineHeight: 1.7, fontSize: 16, fontWeight: 500 }}>
@@ -406,9 +406,9 @@ export default function PlatformPage() {
                 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                     <span style={{ fontSize: 30 }}>{s.icon}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: isDayMode ? "#8B5A2B" : COPPER, fontFamily: "var(--font-jetbrains-mono), monospace", transition: "color 0.4s ease" }}>{s.role}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: isDayMode ? "#8B5A2B" : COPPER, fontFamily: fontFamily.mono, transition: "color 0.4s ease" }}>{s.role}</span>
                   </div>
-                  <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8, fontFamily: "var(--font-outfit), Outfit, sans-serif", color: isDayMode ? "#1A1714" : undefined, transition: "color 0.4s ease" }}>{s.title}</h3>
+                  <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8, fontFamily: fontFamily.primary, color: isDayMode ? "#1A1714" : undefined, transition: "color 0.4s ease" }}>{s.title}</h3>
                   <p style={{ fontSize: 14.5, fontWeight: 500, color: "var(--nl-txM)", lineHeight: 1.6, flex: 1 }}>{s.desc}</p>
                   <div style={{ marginTop: 20, height: 2, background: isDayMode ? `linear-gradient(90deg, #8B5A2BA0, #B8733360, transparent)` : `linear-gradient(90deg, ${COPPER}90, ${COPPER}30, transparent)`, borderRadius: 1, transition: "background 0.4s ease" }} />
                 </div>
@@ -455,9 +455,9 @@ export default function PlatformPage() {
             }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                 <span style={{ fontSize: 30 }}>🚨</span>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: isDayMode ? "#8B5A2B" : COPPER, fontFamily: "var(--font-jetbrains-mono), monospace", transition: "color 0.4s ease" }}>CMO / Medical Director</span>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: isDayMode ? "#8B5A2B" : COPPER, fontFamily: fontFamily.mono, transition: "color 0.4s ease" }}>CMO / Medical Director</span>
               </div>
-              <h3 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8, fontFamily: "var(--font-outfit), Outfit, sans-serif", color: isDayMode ? "#1A1714" : undefined, transition: "color 0.4s ease" }}>Emergency Override</h3>
+              <h3 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8, fontFamily: fontFamily.primary, color: isDayMode ? "#1A1714" : undefined, transition: "color 0.4s ease" }}>Emergency Override</h3>
               <p style={{ fontSize: 14.5, fontWeight: 500, color: "var(--nl-txM)", lineHeight: 1.7, flex: 1 }}>CMO Read-Only Emergency Access — All Actions Permanently Logged With Uneditable Audit Trail</p>
               <div style={{ marginTop: 20, height: 2, background: isDayMode ? `linear-gradient(90deg, #8B5A2BA0, #B8733360, transparent)` : `linear-gradient(90deg, ${COPPER}90, ${COPPER}30, transparent)`, borderRadius: 1, transition: "background 0.4s ease" }} />
             </div>

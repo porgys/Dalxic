@@ -3,13 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, COPPER_LIGHT, BLUE, fontFamily } from "@/hooks/use-station-theme";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
-const COPPER = "#B87333";
-const COPPER_LIGHT = "#D4956B";
-const BLUE = "#0EA5E9";
 
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
@@ -318,7 +315,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
           <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: COPPER_LIGHT }}>Bookkeeping</span>
           <OperatorBadge session={operator} onLogout={() => window.location.reload()} />
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, fontFamily: fontFamily.mono }}>
             {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </span>
         </div>
@@ -420,7 +417,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                     {/* Token */}
                     <div style={{
                       fontSize: 12, fontWeight: 800, color: COPPER_LIGHT,
-                      fontFamily: "var(--font-jetbrains-mono), monospace",
+                      fontFamily: fontFamily.mono,
                       minWidth: 60,
                     }}>
                       {p.queueToken || "—"}
@@ -449,7 +446,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
 
                     {/* Date + Status */}
                     <div style={{ textAlign: "right", minWidth: 90 }}>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: theme.textMuted, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: theme.textMuted, fontFamily: fontFamily.mono }}>
                         {new Date(p.visitDate).toLocaleDateString([], { month: "short", day: "numeric" })}
                       </div>
                       {p.visitStatus && (
@@ -520,7 +517,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                   )}
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: BLUE, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: BLUE, fontFamily: fontFamily.mono }}>
                     {selectedPatient.totalVisits}
                   </div>
                   <div style={{ fontSize: 10, color: theme.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>Total Visits</div>
@@ -553,7 +550,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                     <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 16, alignItems: "start", paddingLeft: 12 }}>
                       {/* Date + Token */}
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>
                           {v.queueToken || "—"}
                         </div>
                         <div style={{ fontSize: 10, color: theme.textMuted, marginTop: 2 }}>
@@ -611,17 +608,17 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
             {/* Summary Stats */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
               <WorkshopBox title={`Total Patients (${periodLabel})`} icon="👥" delay={0}>
-                <div style={{ fontSize: 28, fontWeight: 800, color: BLUE, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: BLUE, fontFamily: fontFamily.mono }}>
                   {assessment.totalPatients.toLocaleString()}
                 </div>
               </WorkshopBox>
               <WorkshopBox title={`Revenue (${periodLabel})`} icon="💰" delay={0.05}>
-                <div style={{ fontSize: 28, fontWeight: 800, color: "#22C55E", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: "#22C55E", fontFamily: fontFamily.mono }}>
                   {fmt(assessment.totalRevenue)}
                 </div>
               </WorkshopBox>
               <WorkshopBox title="Avg Revenue Per Patient" icon="📊" delay={0.1}>
-                <div style={{ fontSize: 28, fontWeight: 800, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>
                   {assessment.totalPatients > 0 ? fmt(assessment.totalRevenue / assessment.totalPatients) : "—"}
                 </div>
               </WorkshopBox>
@@ -641,7 +638,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                         <div key={i}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                             <span style={{ fontSize: 11, fontWeight: 700, color: "#E2E8F0" }}>{b.label}</span>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: BLUE, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: BLUE, fontFamily: fontFamily.mono }}>
                               {b.patients} Patients
                             </span>
                           </div>
@@ -671,7 +668,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                             <span style={{ fontSize: 11, fontWeight: 600, color: "#E2E8F0", maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {d.diagnosis}
                             </span>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>
                               {d.count}
                             </span>
                           </div>
@@ -698,11 +695,11 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                       const pct = (b.revenue / maxR) * 100;
                       return (
                         <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, width: 60, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{b.label}</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, width: 60, fontFamily: fontFamily.mono }}>{b.label}</span>
                           <div style={{ flex: 1, height: 20, borderRadius: 6, background: "rgba(255,255,255,0.03)", overflow: "hidden", position: "relative" }}>
                             <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.5, delay: i * 0.04 }}
                               style={{ height: "100%", borderRadius: 6, background: "linear-gradient(90deg, #22C55E, #4ADE80)" }} />
-                            <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 9, fontWeight: 700, color: "#E2E8F0", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                            <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 9, fontWeight: 700, color: "#E2E8F0", fontFamily: fontFamily.mono }}>
                               {fmt(b.revenue)}
                             </span>
                           </div>
@@ -728,7 +725,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                 { icon: "📦", label: `Items (${periodLabel})`, value: summary.periodItemCount.toString(), color: COPPER_LIGHT },
               ].map((s, i) => (
                 <WorkshopBox key={i} title={s.label} icon={s.icon} delay={i * 0.05}>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: s.color, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: s.color, fontFamily: fontFamily.mono }}>
                     {s.value}
                   </div>
                   {s.sub && <div style={{ fontSize: 10, color: theme.textMuted, marginTop: 4 }}>{s.sub}</div>}
@@ -750,7 +747,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                         <div key={method}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                             <span style={{ fontSize: 11, fontWeight: 700, color: "#E2E8F0" }}>{method.replace(/_/g, " ")}</span>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{fmt(amount)}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>{fmt(amount)}</span>
                           </div>
                           <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.04)" }}>
                             <div style={{ height: 4, borderRadius: 2, background: `linear-gradient(90deg, ${COPPER}, ${COPPER_LIGHT})`, width: `${pct}%`, transition: "width 0.5s ease" }} />
@@ -776,7 +773,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                             <span style={{ fontSize: 11, fontWeight: 700, color: "#E2E8F0" }}>
                               {SERVICE_ICONS[d.serviceType] || "📦"} {SERVICE_LABELS[d.serviceType] || d.serviceType}
                             </span>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: BLUE, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{fmt(d.total)}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: BLUE, fontFamily: fontFamily.mono }}>{fmt(d.total)}</span>
                           </div>
                           <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.04)" }}>
                             <div style={{ height: 4, borderRadius: 2, background: `linear-gradient(90deg, ${BLUE}, #38BDF8)`, width: `${pct}%`, transition: "width 0.5s ease" }} />
@@ -792,17 +789,17 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
             {/* Extra Row — Discounts + Waivers */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginTop: 16 }}>
               <WorkshopBox title="Discounts Given" icon="🏷️" delay={0.3}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "#F59E0B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#F59E0B", fontFamily: fontFamily.mono }}>
                   {fmt(summary.periodDiscounts)}
                 </div>
               </WorkshopBox>
               <WorkshopBox title="Bills Waived" icon="🤝" delay={0.35}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "#A855F7", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#A855F7", fontFamily: fontFamily.mono }}>
                   {fmt(summary.periodWaived)}
                 </div>
               </WorkshopBox>
               <WorkshopBox title="All-Time Bills" icon="📚" delay={0.4}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>
                   {summary.totalBillsAllTime.toLocaleString()}
                 </div>
               </WorkshopBox>
@@ -814,7 +811,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
         {activeNav === "revenue" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
             <WorkshopBox title={`Revenue Trend — ${periodLabel}`} icon="📈" delay={0}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: "#22C55E", marginBottom: 16, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#22C55E", marginBottom: 16, fontFamily: fontFamily.mono }}>
                 Total: {fmt(revenueTotal)}
               </div>
               {revenueDaily.length === 0 ? (
@@ -826,7 +823,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                     const pct = (day.revenue / maxRev) * 100;
                     return (
                       <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, width: 80, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, width: 80, fontFamily: fontFamily.mono }}>
                           {new Date(day.date).toLocaleDateString([], { month: "short", day: "numeric" })}
                         </span>
                         <div style={{ flex: 1, height: 24, borderRadius: 6, background: "rgba(255,255,255,0.03)", overflow: "hidden", position: "relative" }}>
@@ -836,7 +833,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                             transition={{ duration: 0.6, delay: i * 0.03 }}
                             style={{ height: "100%", borderRadius: 6, background: `linear-gradient(90deg, #22C55E, #4ADE80)` }}
                           />
-                          <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 700, color: "#E2E8F0", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                          <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 700, color: "#E2E8F0", fontFamily: fontFamily.mono }}>
                             {fmt(day.revenue)} ({day.count})
                           </span>
                         </div>
@@ -853,7 +850,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
         {activeNav === "departments" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
             <WorkshopBox title={`Department Breakdown — ${periodLabel}`} icon="🏢" delay={0}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: BLUE, marginBottom: 16, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: BLUE, marginBottom: 16, fontFamily: fontFamily.mono }}>
                 Total: {fmt(deptTotal)}
               </div>
               {departments.length === 0 ? (
@@ -873,7 +870,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                           <span style={{ fontSize: 20 }}>{SERVICE_ICONS[d.serviceType] || "📦"}</span>
                           <span style={{ fontSize: 13, fontWeight: 800, color: "#E2E8F0" }}>{SERVICE_LABELS[d.serviceType] || d.serviceType}</span>
                         </div>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: BLUE, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: BLUE, fontFamily: fontFamily.mono }}>
                           {fmt(d.total)}
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
@@ -904,7 +901,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                 { label: "90+ Days", value: aging.days90, color: "#EF4444" },
               ].map((b, i) => (
                 <WorkshopBox key={i} title={b.label} icon="📅" delay={i * 0.05}>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: b.color, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: b.color, fontFamily: fontFamily.mono }}>
                     {fmt(b.value)}
                   </div>
                 </WorkshopBox>
@@ -929,11 +926,11 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                       background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}08`,
                     }}>
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#E2E8F0", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{b.billNumber}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#E2E8F0", fontFamily: fontFamily.mono }}>{b.billNumber}</div>
                         <div style={{ fontSize: 10, color: theme.textMuted }}>{b.ageDays} Days Old</div>
                       </div>
                       <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: STATUS_COLORS[b.status] || "#94A3B8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: STATUS_COLORS[b.status] || "#94A3B8", fontFamily: fontFamily.mono }}>
                           {fmt(b.total)}
                         </div>
                         <span style={{
@@ -965,7 +962,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                 { icon: "📊", label: "Clearance Rate", value: claimsStats.totalClaims > 0 ? `${Math.round(claimsStats.paidClaims / claimsStats.totalClaims * 100)}%` : "—", color: COPPER_LIGHT },
               ].map((s, i) => (
                 <WorkshopBox key={i} title={s.label} icon={s.icon} delay={i * 0.05}>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: s.color, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: s.color, fontFamily: fontFamily.mono }}>
                     {s.value}
                   </div>
                   {s.sub && <div style={{ fontSize: 10, color: theme.textMuted, marginTop: 4 }}>{s.sub}</div>}
@@ -986,13 +983,13 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                       background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}08`,
                     }}>
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#E2E8F0", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{c.billNumber}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#E2E8F0", fontFamily: fontFamily.mono }}>{c.billNumber}</div>
                         <div style={{ fontSize: 10, color: theme.textMuted }}>
                           {c.paymentMethod === "NHIS" ? "🇬🇭 NHIS" : "🏛️ Insurance"} — {c.itemCount} Items
                         </div>
                       </div>
                       <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: STATUS_COLORS[c.status] || "#94A3B8", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: STATUS_COLORS[c.status] || "#94A3B8", fontFamily: fontFamily.mono }}>
                           {fmt(c.total)}
                         </div>
                         <span style={{

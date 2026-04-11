@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { COPPER, fontFamily } from "@/hooks/use-station-theme";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
-const COPPER = "#B87333";
-
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -89,7 +88,7 @@ function WorkshopBox({ children, title, icon, delay = 0, className = "" }: {
     >
       <div className="flex items-center gap-2 mb-4">
         <span className="text-lg">{icon}</span>
-        <h3 style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{title}</h3>
+        <h3 style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: "#D4956B", fontFamily: fontFamily.mono }}>{title}</h3>
       </div>
       {children}
     </motion.div>
@@ -273,7 +272,7 @@ export default function AdminPage() {
           <div style={{ width: 1, height: 16, background: "rgba(184,115,51,0.15)" }} />
           <span style={{ fontSize: 13, color: "#94A3B8" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: "rgba(184,115,51,0.15)" }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: COPPER }}>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: COPPER }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </time>
         </div>
@@ -331,7 +330,7 @@ export default function AdminPage() {
                       backdropFilter: "blur(12px)",
                     }}
                   >
-                    <p style={{ fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stat.accent ? COPPER : "white" }}>
+                    <p style={{ fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800, fontFamily: fontFamily.mono, color: stat.accent ? COPPER : "white" }}>
                       {stat.value}
                     </p>
                     <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: "#94A3B8", marginTop: 4 }}>{stat.label}</p>
@@ -443,7 +442,7 @@ export default function AdminPage() {
                           display: "flex", alignItems: "center", justifyContent: "center",
                           background: "rgba(184,115,51,0.08)", border: "1px solid rgba(184,115,51,0.15)",
                         }}>
-                          <span style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, fontWeight: 700, color: COPPER }}>
+                          <span style={{ fontFamily: fontFamily.mono, fontSize: 12, fontWeight: 700, color: COPPER }}>
                             {device.deviceCode.slice(0, 3)}
                           </span>
                         </div>
@@ -540,7 +539,7 @@ export default function AdminPage() {
                           background: "linear-gradient(135deg, rgba(184,115,51,0.15), rgba(184,115,51,0.05))",
                           border: "1px solid rgba(184,115,51,0.15)",
                         }}>
-                          <span style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, fontWeight: 700, color: COPPER }}>
+                          <span style={{ fontFamily: fontFamily.mono, fontSize: 12, fontWeight: 700, color: COPPER }}>
                             {MONTH_NAMES[book.month - 1]}
                           </span>
                         </div>

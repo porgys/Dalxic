@@ -2,10 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-
-const COPPER = "#B87333";
-const COPPER_LIGHT = "#D4956B";
-const BLUE = "#0EA5E9";
+import { COPPER, COPPER_LIGHT, BLUE, fontFamily } from "@/hooks/use-station-theme";
 
 /* ═══════════════════════════════════════════════════════════════════
    TIER DATA — 4 Hospital Tiers, cumulative capabilities
@@ -327,7 +324,7 @@ export default function PricingPage() {
                     <path d="M20 6L9 17l-5-5" />
                   </svg>
                 </div>
-                <h3 style={{ fontSize: 24, fontWeight: 800, marginBottom: 12, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Demo Request Received</h3>
+                <h3 style={{ fontSize: 24, fontWeight: 800, marginBottom: 12, color: "#F0F4FF", fontFamily: fontFamily.primary }}>Demo Request Received</h3>
                 <p style={{ color: "#7B8DB5", lineHeight: 1.8, fontSize: 14, maxWidth: 380, margin: "0 auto" }}>
                   Our team will respond within 24 hours to discuss the <strong style={{ color: COPPER_LIGHT }}>{contactTier}</strong> package for your facility.
                 </p>
@@ -364,7 +361,7 @@ export default function PricingPage() {
                     </div>
                     <div>
                       <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER, marginBottom: 4 }}>Request A Demo</div>
-                      <h3 style={{ fontSize: 24, fontWeight: 800, color: "#F0F4FF", margin: 0, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{contactTier}</h3>
+                      <h3 style={{ fontSize: 24, fontWeight: 800, color: "#F0F4FF", margin: 0, fontFamily: fontFamily.primary }}>{contactTier}</h3>
                     </div>
                   </div>
                   <button
@@ -827,6 +824,6 @@ const modalInputStyle: React.CSSProperties = {
   width: "100%", padding: "14px 18px", borderRadius: 12, fontSize: 14,
   background: "rgba(255,255,255,0.03)", border: "1px solid rgba(184,115,51,0.15)",
   color: "#E2E8F0", outline: "none",
-  fontFamily: "var(--font-outfit), Outfit, system-ui, sans-serif",
+  fontFamily: fontFamily.primary,
   transition: "border-color 0.2s ease, box-shadow 0.2s ease",
 };

@@ -4,10 +4,9 @@ import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ALL_WORKSTATIONS, UTILITY_STATIONS, getTierDefaults } from "@/lib/tier-defaults";
 import { motion, AnimatePresence } from "framer-motion";
+import { COPPER, COPPER_LIGHT, fontFamily } from "@/hooks/use-station-theme";
 
 /* ─── Constants ─── */
-const COPPER = "#B87333";
-const COPPER_LIGHT = "#D4956B";
 const BOOT_HOLD = 5000; // ms — how long the landing page stays visible before transitioning
 
 /* ─── Fullscreen helpers ─── */
@@ -184,7 +183,7 @@ function StationPicker({ hospitalCode, onSelect }: { hospitalCode: string; onSel
           padding: "4px 12px", borderRadius: 8,
           background: `${COPPER}08`, border: `1px solid ${COPPER}15`,
           fontSize: 10, fontWeight: 700, color: COPPER,
-          letterSpacing: "0.1em", fontFamily: "var(--font-jetbrains-mono), monospace",
+          letterSpacing: "0.1em", fontFamily: fontFamily.mono,
         }}>
           {hospitalCode}
         </div>
@@ -193,10 +192,10 @@ function StationPicker({ hospitalCode, onSelect }: { hospitalCode: string; onSel
       {/* Station grid */}
       <main style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto", padding: "100px 32px 60px" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 10, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 10, fontFamily: fontFamily.primary }}>
             Kiosk Mode
           </div>
-          <h1 style={{ fontSize: 32, fontWeight: 800, color: "#F0F4FF", marginBottom: 10, fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em" }}>
+          <h1 style={{ fontSize: 32, fontWeight: 800, color: "#F0F4FF", marginBottom: 10, fontFamily: fontFamily.primary, letterSpacing: "-0.02em" }}>
             Select Workstation
           </h1>
           <p style={{ fontSize: 13, color: "#64748B", maxWidth: 420, margin: "0 auto" }}>
@@ -226,11 +225,11 @@ function StationPicker({ hospitalCode, onSelect }: { hospitalCode: string; onSel
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                 <span style={{ fontSize: 28 }}>{s.icon}</span>
-                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: COPPER, fontFamily: fontFamily.mono }}>
                   {s.role}
                 </span>
               </div>
-              <div style={{ fontSize: 17, fontWeight: 700, color: "#F0F4FF", marginBottom: 6, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+              <div style={{ fontSize: 17, fontWeight: 700, color: "#F0F4FF", marginBottom: 6, fontFamily: fontFamily.primary }}>
                 {s.title}
               </div>
               <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5, flex: 1 }}>
@@ -275,10 +274,10 @@ function TransitionOverlay({ station, onDone }: { station: ReturnType<typeof get
             transition={{ delay: 0.3, duration: 0.5 }}
           >
             <div style={{ fontSize: 48, marginBottom: 16 }}>{station.icon}</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#F0F4FF", marginBottom: 6, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#F0F4FF", marginBottom: 6, fontFamily: fontFamily.primary }}>
               {station.title}
             </div>
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER, fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER, fontFamily: fontFamily.mono }}>
               Loading Module...
             </div>
           </motion.div>

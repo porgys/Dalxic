@@ -3,12 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate } from "@/components/station-gate";
-import { useStationTheme, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
-const COPPER = "#B87333";
-
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -245,7 +243,7 @@ function BedManagementContent() {
           <div style={{ width: 1, height: 16, background: "rgba(184,115,51,0.15)" }} />
           <span style={{ fontSize: 13, color: "#94A3B8" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: "rgba(184,115,51,0.15)" }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: COPPER }}>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: COPPER }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </time>
         </div>
@@ -282,7 +280,7 @@ function BedManagementContent() {
                   <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                     style={{ padding: 20, borderRadius: 14, background: "rgba(255,255,255,0.025)", border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
                     <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
-                    <p style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stat.color }}>{stat.value}</p>
+                    <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
                   </motion.div>
                 ))}
               </div>
@@ -303,7 +301,7 @@ function BedManagementContent() {
                             <p style={{ fontSize: 10, fontWeight: 500, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.5px" }}>Floor {ward.floor} — {typeInfo?.label || ward.type}</p>
                           </div>
                         </div>
-                        <span style={{ fontSize: 24, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER }}>{ward.counts.total}</span>
+                        <span style={{ fontSize: 24, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{ward.counts.total}</span>
                       </div>
                       {/* Status bar */}
                       <div style={{ display: "flex", gap: 4, height: 6, borderRadius: 3, overflow: "hidden", background: "rgba(255,255,255,0.03)", marginBottom: 10 }}>

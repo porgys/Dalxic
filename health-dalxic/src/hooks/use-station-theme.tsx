@@ -2,7 +2,155 @@
 
 import { useState, useCallback, createContext, useContext } from "react";
 
-const COPPER = "#B87333";
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MASTER DESIGN TOKENS — Single source of truth for all DalxicHealth UI
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Brand Colors ─── */
+export const COPPER = "#B87333";
+export const COPPER_LIGHT = "#D4956B";
+export const BLUE = "#0EA5E9";
+
+/* ─── Typography Tokens ─── */
+export const fontSize = {
+  xs: 9,       // badges, status pills, fine print
+  sm: 13,      // descriptions, helper text (accessibility minimum)
+  base: 14,    // form inputs, body text
+  lg: 16,      // sub-headings, icons
+  xl: 20,      // section headings
+  "2xl": 28,   // page headings
+  display: 36, // hero numbers
+} as const;
+
+export const fontWeight = {
+  normal: 400,
+  medium: 500,
+  semibold: 600,
+  bold: 700,
+  heavy: 800,
+} as const;
+
+export const letterSpacing = {
+  tight: "-0.02em",
+  normal: "0",
+  wide: "0.04em",
+  wider: "0.08em",
+  widest: "0.2em",
+} as const;
+
+export const fontFamily = {
+  primary: "var(--font-outfit), Outfit, sans-serif",
+  mono: "var(--font-jetbrains-mono), monospace",
+} as const;
+
+/* ─── Layout Tokens ─── */
+export const radius = {
+  sm: 6,
+  md: 10,
+  lg: 14,
+  xl: 16,
+  "2xl": 20,
+} as const;
+
+export const spacing = {
+  cardPadding: "24px 20px",
+  sectionGap: 20,
+} as const;
+
+/* ─── Composite Style Presets ─── */
+export function getStyles(isDayMode: boolean) {
+  const d = !isDayMode; // dark mode flag
+  return {
+    input: {
+      width: "100%",
+      padding: "12px 14px",
+      borderRadius: radius.md,
+      fontSize: fontSize.base,
+      background: d ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.7)",
+      border: `1px solid ${d ? COPPER + "12" : "rgba(139,90,43,0.2)"}`,
+      color: d ? "#E2E8F0" : "#1A1714",
+      outline: "none",
+      fontFamily: fontFamily.primary,
+    } as const,
+    label: {
+      display: "block" as const,
+      fontSize: fontSize.xs,
+      fontWeight: fontWeight.bold,
+      letterSpacing: "0.1em",
+      textTransform: "uppercase" as const,
+      color: d ? "#64748B" : "#5C534A",
+      marginBottom: 6,
+    } as const,
+    card: {
+      padding: spacing.cardPadding,
+      borderRadius: radius.xl,
+      background: d ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.82)",
+      border: `1px solid ${d ? COPPER + "10" : "rgba(139,90,43,0.18)"}`,
+      marginBottom: spacing.sectionGap,
+    } as const,
+    sectionTitle: {
+      fontSize: fontSize.sm,
+      fontWeight: fontWeight.heavy,
+      color: d ? COPPER_LIGHT : "#8B5A2B",
+      letterSpacing: wider,
+      textTransform: "uppercase" as const,
+    } as const,
+    description: {
+      fontSize: fontSize.sm,
+      color: d ? "#64748B" : "#6B7280",
+      lineHeight: 1.6,
+      marginBottom: 14,
+    } as const,
+    primaryButton: {
+      padding: "10px 20px",
+      borderRadius: radius.md,
+      fontSize: 12,
+      fontWeight: fontWeight.bold,
+      letterSpacing: letterSpacing.wider,
+      textTransform: "uppercase" as const,
+      color: "#fff",
+      cursor: "pointer",
+      background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`,
+      border: "none",
+      fontFamily: fontFamily.primary,
+    } as const,
+    secondaryButton: {
+      padding: "10px 20px",
+      borderRadius: radius.md,
+      fontSize: 12,
+      fontWeight: fontWeight.bold,
+      letterSpacing: letterSpacing.wider,
+      textTransform: "uppercase" as const,
+      color: d ? "#64748B" : "#6B7280",
+      cursor: "pointer",
+      background: d ? "rgba(255,255,255,0.03)" : "rgba(139,90,43,0.04)",
+      border: `1px solid ${d ? "rgba(255,255,255,0.06)" : "rgba(139,90,43,0.12)"}`,
+      fontFamily: fontFamily.primary,
+    } as const,
+    statusBadge: {
+      fontSize: fontSize.xs,
+      fontWeight: fontWeight.semibold,
+      padding: "2px 6px",
+      borderRadius: radius.sm - 2,
+      letterSpacing: "0.05em",
+      textTransform: "uppercase" as const,
+    } as const,
+    feedbackMsg: {
+      fontSize: fontSize.sm,
+      fontWeight: fontWeight.semibold,
+    } as const,
+    sectionLabel: {
+      fontSize: 10,
+      fontWeight: fontWeight.bold,
+      color: d ? "#475569" : "#6B7280",
+      letterSpacing: "0.1em",
+      textTransform: "uppercase" as const,
+      marginBottom: 4,
+    } as const,
+  };
+}
+
+const wider = letterSpacing.wider;
 
 export interface StationTheme {
   isDayMode: boolean;

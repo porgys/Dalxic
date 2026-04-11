@@ -3,16 +3,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
-import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
+import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, COPPER_LIGHT, BLUE, fontFamily } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
 import { calloutNumber } from "@/lib/voice-callout";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
-const COPPER = "#B87333";
-const COPPER_LIGHT = "#D4956B";
-const BLUE = "#0EA5E9";
 
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
@@ -97,7 +94,7 @@ function WorkshopBox({ children, title, icon, delay = 0, className = "" }: {
     >
       <div className="flex items-center gap-2 mb-4">
         <span className="text-lg">{icon}</span>
-        <h3 style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{title}</h3>
+        <h3 style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: "#D4956B", fontFamily: fontFamily.mono }}>{title}</h3>
       </div>
       {children}
     </motion.div>
@@ -521,7 +518,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <span style={{ fontSize: 13, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
-          <time suppressHydrationWarning style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
+          <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </time>
         </div>
@@ -578,7 +575,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                 ].map((stat, i) => (
                   <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
                     style={{ padding: 20, borderRadius: 16, background: theme.cardBg, border: `1px solid ${stat.color}20`, backdropFilter: "blur(12px)" }}>
-                    <p style={{ fontSize: 28, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stat.color }}>{stat.value}</p>
+                    <p style={{ fontSize: 28, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
                     <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94A3B8", marginTop: 4 }}>{stat.label}</p>
                   </motion.div>
                 ))}
@@ -679,7 +676,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                         {retailSearchResults.map((d) => (
                           <button key={d.id} onClick={() => addToCart(d)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "10px 14px", border: "none", background: "transparent", color: "#F0F4FF", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left" }}>
                             <span>{d.name} <span style={{ color: "#64748B", fontSize: 11 }}>({d.unit})</span></span>
-                            <span style={{ color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 12 }}>GHS {d.defaultPrice.toFixed(2)}</span>
+                            <span style={{ color: COPPER_LIGHT, fontFamily: fontFamily.mono, fontSize: 12 }}>GHS {d.defaultPrice.toFixed(2)}</span>
                           </button>
                         ))}
                       </div>
@@ -702,7 +699,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                             <span style={{ fontSize: 14, fontWeight: 700, color: "#F0F4FF", minWidth: 24, textAlign: "center" }}>{item.quantity}</span>
                             <button onClick={() => updateCartQty(item.drugCatalogId, item.quantity + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#94A3B8", cursor: "pointer", fontSize: 14, fontWeight: 700 }}>+</button>
                           </div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>GHS {item.total.toFixed(2)}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>GHS {item.total.toFixed(2)}</span>
                           <button onClick={() => updateCartQty(item.drugCatalogId, 0)} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer", fontSize: 14 }}>✕</button>
                         </div>
                       ))}
@@ -717,7 +714,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                         </div>
                         <div style={{ textAlign: "right" }}>
                           <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Total</div>
-                          <div style={{ fontSize: 24, fontWeight: 800, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>GHS {cartTotal.toFixed(2)}</div>
+                          <div style={{ fontSize: 24, fontWeight: 800, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>GHS {cartTotal.toFixed(2)}</div>
                         </div>
                       </div>
 
@@ -750,7 +747,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                       {retailSales.map((sale) => (
                         <div key={sale.id} style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(255,255,255,0.02)", border: `1px solid ${sale.paymentStatus === "PAID" ? (sale.dispensed ? "rgba(34,197,94,0.2)" : "rgba(14,165,233,0.2)") : sale.paymentStatus === "CANCELLED" ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)"}` }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                            <span style={{ fontSize: 13, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER_LIGHT }}>{sale.receiptCode}</span>
+                            <span style={{ fontSize: 13, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER_LIGHT }}>{sale.receiptCode}</span>
                             <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 6, textTransform: "uppercase", letterSpacing: "0.06em",
                               background: sale.dispensed ? "rgba(34,197,94,0.1)" : sale.paymentStatus === "PAID" ? "rgba(14,165,233,0.1)" : sale.paymentStatus === "CANCELLED" ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)",
                               color: sale.dispensed ? "#22C55E" : sale.paymentStatus === "PAID" ? BLUE : sale.paymentStatus === "CANCELLED" ? "#EF4444" : "#F59E0B",
@@ -770,7 +767,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                           </div>
 
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <span style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#F0F4FF" }}>GHS {sale.totalAmount.toFixed(2)}</span>
+                            <span style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: "#F0F4FF" }}>GHS {sale.totalAmount.toFixed(2)}</span>
 
                             {/* Payment gate: dispense only if PAID */}
                             {sale.paymentStatus === "PAID" && !sale.dispensed && (
@@ -862,8 +859,8 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                               <span style={{ fontSize: 11, fontWeight: 600, color: "#64748B" }}>{drugs.length} {drugs.length === 1 ? "Drug" : "Drugs"}</span>
                             </div>
                             <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                              <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#94A3B8" }}>{catStock} Units</span>
-                              <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER_LIGHT }}>GHS {catValue.toFixed(2)}</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, fontFamily: fontFamily.mono, color: "#94A3B8" }}>{catStock} Units</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, fontFamily: fontFamily.mono, color: COPPER_LIGHT }}>GHS {catValue.toFixed(2)}</span>
                             </div>
                           </div>
                           {/* Drug cards in this category */}
@@ -887,21 +884,21 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                                 </div>
                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                                   <div>
-                                    <div style={{ fontSize: 18, fontWeight: 800, color: stockColor(drug.stockStatus), fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.totalStock}</div>
+                                    <div style={{ fontSize: 18, fontWeight: 800, color: stockColor(drug.stockStatus), fontFamily: fontFamily.mono }}>{drug.totalStock}</div>
                                     <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>In Stock</div>
                                   </div>
                                   <div>
-                                    <div style={{ fontSize: 18, fontWeight: 800, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.batchCount}</div>
+                                    <div style={{ fontSize: 18, fontWeight: 800, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>{drug.batchCount}</div>
                                     <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Batches</div>
                                   </div>
                                   <div>
-                                    <div style={{ fontSize: 14, fontWeight: 800, color: expiryColor(drug.daysToExpiry), fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                                    <div style={{ fontSize: 14, fontWeight: 800, color: expiryColor(drug.daysToExpiry), fontFamily: fontFamily.mono }}>
                                       {drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}
                                     </div>
                                     <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Expiry</div>
                                   </div>
                                 </div>
-                                <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: theme.textPrimary, fontFamily: "var(--font-jetbrains-mono), monospace", transition: "color 0.4s ease" }}>
+                                <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: theme.textPrimary, fontFamily: fontFamily.mono, transition: "color 0.4s ease" }}>
                                   GHS {drug.defaultPrice.toFixed(2)} <span style={{ fontSize: 10, color: "#475569", fontWeight: 500 }}>/ {drug.unit}</span>
                                 </div>
                               </motion.div>
@@ -934,21 +931,21 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                         <div>
-                          <div style={{ fontSize: 18, fontWeight: 800, color: stockColor(drug.stockStatus), fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.totalStock}</div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: stockColor(drug.stockStatus), fontFamily: fontFamily.mono }}>{drug.totalStock}</div>
                           <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>In Stock</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: 18, fontWeight: 800, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.batchCount}</div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>{drug.batchCount}</div>
                           <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Batches</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: expiryColor(drug.daysToExpiry), fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: expiryColor(drug.daysToExpiry), fontFamily: fontFamily.mono }}>
                             {drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}
                           </div>
                           <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Expiry</div>
                         </div>
                       </div>
-                      <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: theme.textPrimary, fontFamily: "var(--font-jetbrains-mono), monospace", transition: "color 0.4s ease" }}>
+                      <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: theme.textPrimary, fontFamily: fontFamily.mono, transition: "color 0.4s ease" }}>
                         GHS {drug.defaultPrice.toFixed(2)} <span style={{ fontSize: 10, color: "#475569", fontWeight: 500 }}>/ {drug.unit}</span>
                       </div>
                     </motion.div>
@@ -974,9 +971,9 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                     {inventory.map((s) => (
                       <div key={s.id} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", gap: 8, padding: "10px 12px", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.02)" }}>
                         <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary, transition: "color 0.4s ease" }}>{s.drugName}</span>
-                        <span style={{ fontSize: 11, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#94A3B8" }}>{s.batchNumber}</span>
+                        <span style={{ fontSize: 11, fontFamily: fontFamily.mono, color: "#94A3B8" }}>{s.batchNumber}</span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: s.quantityRemaining === 0 ? "#EF4444" : theme.textPrimary }}>{s.quantityRemaining} / {s.quantityReceived}</span>
-                        <span style={{ fontSize: 12, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER_LIGHT }}>GHS {s.sellPrice.toFixed(2)}</span>
+                        <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: COPPER_LIGHT }}>GHS {s.sellPrice.toFixed(2)}</span>
                         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                           <div style={{ width: 6, height: 6, borderRadius: "50%", background: expiryColor(s.daysToExpiry), boxShadow: s.daysToExpiry <= 30 ? `0 0 6px ${expiryColor(s.daysToExpiry)}` : "none" }} />
                           <span style={{ fontSize: 11, fontWeight: 600, color: expiryColor(s.daysToExpiry) }}>{s.daysToExpiry}d</span>
@@ -1055,7 +1052,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                       style={{ background: "rgba(12,8,18,0.95)", border: `1px solid ${COPPER}30`, borderRadius: 20, padding: 24, width: 400, boxShadow: `0 24px 80px rgba(0,0,0,0.5)` }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
                         <span style={{ fontSize: 16 }}>📦</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#D4956B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>Custom Drug Category</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#D4956B", fontFamily: fontFamily.mono }}>Custom Drug Category</span>
                       </div>
                       <p style={{ fontSize: 12, color: "#94A3B8", marginBottom: 14 }}>Enter The Name Of The Drug Category Not Listed In The Dropdown.</p>
                       <DInput label="Category Name" placeholder="e.g. ANTIFUNGAL, ANTIRETROVIRAL, STEROID..."
@@ -1140,7 +1137,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                 ].map((stat, i) => (
                   <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
                     style={{ padding: 20, borderRadius: 16, background: theme.cardBg, border: `1px solid ${stat.color}20`, backdropFilter: "blur(12px)" }}>
-                    <p style={{ fontSize: 22, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stat.color }}>{stat.value}</p>
+                    <p style={{ fontSize: 22, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
                     <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94A3B8", marginTop: 6 }}>{stat.label}</p>
                   </motion.div>
                 ))}
@@ -1201,19 +1198,19 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16 }}>
                               <div>
-                                <div style={{ fontSize: 20, fontWeight: 800, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{data.stock}</div>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>{data.stock}</div>
                                 <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>Total Units</div>
                               </div>
                               <div>
-                                <div style={{ fontSize: 20, fontWeight: 800, color: theme.textPrimary, fontFamily: "var(--font-jetbrains-mono), monospace", transition: "color 0.4s ease" }}>GHS {data.value.toFixed(0)}</div>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: theme.textPrimary, fontFamily: fontFamily.mono, transition: "color 0.4s ease" }}>GHS {data.value.toFixed(0)}</div>
                                 <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>Stock Value</div>
                               </div>
                               <div>
-                                <div style={{ fontSize: 20, fontWeight: 800, color: "#22C55E", fontFamily: "var(--font-jetbrains-mono), monospace" }}>GHS {data.retailSold.toFixed(0)}</div>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: "#22C55E", fontFamily: fontFamily.mono }}>GHS {data.retailSold.toFixed(0)}</div>
                                 <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>Retail Sales</div>
                               </div>
                               <div>
-                                <div style={{ fontSize: 20, fontWeight: 800, color: lowCount > 0 ? "#F59E0B" : "#22C55E", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{data.drugs.length - lowCount}/{data.drugs.length}</div>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: lowCount > 0 ? "#F59E0B" : "#22C55E", fontFamily: fontFamily.mono }}>{data.drugs.length - lowCount}/{data.drugs.length}</div>
                                 <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>In Stock</div>
                               </div>
                             </div>
@@ -1235,15 +1232,15 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                                       </div>
                                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
                                         <div>
-                                          <div style={{ fontSize: 15, fontWeight: 800, color: stockColor(drug.stockStatus), fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.totalStock}</div>
+                                          <div style={{ fontSize: 15, fontWeight: 800, color: stockColor(drug.stockStatus), fontFamily: fontFamily.mono }}>{drug.totalStock}</div>
                                           <div style={{ fontSize: 8, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Stock</div>
                                         </div>
                                         <div>
-                                          <div style={{ fontSize: 13, fontWeight: 700, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>GHS {drug.defaultPrice.toFixed(2)}</div>
+                                          <div style={{ fontSize: 13, fontWeight: 700, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>GHS {drug.defaultPrice.toFixed(2)}</div>
                                           <div style={{ fontSize: 8, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Price</div>
                                         </div>
                                         <div>
-                                          <div style={{ fontSize: 13, fontWeight: 700, color: expiryColor(drug.daysToExpiry), fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}</div>
+                                          <div style={{ fontSize: 13, fontWeight: 700, color: expiryColor(drug.daysToExpiry), fontFamily: fontFamily.mono }}>{drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}</div>
                                           <div style={{ fontSize: 8, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Expiry</div>
                                         </div>
                                       </div>
@@ -1290,9 +1287,9 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                               <span style={{ fontSize: 14, fontWeight: 800, color: theme.textPrimary, transition: "color 0.4s ease" }}>{cat}</span>
                               <span style={{ fontSize: 11, color: "#64748B", marginLeft: 8 }}>{data.drugs.length} drugs</span>
                             </div>
-                            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#94A3B8" }}>{data.stock} units</span>
-                            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER_LIGHT }}>GHS {data.value.toFixed(0)}</span>
-                            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#22C55E" }}>GHS {data.retailSold.toFixed(0)}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: fontFamily.mono, color: "#94A3B8" }}>{data.stock} units</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: fontFamily.mono, color: COPPER_LIGHT }}>GHS {data.value.toFixed(0)}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: fontFamily.mono, color: "#22C55E" }}>GHS {data.retailSold.toFixed(0)}</span>
                             <div>
                               {data.drugs.filter((d) => d.stockStatus === "LOW" || d.stockStatus === "OUT").length > 0 && (
                                 <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: "rgba(245,158,11,0.1)", color: "#F59E0B" }}>
@@ -1317,9 +1314,9 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                                       <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary, transition: "color 0.4s ease" }}>{drug.name}</span>
                                       {drug.genericName && <span style={{ fontSize: 10, color: "#64748B", marginLeft: 6, fontStyle: "italic" }}>{drug.genericName}</span>}
                                     </div>
-                                    <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", color: stockColor(drug.stockStatus) }}>{drug.totalStock}</span>
-                                    <span style={{ fontSize: 12, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER_LIGHT }}>GHS {drug.defaultPrice.toFixed(2)}</span>
-                                    <span style={{ fontSize: 12, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#94A3B8" }}>GHS {(drug.totalStock * drug.defaultPrice).toFixed(0)}</span>
+                                    <span style={{ fontSize: 13, fontWeight: 700, fontFamily: fontFamily.mono, color: stockColor(drug.stockStatus) }}>{drug.totalStock}</span>
+                                    <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: COPPER_LIGHT }}>GHS {drug.defaultPrice.toFixed(2)}</span>
+                                    <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: "#94A3B8" }}>GHS {(drug.totalStock * drug.defaultPrice).toFixed(0)}</span>
                                     <span style={{ fontSize: 11, fontWeight: 600, color: expiryColor(drug.daysToExpiry) }}>{drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}</span>
                                     <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: `${stockColor(drug.stockStatus)}12`, color: stockColor(drug.stockStatus), textTransform: "uppercase", textAlign: "center" }}>{drug.stockStatus}</span>
                                   </div>
@@ -1356,7 +1353,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                             <div style={{ fontSize: 10, color: "#64748B" }}>{d.category}</div>
                           </div>
                         </div>
-                        <span style={{ fontSize: 14, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stockColor(d.stockStatus) }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: stockColor(d.stockStatus) }}>
                           {d.totalStock} <span style={{ fontSize: 10, fontWeight: 500, color: "#475569" }}>/ {d.minStockThreshold} min</span>
                         </span>
                       </div>
