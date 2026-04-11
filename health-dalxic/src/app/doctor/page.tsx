@@ -298,6 +298,19 @@ const SOAP_TEMPLATES: SOAPTemplate[] = [
   },
 ];
 
+/* ─── Custom Template Storage ─── */
+function getCustomTemplates(operatorId: string): SOAPTemplate[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(`soap_templates_${operatorId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+function saveCustomTemplates(operatorId: string, templates: SOAPTemplate[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(`soap_templates_${operatorId}`, JSON.stringify(templates));
+}
+
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 
 export default function DoctorPage() {
@@ -333,6 +346,12 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [referralSending, setReferralSending] = useState(false);
   const [incomingReferrals, setIncomingReferrals] = useState<{ id: string; recordId: string; patientName: string; queueToken: string; specialty?: string; reason: string; urgency: string; referredBy: string; referredAt: string; status: string; chiefComplaint: string; currentDiagnosis: string | null }[]>([]);
   const [referralCount, setReferralCount] = useState(0);
+
+  // Custom SOAP templates
+  const [customTemplates, setCustomTemplates] = useState<SOAPTemplate[]>(() => getCustomTemplates(operator.operatorId));
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  const [newTemplate, setNewTemplate] = useState({ label: "", icon: "📋", diagnosis: "", notes: "", prescriptions: [{ medication: "", dosage: "", frequency: "", duration: "" }], suggestedTests: [] as string[] });
+  const allTemplates = [...SOAP_TEMPLATES, ...customTemplates];
 
   // Ward admission state
   const [showAdmitModal, setShowAdmitModal] = useState(false);
@@ -637,6 +656,43 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
       setLabReferral(true);
       setSelectedTests(template.suggestedTests);
     }
+  };
+
+  const saveAsTemplate = () => {
+    if (!newTemplate.label.trim() || !newTemplate.diagnosis.trim()) return;
+    const key = `custom_${Date.now()}`;
+    const tmpl: SOAPTemplate = {
+      key,
+      label: newTemplate.label,
+      icon: newTemplate.icon || "📋",
+      diagnosis: newTemplate.diagnosis,
+      notes: newTemplate.notes,
+      suggestedTests: newTemplate.suggestedTests,
+      prescriptions: newTemplate.prescriptions.filter(rx => rx.medication.trim()),
+    };
+    const updated = [...customTemplates, tmpl];
+    setCustomTemplates(updated);
+    saveCustomTemplates(operator.operatorId, updated);
+    setShowCreateTemplate(false);
+    setNewTemplate({ label: "", icon: "📋", diagnosis: "", notes: "", prescriptions: [{ medication: "", dosage: "", frequency: "", duration: "" }], suggestedTests: [] });
+  };
+
+  const saveCurrentAsTemplate = () => {
+    setNewTemplate({
+      label: "",
+      icon: "📋",
+      diagnosis: diagnosis.primary,
+      notes: diagnosis.notes,
+      prescriptions: prescriptions.filter(rx => rx.medication.trim()),
+      suggestedTests: selectedTests,
+    });
+    setShowCreateTemplate(true);
+  };
+
+  const deleteCustomTemplate = (key: string) => {
+    const updated = customTemplates.filter(t => t.key !== key);
+    setCustomTemplates(updated);
+    saveCustomTemplates(operator.operatorId, updated);
   };
 
   const addPrescription = () => setPrescriptions((p) => [...p, { medication: "", dosage: "", frequency: "", duration: "" }]);
@@ -1047,20 +1103,41 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                     </div>
                     {/* SOAP Template Quick-Select */}
                     <div style={{ marginBottom: 10 }}>
-                      <label style={{ display: "block", fontSize: 9, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#3D4D78", marginBottom: 4 }}>Quick Template</label>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                        {SOAP_TEMPLATES.map(t => (
-                          <button key={t.key} type="button" onClick={() => applyTemplate(t)}
-                            style={{
-                              fontSize: 10, fontWeight: 600, padding: "4px 8px", borderRadius: 6, cursor: "pointer",
-                              background: diagnosis.primary === t.diagnosis ? `${COPPER}18` : "rgba(255,255,255,0.03)",
-                              border: `1px solid ${diagnosis.primary === t.diagnosis ? COPPER + "30" : "rgba(255,255,255,0.05)"}`,
-                              color: diagnosis.primary === t.diagnosis ? "#D4956B" : "#64748B",
-                              transition: "all 0.15s ease",
-                            }}
-                          >
-                            {t.icon} {t.label}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <label style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#3D4D78" }}>Quick Template</label>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          {diagnosis.primary && (
+                            <button type="button" onClick={saveCurrentAsTemplate} style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, cursor: "pointer", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#22C55E", letterSpacing: "0.04em" }}>
+                              Save As Template
+                            </button>
+                          )}
+                          <button type="button" onClick={() => setShowCreateTemplate(true)} style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, cursor: "pointer", background: `${COPPER}08`, border: `1px solid ${COPPER}20`, color: "#D4956B", letterSpacing: "0.04em" }}>
+                            + New
                           </button>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                        {allTemplates.map(t => (
+                          <div key={t.key} style={{ position: "relative", display: "inline-flex" }}>
+                            <button type="button" onClick={() => applyTemplate(t)}
+                              style={{
+                                fontSize: 10, fontWeight: 600, padding: "4px 8px", borderRadius: 6, cursor: "pointer",
+                                background: diagnosis.primary === t.diagnosis ? `${COPPER}18` : "rgba(255,255,255,0.03)",
+                                border: `1px solid ${diagnosis.primary === t.diagnosis ? COPPER + "30" : t.key.startsWith("custom_") ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.05)"}`,
+                                color: diagnosis.primary === t.diagnosis ? "#D4956B" : t.key.startsWith("custom_") ? "#94A3B8" : "#64748B",
+                                transition: "all 0.15s ease",
+                                paddingRight: t.key.startsWith("custom_") ? 20 : 8,
+                              }}
+                            >
+                              {t.icon} {t.label}
+                            </button>
+                            {t.key.startsWith("custom_") && (
+                              <button type="button" onClick={(e) => { e.stopPropagation(); deleteCustomTemplate(t.key); }}
+                                style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", fontSize: 8, fontWeight: 800, width: 14, height: 14, borderRadius: 3, border: "none", background: "rgba(239,68,68,0.1)", color: "#EF4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
+                                x
+                              </button>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -1506,6 +1583,83 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         </motion.div>
       </div>
     )}
+
+    {/* ═══ Create SOAP Template Modal ═══ */}
+    <AnimatePresence>
+      {showCreateTemplate && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(8px)" }}
+          onClick={() => setShowCreateTemplate(false)}>
+          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "rgba(15,15,25,0.98)", border: `1px solid ${COPPER}20`, borderRadius: 24, padding: 28, width: 560, maxHeight: "85vh", overflow: "auto" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#D4956B", marginBottom: 20 }}>Create SOAP Template</div>
+
+            {/* Template name + icon */}
+            <div style={{ display: "grid", gridTemplateColumns: "60px 1fr", gap: 10, marginBottom: 12 }}>
+              <div>
+                <label className="block text-xs font-medium font-body mb-1.5" style={{ color: theme.textLabel }}>Icon</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                  {["📋", "🩺", "💊", "🧪", "🩹", "🫁", "❤️", "🦟", "🤒", "🤰", "🦴", "👁️"].map(ico => (
+                    <button key={ico} type="button" onClick={() => setNewTemplate(t => ({ ...t, icon: ico }))}
+                      style={{ fontSize: 14, padding: 3, borderRadius: 4, cursor: "pointer", border: newTemplate.icon === ico ? `1px solid ${COPPER}40` : "1px solid transparent", background: newTemplate.icon === ico ? `${COPPER}10` : "transparent" }}>
+                      {ico}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <DInput label="Template Name" placeholder="e.g. Sickle Cell Crisis" value={newTemplate.label} onChange={e => setNewTemplate(t => ({ ...t, label: e.target.value }))} required />
+            </div>
+
+            {/* Diagnosis + Notes */}
+            <div style={{ marginBottom: 12 }}>
+              <DInput label="Diagnosis" placeholder="e.g. Sickle Cell Disease — Vaso-Occlusive Crisis" value={newTemplate.diagnosis} onChange={e => setNewTemplate(t => ({ ...t, diagnosis: e.target.value }))} required />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <DTextarea label="SOAP Notes" rows={3} placeholder="S: ... O: ... A: ... P: ..." value={newTemplate.notes} onChange={e => setNewTemplate(t => ({ ...t, notes: e.target.value }))} />
+            </div>
+
+            {/* Prescriptions */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <label className="block text-xs font-medium font-body" style={{ color: theme.textLabel }}>Prescriptions</label>
+                <button type="button" onClick={() => setNewTemplate(t => ({ ...t, prescriptions: [...t.prescriptions, { medication: "", dosage: "", frequency: "", duration: "" }] }))}
+                  style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, cursor: "pointer", background: `${COPPER}08`, border: `1px solid ${COPPER}20`, color: "#D4956B" }}>+ Add</button>
+              </div>
+              {newTemplate.prescriptions.map((rx, i) => (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 20px", gap: 6, marginBottom: 6 }}>
+                  <input placeholder="Medication" value={rx.medication} onChange={e => { const p = [...newTemplate.prescriptions]; p[i] = { ...p[i], medication: e.target.value }; setNewTemplate(t => ({ ...t, prescriptions: p })); }}
+                    className="rounded-lg border px-2.5 py-2 text-xs font-body focus:outline-none" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }} />
+                  <input placeholder="Dosage" value={rx.dosage} onChange={e => { const p = [...newTemplate.prescriptions]; p[i] = { ...p[i], dosage: e.target.value }; setNewTemplate(t => ({ ...t, prescriptions: p })); }}
+                    className="rounded-lg border px-2.5 py-2 text-xs font-body focus:outline-none" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }} />
+                  <input placeholder="Frequency" value={rx.frequency} onChange={e => { const p = [...newTemplate.prescriptions]; p[i] = { ...p[i], frequency: e.target.value }; setNewTemplate(t => ({ ...t, prescriptions: p })); }}
+                    className="rounded-lg border px-2.5 py-2 text-xs font-body focus:outline-none" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }} />
+                  <input placeholder="Duration" value={rx.duration} onChange={e => { const p = [...newTemplate.prescriptions]; p[i] = { ...p[i], duration: e.target.value }; setNewTemplate(t => ({ ...t, prescriptions: p })); }}
+                    className="rounded-lg border px-2.5 py-2 text-xs font-body focus:outline-none" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }} />
+                  {newTemplate.prescriptions.length > 1 && (
+                    <button type="button" onClick={() => setNewTemplate(t => ({ ...t, prescriptions: t.prescriptions.filter((_, j) => j !== i) }))}
+                      style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer", fontSize: 12, fontWeight: 700, alignSelf: "center" }}>x</button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <motion.button type="button" onClick={saveAsTemplate} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                disabled={!newTemplate.label.trim() || !newTemplate.diagnosis.trim()}
+                style={{ flex: 2, padding: "12px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "#fff", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", textTransform: "uppercase", letterSpacing: "0.06em", opacity: !newTemplate.label.trim() || !newTemplate.diagnosis.trim() ? 0.4 : 1 }}>
+                Save Template
+              </motion.button>
+              <button type="button" onClick={() => setShowCreateTemplate(false)}
+                style={{ flex: 1, padding: "12px 20px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "#94A3B8", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
     </StationThemeProvider>
   );
 }

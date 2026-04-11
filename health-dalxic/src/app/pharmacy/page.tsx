@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
+import { calloutNumber } from "@/lib/voice-callout";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
@@ -266,6 +267,9 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
   const [activeNav, setActiveNav] = useState("prescriptions");
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  // ═══ Voice ═══
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+
   // ═══ Prescription state ═══
   const [queue, setQueue] = useState<PrescriptionItem[]>([]);
   const [dispensing, setDispensing] = useState<string | null>(null);
@@ -378,12 +382,24 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
   const dispenseRx = async (recordId: string) => {
     setDispensing(recordId);
     try {
+      const patient = queue.find(q => q.recordId === recordId);
       const res = await fetch("/api/pharmacy/dispense", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, recordId, dispensedBy: operator.operatorName }),
       });
-      if (res.ok) { await loadQueue(); await loadInventory(); }
+      if (res.ok) {
+        await loadQueue(); await loadInventory();
+        // Voice callout — announce patient to collect medication
+        if (voiceEnabled && patient) {
+          try {
+            await calloutNumber({ token: patient.queueToken, department: "pharmacy", mode: "speech", rate: 0.85, volume: 1 });
+            // Repeat once for clarity
+            await new Promise(r => setTimeout(r, 1200));
+            await calloutNumber({ token: patient.queueToken, department: "pharmacy", mode: "speech", rate: 0.85, volume: 1 });
+          } catch { /* voice unavailable */ }
+        }
+      }
     } catch { /* retry */ }
     finally { setDispensing(null); }
   };
@@ -493,6 +509,11 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Pharmacy</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
+          <div style={{ width: 1, height: 16, background: theme.divider }} />
+          <button onClick={() => setVoiceEnabled(v => !v)} title={voiceEnabled ? "Voice On" : "Voice Off"}
+            style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 16, opacity: voiceEnabled ? 1 : 0.4, transition: "opacity 0.2s" }}>
+            {voiceEnabled ? "🔊" : "🔇"}
+          </button>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <OperatorBadge session={operator} onLogout={() => window.location.reload()} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
