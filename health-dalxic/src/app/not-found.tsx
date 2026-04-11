@@ -92,11 +92,11 @@ export default function NotFound() {
           transition={{ delay: 0.6 }}
           style={{ display: "flex", gap: 12, justifyContent: "center" }}
         >
-          <Link href="/" style={{ textDecoration: "none" }}>
+          <Link href="/" style={{ textDecoration: "none", flex: 1, maxWidth: 200 }}>
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              style={{ padding: "14px 32px", borderRadius: 14, cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+              style={{ width: "100%", padding: "14px 0", borderRadius: 14, cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
             >
               Return Home
             </motion.button>
@@ -105,7 +105,7 @@ export default function NotFound() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => window.history.back()}
-            style={{ padding: "14px 32px", borderRadius: 14, cursor: "pointer", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${COPPER}20`, color: COPPER_LIGHT, fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+            style={{ flex: 1, maxWidth: 200, padding: "14px 0", borderRadius: 14, cursor: "pointer", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${COPPER}20`, color: COPPER_LIGHT, fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
           >
             Go Back
           </motion.button>
@@ -122,7 +122,7 @@ export default function NotFound() {
         <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
           Dalxic Health
         </span>
-        <span style={{ fontSize: 9, color: "#1E293B", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+        <span style={{ fontSize: 9, color: "#4A3728", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
           Worlds Best Hospital Management System
         </span>
       </motion.div>
