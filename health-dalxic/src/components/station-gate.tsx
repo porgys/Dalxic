@@ -60,10 +60,10 @@ export function StationGate({ hospitalCode, stationName, stationIcon, allowedRol
     const check = async () => {
       try {
         const res = await fetch(`/api/hospitals?code=${hospitalCode}`);
-        if (!res.ok) return;
+        if (!res.ok) { if (!cancelled) setModuleCheckDone(true); return; }
         const data = await res.json();
         const hospital = data.hospitals?.[0] || data.hospital;
-        if (!hospital) return;
+        if (!hospital) { if (!cancelled) setModuleCheckDone(true); return; }
         const active = (hospital.activeModules || []) as string[];
         if (!cancelled) {
           setModuleLocked(!active.includes(resolvedModule));
