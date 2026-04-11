@@ -82,71 +82,73 @@ function GalaxyCanvas() {
   return <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }} />;
 }
 
+/* ─── Session type ─── */
+interface OpsSession {
+  authenticated: boolean;
+  expiresAt: number;
+  isOwner: boolean;
+  staffId?: string;
+  staffName?: string;
+  allowedScreens?: string[];
+}
+
 /* ─── Encrypted Gate ─── */
-function EncryptedGate({ onUnlock }: { onUnlock: () => void }) {
+function EncryptedGate({ onUnlock }: { onUnlock: (session: OpsSession) => void }) {
+  const [mode, setMode] = useState<"owner" | "staff">("owner");
   const [passphrase, setPassphrase] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
+  const [staffEmail, setStaffEmail] = useState("");
+  const [staffPin, setStaffPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [isFirstTime, setIsFirstTime] = useState<boolean | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const confirmRef = useRef<HTMLInputElement>(null);
+  const staffEmailRef = useRef<HTMLInputElement>(null);
 
-  // Check if ops password is set
   useEffect(() => {
     fetch("/api/system-config?action=ops_password_status")
       .then(r => r.json())
       .then(d => setIsFirstTime(!d.isSet))
-      .catch(() => setIsFirstTime(false)); // fallback: assume password exists
+      .catch(() => setIsFirstTime(false));
   }, []);
-  useEffect(() => { if (isFirstTime !== null) inputRef.current?.focus(); }, [isFirstTime]);
+  useEffect(() => { if (isFirstTime !== null) { if (mode === "owner") inputRef.current?.focus(); else staffEmailRef.current?.focus(); } }, [isFirstTime, mode]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleOwnerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!passphrase.trim()) return;
     setVerifying(true); setError(null);
-
     try {
       if (isFirstTime) {
-        // First-time setup: create password
-        if (passphrase.length < 8) {
-          setError("Password must be at least 8 characters"); setVerifying(false); return;
-        }
-        if (passphrase !== confirmPass) {
-          setError("Passwords do not match"); setVerifying(false); return;
-        }
-        const res = await fetch("/api/system-config", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "set_ops_password", password: passphrase.trim() }),
-        });
+        if (passphrase.length < 8) { setError("Password must be at least 8 characters"); setVerifying(false); return; }
+        if (passphrase !== confirmPass) { setError("Passwords do not match"); setVerifying(false); return; }
+        const res = await fetch("/api/system-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "set_ops_password", password: passphrase.trim() }) });
         if (!res.ok) { setError("Failed to set password"); setVerifying(false); return; }
       } else {
-        // Verify password against stored hash
-        const res = await fetch("/api/system-config", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "verify_ops_password", password: passphrase.trim() }),
-        });
+        const res = await fetch("/api/system-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "verify_ops_password", password: passphrase.trim() }) });
         const data = await res.json();
-        if (!data.valid) {
-          setError("Access Denied — Invalid Password");
-          setPassphrase(""); setVerifying(false);
-          setTimeout(() => inputRef.current?.focus(), 100);
-          return;
-        }
+        if (!data.valid) { setError("Access Denied — Invalid Password"); setPassphrase(""); setVerifying(false); setTimeout(() => inputRef.current?.focus(), 100); return; }
       }
-
-      // Success
-      const encoder = new TextEncoder();
-      const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(passphrase.trim()));
-      const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+      const session: OpsSession = { authenticated: true, expiresAt: Date.now() + 8 * 60 * 60 * 1000, isOwner: true };
       setUnlocked(true);
-      sessionStorage.setItem(OPS_KEY, JSON.stringify({ authenticated: true, expiresAt: Date.now() + 8 * 60 * 60 * 1000, hash: hashHex.slice(0, 16) }));
-      setTimeout(onUnlock, 800);
-    } catch {
-      setError("Connection error — try again");
-      setVerifying(false);
-    }
+      sessionStorage.setItem(OPS_KEY, JSON.stringify(session));
+      setTimeout(() => onUnlock(session), 800);
+    } catch { setError("Connection error — try again"); setVerifying(false); }
+  };
+
+  const handleStaffSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!staffEmail.trim() || !staffPin.trim()) return;
+    setVerifying(true); setError(null);
+    try {
+      const res = await fetch("/api/system-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "verify_ops_staff", email: staffEmail.trim(), pin: staffPin.trim() }) });
+      const data = await res.json();
+      if (!data.valid) { setError(data.error || "Invalid credentials"); setStaffPin(""); setVerifying(false); return; }
+      const session: OpsSession = { authenticated: true, expiresAt: Date.now() + 8 * 60 * 60 * 1000, isOwner: false, staffId: data.staffId, staffName: data.staffName, allowedScreens: data.allowedScreens };
+      setUnlocked(true);
+      sessionStorage.setItem(OPS_KEY, JSON.stringify(session));
+      setTimeout(() => onUnlock(session), 800);
+    } catch { setError("Connection error — try again"); setVerifying(false); }
   };
 
   return (
@@ -168,14 +170,25 @@ function EncryptedGate({ onUnlock }: { onUnlock: () => void }) {
           <h1 style={{ fontSize: 22, fontWeight: 800, color: "#F0F4FF", marginBottom: 6, fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em" }}>Operating Platform</h1>
           <p style={{ fontSize: 11, color: "#4A5568", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{isFirstTime ? "First Time Setup" : "Encrypted Access Required"}</p>
         </motion.div>
-        <div style={{ width: 48, height: 1, background: `linear-gradient(90deg, transparent, ${COPPER}25, transparent)`, margin: "28px auto" }} />
+        {/* Mode toggle — Owner / Staff */}
+        {!isFirstTime && isFirstTime !== null && (
+          <div style={{ display: "flex", gap: 0, margin: "24px auto 20px", borderRadius: 10, overflow: "hidden", border: `1px solid ${COPPER}15`, maxWidth: 280 }}>
+            {(["owner", "staff"] as const).map(m => (
+              <button key={m} onClick={() => { setMode(m); setError(null); setPassphrase(""); setStaffEmail(""); setStaffPin(""); }}
+                style={{ flex: 1, padding: "10px 0", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", border: "none", fontFamily: "var(--font-outfit), Outfit, sans-serif", background: mode === m ? `${COPPER}15` : "transparent", color: mode === m ? COPPER_LIGHT : "#475569", transition: "all 0.2s" }}>
+                {m === "owner" ? "🔐 Owner" : "👤 Staff"}
+              </button>
+            ))}
+          </div>
+        )}
+        <div style={{ width: 48, height: 1, background: `linear-gradient(90deg, transparent, ${COPPER}25, transparent)`, margin: "0 auto 20px" }} />
         {isFirstTime === null ? (
           <div style={{ padding: 20, textAlign: "center", color: "#64748B", fontSize: 12 }}>Checking...</div>
-        ) : (
-        <motion.form onSubmit={handleSubmit} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
+        ) : mode === "owner" || isFirstTime ? (
+        <motion.form onSubmit={handleOwnerSubmit} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} key="owner-form">
           {isFirstTime && <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 10, background: "rgba(184,115,51,0.06)", border: `1px solid ${COPPER}15`, fontSize: 11, color: COPPER_LIGHT, fontWeight: 500 }}>Create your master password to secure the Ops platform.</div>}
           <div style={{ position: "relative", marginBottom: isFirstTime ? 12 : 20 }}>
-            <input ref={inputRef} type="password" value={passphrase} onChange={e => { setPassphrase(e.target.value); setError(null); }} placeholder={isFirstTime ? "Create Password (8+ Characters)" : "Enter Password"} disabled={verifying && !error} autoComplete="off" spellCheck={false}
+            <input ref={inputRef} type="password" value={passphrase} onChange={e => { setPassphrase(e.target.value); setError(null); }} placeholder={isFirstTime ? "Create Password (8+ Characters)" : "Enter Owner Password"} disabled={verifying && !error} autoComplete="off" spellCheck={false}
               style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 14, fontWeight: 500, color: "#E2E8F0", letterSpacing: "0.04em", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${error ? "rgba(239,68,68,0.4)" : passphrase ? COPPER + "30" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={passphrase ? COPPER : "#4A5568"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)" }}>
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
@@ -183,7 +196,7 @@ function EncryptedGate({ onUnlock }: { onUnlock: () => void }) {
           </div>
           {isFirstTime && (
             <div style={{ position: "relative", marginBottom: 20 }}>
-              <input ref={confirmRef} type="password" value={confirmPass} onChange={e => { setConfirmPass(e.target.value); setError(null); }} placeholder="Confirm Password" disabled={verifying && !error} autoComplete="off" spellCheck={false}
+              <input type="password" value={confirmPass} onChange={e => { setConfirmPass(e.target.value); setError(null); }} placeholder="Confirm Password" disabled={verifying && !error} autoComplete="off" spellCheck={false}
                 style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 14, fontWeight: 500, color: "#E2E8F0", letterSpacing: "0.04em", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${confirmPass && confirmPass === passphrase ? "rgba(34,197,94,0.3)" : confirmPass ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={confirmPass === passphrase && confirmPass ? "#22C55E" : "#4A5568"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)" }}>
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
@@ -193,6 +206,27 @@ function EncryptedGate({ onUnlock }: { onUnlock: () => void }) {
           <motion.button type="submit" disabled={!passphrase.trim() || (isFirstTime && passphrase !== confirmPass) || (verifying && !error)} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
             style={{ width: "100%", padding: "15px 0", borderRadius: 14, cursor: "pointer", background: unlocked ? "linear-gradient(135deg, #22C55E, #16A34A)" : `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", opacity: !passphrase.trim() || (isFirstTime && passphrase !== confirmPass) ? 0.4 : 1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
             {unlocked ? "Access Granted" : verifying && !error ? "Verifying..." : isFirstTime ? "Set Password & Enter" : "Authenticate"}
+          </motion.button>
+        </motion.form>
+        ) : (
+        <motion.form onSubmit={handleStaffSubmit} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} key="staff-form">
+          <div style={{ position: "relative", marginBottom: 12 }}>
+            <input ref={staffEmailRef} type="email" value={staffEmail} onChange={e => { setStaffEmail(e.target.value); setError(null); }} placeholder="Staff Email" disabled={verifying && !error} autoComplete="off" spellCheck={false}
+              style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 14, fontWeight: 500, color: "#E2E8F0", letterSpacing: "0.02em", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${error ? "rgba(239,68,68,0.4)" : staffEmail ? COPPER + "30" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={staffEmail ? COPPER : "#4A5568"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)" }}>
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+          <div style={{ position: "relative", marginBottom: 20 }}>
+            <input type="password" value={staffPin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) { setStaffPin(e.target.value); setError(null); } }} placeholder="4-Digit PIN" maxLength={4} disabled={verifying && !error} autoComplete="off"
+              style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 18, fontWeight: 600, color: "#E2E8F0", letterSpacing: "0.4em", textAlign: "center", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${error ? "rgba(239,68,68,0.4)" : staffPin ? COPPER + "30" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={staffPin ? COPPER : "#4A5568"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)" }}>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+            </svg>
+          </div>
+          <motion.button type="submit" disabled={!staffEmail.trim() || staffPin.length !== 4 || (verifying && !error)} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+            style={{ width: "100%", padding: "15px 0", borderRadius: 14, cursor: "pointer", background: unlocked ? "linear-gradient(135deg, #22C55E, #16A34A)" : `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", opacity: !staffEmail.trim() || staffPin.length !== 4 ? 0.4 : 1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+            {unlocked ? "Access Granted" : verifying && !error ? "Verifying..." : "Staff Login"}
           </motion.button>
         </motion.form>
         )}
@@ -247,9 +281,17 @@ interface AccessGrant { id: string; dalxicStaffId: string; grantedRole: string; 
 
 type OpsScreen = "tiers" | "modules" | "module-config" | "create-hospitals" | "hospitals" | "hospital-detail" | "operators" | "audit" | "access";
 
-function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
+function OperatingPlatform({ onLogout, session }: { onLogout: () => void; session: OpsSession }) {
+  const isOwner = session.isOwner;
+  const allowedScreens = session.allowedScreens || [];
+  const actorId = isOwner ? "owner" : (session.staffId || "unknown");
+  const actorName = isOwner ? "Owner" : (session.staffName || "Staff");
   // ─── Navigation ───
-  const [screen, setScreen] = useState<OpsScreen>("create-hospitals");
+  const [screen, setScreen] = useState<OpsScreen>(() => {
+    if (isOwner) return "create-hospitals";
+    // Staff: default to first allowed screen
+    return (allowedScreens[0] as OpsScreen) || "hospitals";
+  });
   const [selectedTier, setSelectedTier] = useState<TierKey | null>(null);
   const [activeModules, setActiveModules] = useState<string[]>([]);
   const [configModule, setConfigModule] = useState<string | null>(null);
@@ -306,6 +348,12 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const [masterPinValue, setMasterPinValue] = useState("");
   const [masterPinMsg, setMasterPinMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [masterPinMap, setMasterPinMap] = useState<Record<string, boolean>>({});
+  // Ops Staff management
+  const [opsStaffList, setOpsStaffList] = useState<{ id: string; name: string; email: string; role: string; allowedScreens: string[]; isActive: boolean; lastOpsLoginAt: string | null }[]>([]);
+  const [newStaff, setNewStaff] = useState({ name: "", email: "", pin: "", screens: [] as string[] });
+  const [staffMsg, setStaffMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [editStaff, setEditStaff] = useState<{ id: string; name: string; screens: string[]; resetPin: string } | null>(null);
+  const [editStaffMsg, setEditStaffMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // ─── Hospital Detail ───
   const [detailHospital, setDetailHospital] = useState<HospitalItem | null>(null);
@@ -536,13 +584,13 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const handleCreateGrant = async () => {
     if (!newGrant.staffId || !newGrant.hospitalId || !newGrant.reason) { setGrantMsg({ type: "err", text: "All fields required" }); return; }
     const expiresAt = new Date(Date.now() + parseInt(newGrant.hours) * 60 * 60 * 1000).toISOString();
-    const res = await fetch("/api/access-grants", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dalxicStaffId: newGrant.staffId, hospitalId: newGrant.hospitalId, grantedRole: newGrant.role, grantedBy: "ops-admin", expiresAt, reason: newGrant.reason }) });
+    const res = await fetch("/api/access-grants", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dalxicStaffId: newGrant.staffId, hospitalId: newGrant.hospitalId, grantedRole: newGrant.role, grantedBy: actorId, expiresAt, reason: newGrant.reason }) });
     if (res.ok) { setGrantMsg({ type: "ok", text: "Access granted" }); setNewGrant({ staffId: "", hospitalId: "", role: "viewer", reason: "", hours: "24" }); loadAccessGrants(); }
     else { const err = await res.json(); setGrantMsg({ type: "err", text: err.error || "Failed" }); }
   };
 
   const handleRevokeGrant = async (grantId: string) => {
-    const res = await fetch("/api/access-grants", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ grantId, revokedBy: "ops-admin" }) });
+    const res = await fetch("/api/access-grants", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ grantId, revokedBy: actorId }) });
     if (res.ok) loadAccessGrants();
   };
 
@@ -580,13 +628,43 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     if (res.ok) loadMasterPinStatus();
   };
 
+  const loadOpsStaff = useCallback(async () => {
+    try {
+      const res = await fetch("/api/system-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "list_ops_staff" }) });
+      if (res.ok) setOpsStaffList(await res.json());
+    } catch { /* */ }
+  }, []);
+
+  const handleCreateOpsStaff = async () => {
+    setStaffMsg(null);
+    if (!newStaff.name || !newStaff.email || !/^\d{4}$/.test(newStaff.pin)) { setStaffMsg({ type: "err", text: "Name, email, and 4-digit PIN required" }); return; }
+    const res = await fetch("/api/system-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create_ops_staff", name: newStaff.name, email: newStaff.email, pin: newStaff.pin, allowedScreens: newStaff.screens }) });
+    if (res.ok) { setStaffMsg({ type: "ok", text: "Staff added" }); setNewStaff({ name: "", email: "", pin: "", screens: [] }); loadOpsStaff(); }
+    else { const err = await res.json(); setStaffMsg({ type: "err", text: err.error || "Failed" }); }
+  };
+
+  const handleEditOpsStaff = async () => {
+    if (!editStaff) return;
+    setEditStaffMsg(null);
+    const body: Record<string, unknown> = { action: "edit_ops_staff", staffId: editStaff.id, name: editStaff.name, allowedScreens: editStaff.screens };
+    if (editStaff.resetPin && /^\d{4}$/.test(editStaff.resetPin)) body.resetPin = editStaff.resetPin;
+    const res = await fetch("/api/system-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (res.ok) { setEditStaffMsg({ type: "ok", text: "Updated" }); loadOpsStaff(); setTimeout(() => setEditStaff(null), 600); }
+    else { const err = await res.json(); setEditStaffMsg({ type: "err", text: err.error || "Failed" }); }
+  };
+
+  const handleToggleOpsStaff = async (staffId: string) => {
+    await fetch("/api/system-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle_ops_staff", staffId }) });
+    loadOpsStaff();
+  };
+
   const handleAccessGateUnlock = async () => {
     if (!accessGatePass.trim()) return;
     setAccessGateLoading(true); setAccessGateError("");
     try {
       const res = await fetch("/api/system-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "verify_ops_password", password: accessGatePass.trim() }) });
       const data = await res.json();
-      if (data.valid) { setAccessUnlocked(true); setAccessGatePass(""); loadOpsPasswordStatus(); loadMasterPinStatus(); loadAccessGrants(); }
+      if (data.valid) { setAccessUnlocked(true); setAccessGatePass(""); loadOpsPasswordStatus(); loadMasterPinStatus(); loadAccessGrants(); loadOpsStaff(); }
       else { setAccessGateError("Invalid password"); setAccessGatePass(""); }
     } catch { setAccessGateError("Connection error"); }
     setAccessGateLoading(false);
@@ -614,7 +692,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
     if (detailEditForm.tagline !== (detailHospital.tagline || "")) editFields.tagline = detailEditForm.tagline;
     if (detailEditForm.subdomain && detailEditForm.subdomain !== detailHospital.subdomain) editFields.subdomain = detailEditForm.subdomain;
     if (Object.keys(editFields).length === 0) { setEditingDetails(false); return; }
-    const res = await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, editFields, actorId: "ops-admin" }) });
+    const res = await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, editFields, actorId: actorId }) });
     if (res.ok) { setDetailEditMsg({ type: "ok", text: "Details Updated" }); setEditingDetails(false); loadHospitalDetail(detailHospital.code); loadHospitals(); }
     else { const err = await res.json(); setDetailEditMsg({ type: "err", text: err.error || "Failed" }); }
   };
@@ -626,27 +704,27 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
 
     if (moduleKey === "__select_all__") {
       const toEnable = allKeys.filter(k => !hospitalModules.includes(k));
-      for (const k of toEnable) await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, toggleModule: k, actorId: "ops-admin" }) });
+      for (const k of toEnable) await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, toggleModule: k, actorId: actorId }) });
       loadHospitalDetail(detailHospital.code); loadHospitals(); return;
     }
     if (moduleKey === "__deselect_all__") {
       const toDisable = allKeys.filter(k => hospitalModules.includes(k));
-      for (const k of toDisable) await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, toggleModule: k, actorId: "ops-admin" }) });
+      for (const k of toDisable) await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, toggleModule: k, actorId: actorId }) });
       loadHospitalDetail(detailHospital.code); loadHospitals(); return;
     }
 
-    const res = await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, toggleModule: moduleKey, actorId: "ops-admin" }) });
+    const res = await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, toggleModule: moduleKey, actorId: actorId }) });
     if (res.ok) { loadHospitalDetail(detailHospital.code); loadHospitals(); }
   };
 
   const handleDetailChangeTier = async (newTier: TierKey) => {
     if (!detailHospital) return;
-    const res = await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, newTier, actorId: "ops-admin" }) });
+    const res = await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, newTier, actorId: actorId }) });
     if (res.ok) { setChangingTier(false); loadHospitalDetail(detailHospital.code); loadHospitals(); }
   };
 
   const handleToggleHospitalActive = async (hospitalCode: string, currentlyActive: boolean) => {
-    await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode, editFields: { active: !currentlyActive }, actorId: "ops-admin" }) });
+    await fetch("/api/hospitals", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode, editFields: { active: !currentlyActive }, actorId: actorId }) });
     loadHospitals();
     if (detailHospital?.code === hospitalCode) loadHospitalDetail(hospitalCode);
   };
@@ -685,7 +763,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDetailDeviceAction = async (deviceId: string, action: string) => {
-    await fetch("/api/devices", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceId, action, actorId: "ops-admin", actorType: "dalxic_super_admin" }) });
+    await fetch("/api/devices", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceId, action, actorId: actorId, actorType: "dalxic_super_admin" }) });
     if (detailHospital) loadHospitalDetail(detailHospital.code);
   };
 
@@ -836,8 +914,12 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          {/* Utility nav */}
-          {["create-hospitals", "hospitals", "operators", "audit", "access"].map(s => {
+          {/* Utility nav — filtered by session scope */}
+          {["create-hospitals", "hospitals", "operators", "audit", "access"].filter(s => {
+            if (isOwner) return true; // owner sees everything
+            if (s === "access") return false; // access is always owner-only
+            return allowedScreens.includes(s);
+          }).map(s => {
             const isActive = s === "hospitals" ? (screen === "hospitals" || screen === "hospital-detail") : screen === s;
             const label = s === "create-hospitals" ? "Create" : s;
             return (
@@ -848,6 +930,10 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
             );
           })}
 
+          {/* Logged-in identity */}
+          <span style={{ fontSize: 10, fontWeight: 600, color: isOwner ? COPPER_LIGHT : "#38BDF8", padding: "4px 10px", borderRadius: 6, background: isOwner ? `${COPPER}08` : "rgba(56,189,248,0.06)", border: `1px solid ${isOwner ? COPPER + "15" : "rgba(56,189,248,0.12)"}` }}>
+            {isOwner ? "🔐 Owner" : `👤 ${actorName}`}
+          </span>
           <span style={{ fontSize: 12, fontWeight: 700, color: "#334155", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </span>
@@ -2120,6 +2206,101 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                   );
                 })}
               </div>
+
+              {/* ─── Section D: Ops Staff Management ─── */}
+              <div style={{ padding: "24px 20px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10`, marginTop: 20, marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                  <span style={{ fontSize: 16 }}>👥</span>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: COPPER_LIGHT, letterSpacing: "0.06em", textTransform: "uppercase" }}>Ops Staff Accounts</div>
+                  <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, color: "#64748B" }}>{opsStaffList.filter(s => s.isActive).length} Active</span>
+                </div>
+                <div style={{ fontSize: 11, color: "#64748B", marginBottom: 14 }}>Add staff members who can log into Ops with their own email + PIN. Assign which screens they can access.</div>
+
+                {/* Add Staff Form */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 100px", gap: 10 }}>
+                  <input value={newStaff.name} onChange={e => setNewStaff(s => ({ ...s, name: e.target.value }))} placeholder="Full Name" style={{ ...inputStyle, padding: "10px 12px", fontSize: 12 }} />
+                  <input value={newStaff.email} onChange={e => setNewStaff(s => ({ ...s, email: e.target.value }))} placeholder="Email Address" type="email" style={{ ...inputStyle, padding: "10px 12px", fontSize: 12 }} />
+                  <input value={newStaff.pin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setNewStaff(s => ({ ...s, pin: e.target.value })); }} placeholder="PIN" maxLength={4} style={{ ...inputStyle, padding: "10px 12px", fontSize: 13, fontFamily: "var(--font-jetbrains-mono), monospace", textAlign: "center", letterSpacing: "0.3em" }} />
+                </div>
+                {/* Screen checkboxes */}
+                <div style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
+                  {[{ key: "create-hospitals", label: "Create" }, { key: "hospitals", label: "Hospitals" }, { key: "operators", label: "Operators" }, { key: "audit", label: "Audit" }].map(sc => (
+                    <label key={sc.key} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 11, fontWeight: 600, color: newStaff.screens.includes(sc.key) ? COPPER_LIGHT : "#64748B" }}>
+                      <input type="checkbox" checked={newStaff.screens.includes(sc.key)} onChange={e => setNewStaff(s => ({ ...s, screens: e.target.checked ? [...s.screens, sc.key] : s.screens.filter(x => x !== sc.key) }))} style={{ accentColor: COPPER }} />
+                      {sc.label}
+                    </label>
+                  ))}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
+                  <motion.button whileHover={{ scale: 1.02 }} onClick={handleCreateOpsStaff} style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none" }}>Add Staff</motion.button>
+                  {staffMsg && <span style={{ fontSize: 11, fontWeight: 600, color: staffMsg.type === "ok" ? "#22C55E" : "#F87171" }}>{staffMsg.text}</span>}
+                </div>
+
+                {/* Staff List */}
+                {opsStaffList.length > 0 && (
+                  <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#475569", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Staff Members</div>
+                    {opsStaffList.map(staff => (
+                      <div key={staff.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: 10, background: "rgba(255,255,255,0.015)", border: `1px solid ${COPPER}08`, opacity: staff.isActive ? 1 : 0.5 }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ width: 7, height: 7, borderRadius: "50%", background: staff.isActive ? "#22C55E" : "#EF4444" }} />
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "#E2E8F0" }}>{staff.name}</span>
+                            <span style={{ fontSize: 10, color: "#64748B", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{staff.email}</span>
+                          </div>
+                          <div style={{ display: "flex", gap: 6, marginTop: 6, marginLeft: 15 }}>
+                            {(staff.allowedScreens || []).map((sc: string) => (
+                              <span key={sc} style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 3, background: `${COPPER}08`, color: COPPER_LIGHT, textTransform: "uppercase", letterSpacing: "0.05em" }}>{sc === "create-hospitals" ? "Create" : sc}</span>
+                            ))}
+                            {staff.lastOpsLoginAt && <span style={{ fontSize: 9, color: "#475569", marginLeft: 6 }}>Last: {new Date(staff.lastOpsLoginAt).toLocaleDateString()}</span>}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <motion.button whileHover={{ scale: 1.05 }} onClick={() => setEditStaff({ id: staff.id, name: staff.name, screens: staff.allowedScreens || [], resetPin: "" })}
+                            style={{ padding: "5px 10px", borderRadius: 5, fontSize: 10, fontWeight: 600, color: COPPER_LIGHT, background: `${COPPER}06`, border: `1px solid ${COPPER}12`, cursor: "pointer" }}>Edit</motion.button>
+                          <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleToggleOpsStaff(staff.id)}
+                            style={{ padding: "5px 10px", borderRadius: 5, fontSize: 10, fontWeight: 600, color: staff.isActive ? "#F59E0B" : "#22C55E", background: staff.isActive ? "rgba(245,158,11,0.06)" : "rgba(34,197,94,0.06)", border: `1px solid ${staff.isActive ? "rgba(245,158,11,0.12)" : "rgba(34,197,94,0.12)"}`, cursor: "pointer" }}>{staff.isActive ? "Deactivate" : "Activate"}</motion.button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Edit Staff Modal */}
+              <AnimatePresence>
+                {editStaff && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }} onClick={() => setEditStaff(null)}>
+                    <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()} style={{ width: 400, padding: "28px 24px", borderRadius: 20, background: "rgba(10,8,20,0.95)", border: `1px solid ${COPPER}15`, boxShadow: "0 32px 80px rgba(0,0,0,0.6)" }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: COPPER_LIGHT, marginBottom: 20 }}>Edit Staff Member</div>
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={labelStyle}>Name</div>
+                        <input value={editStaff.name} onChange={e => setEditStaff(s => s ? { ...s, name: e.target.value } : s)} style={{ ...inputStyle, padding: "10px 12px", fontSize: 12 }} />
+                      </div>
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={labelStyle}>Reset PIN (Leave Empty To Keep)</div>
+                        <input value={editStaff.resetPin} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setEditStaff(s => s ? { ...s, resetPin: e.target.value } : s); }} placeholder="New 4-Digit PIN" maxLength={4} style={{ ...inputStyle, padding: "10px 12px", fontSize: 13, fontFamily: "var(--font-jetbrains-mono), monospace", textAlign: "center", letterSpacing: "0.3em" }} />
+                      </div>
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={labelStyle}>Allowed Screens</div>
+                        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 6 }}>
+                          {[{ key: "create-hospitals", label: "Create" }, { key: "hospitals", label: "Hospitals" }, { key: "operators", label: "Operators" }, { key: "audit", label: "Audit" }].map(sc => (
+                            <label key={sc.key} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 11, fontWeight: 600, color: editStaff.screens.includes(sc.key) ? COPPER_LIGHT : "#64748B" }}>
+                              <input type="checkbox" checked={editStaff.screens.includes(sc.key)} onChange={e => setEditStaff(s => s ? { ...s, screens: e.target.checked ? [...s.screens, sc.key] : s.screens.filter(x => x !== sc.key) } : s)} style={{ accentColor: COPPER }} />
+                              {sc.label}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <motion.button whileHover={{ scale: 1.02 }} onClick={handleEditOpsStaff} style={{ padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none" }}>Save Changes</motion.button>
+                        <motion.button whileHover={{ scale: 1.02 }} onClick={() => setEditStaff(null)} style={{ padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "#64748B", cursor: "pointer", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>Cancel</motion.button>
+                        {editStaffMsg && <span style={{ fontSize: 11, fontWeight: 600, color: editStaffMsg.type === "ok" ? "#22C55E" : "#F87171" }}>{editStaffMsg.text}</span>}
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               </>
               )}
             </motion.div>
@@ -2142,22 +2323,22 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 export default function OpsPage() {
-  const [authenticated, setAuthenticated] = useState(false);
+  const [opsSession, setOpsSession] = useState<OpsSession | null>(null);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     try {
       const stored = sessionStorage.getItem(OPS_KEY);
       if (stored) {
-        const session = JSON.parse(stored);
-        if (session.authenticated && session.expiresAt > Date.now()) setAuthenticated(true);
+        const session = JSON.parse(stored) as OpsSession;
+        if (session.authenticated && session.expiresAt > Date.now()) setOpsSession(session);
         else sessionStorage.removeItem(OPS_KEY);
       }
     } catch { /* */ }
     setChecking(false);
   }, []);
 
-  const handleLogout = () => { sessionStorage.removeItem(OPS_KEY); setAuthenticated(false); };
+  const handleLogout = () => { sessionStorage.removeItem(OPS_KEY); setOpsSession(null); };
   if (checking) return null;
-  return authenticated ? <OperatingPlatform onLogout={handleLogout} /> : <EncryptedGate onUnlock={() => setAuthenticated(true)} />;
+  return opsSession ? <OperatingPlatform onLogout={handleLogout} session={opsSession} /> : <EncryptedGate onUnlock={(s) => setOpsSession(s)} />;
 }

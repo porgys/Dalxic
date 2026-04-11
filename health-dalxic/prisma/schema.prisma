@@ -192,11 +192,15 @@ model HospitalLabTest {
 // ─── Access & Auth ───
 
 model DalxicStaff {
-  id           String        @id @default(cuid())
-  name         String
-  email        String        @unique
-  role         String        // super_admin | support | analyst
-  accessGrants AccessGrant[]
+  id              String        @id @default(cuid())
+  name            String
+  email           String        @unique
+  role            String        // super_admin | support | analyst
+  pin             String?       // 4-digit PIN for ops login
+  allowedScreens  String?       @map("allowed_screens") // JSON array: ["hospitals","operators","audit","create-hospitals"]
+  isActive        Boolean       @default(true) @map("is_active")
+  lastOpsLoginAt  DateTime?     @map("last_ops_login_at")
+  accessGrants    AccessGrant[]
 
   @@map("dalxic_staff")
 }

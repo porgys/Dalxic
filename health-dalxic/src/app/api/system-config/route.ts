@@ -143,5 +143,73 @@ export async function POST(request: Request) {
     return Response.json({ valid: hash === config.value });
   }
 
+  // ─── Create Ops Staff ───
+  if (action === "create_ops_staff") {
+    const { name, email, pin, allowedScreens } = body;
+    if (!name || !email || !pin || !/^\d{4}$/.test(pin)) {
+      return Response.json({ error: "Name, email, and 4-digit PIN required" }, { status: 400 });
+    }
+    const existing = await db.dalxicStaff.findUnique({ where: { email } });
+    if (existing) return Response.json({ error: "Email already exists" }, { status: 409 });
+
+    const pinHash = await sha256(pin);
+    const staff = await db.dalxicStaff.create({
+      data: { name, email, role: "support", pin: pinHash, allowedScreens: JSON.stringify(allowedScreens || []), isActive: true },
+    });
+    return Response.json({ id: staff.id, name: staff.name, email: staff.email }, { status: 201 });
+  }
+
+  // ─── List Ops Staff ───
+  if (action === "list_ops_staff") {
+    const staff = await db.dalxicStaff.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, email: true, role: true, allowedScreens: true, isActive: true, lastOpsLoginAt: true },
+    });
+    return Response.json(staff.map(s => ({ ...s, allowedScreens: s.allowedScreens ? JSON.parse(s.allowedScreens) : [] })));
+  }
+
+  // ─── Edit Ops Staff ───
+  if (action === "edit_ops_staff") {
+    const { staffId, name, allowedScreens, resetPin } = body;
+    if (!staffId) return Response.json({ error: "staffId required" }, { status: 400 });
+
+    const data: Record<string, unknown> = {};
+    if (name) data.name = name;
+    if (allowedScreens !== undefined) data.allowedScreens = JSON.stringify(allowedScreens);
+    if (resetPin && /^\d{4}$/.test(resetPin)) data.pin = await sha256(resetPin);
+
+    const updated = await db.dalxicStaff.update({ where: { id: staffId }, data });
+    return Response.json({ id: updated.id, name: updated.name });
+  }
+
+  // ─── Toggle Ops Staff Active ───
+  if (action === "toggle_ops_staff") {
+    const { staffId } = body;
+    if (!staffId) return Response.json({ error: "staffId required" }, { status: 400 });
+    const staff = await db.dalxicStaff.findUnique({ where: { id: staffId } });
+    if (!staff) return Response.json({ error: "Staff not found" }, { status: 404 });
+    const updated = await db.dalxicStaff.update({ where: { id: staffId }, data: { isActive: !staff.isActive } });
+    return Response.json({ id: updated.id, isActive: updated.isActive });
+  }
+
+  // ─── Verify Ops Staff (email + PIN login) ───
+  if (action === "verify_ops_staff") {
+    const { email, pin } = body;
+    if (!email || !pin) return Response.json({ error: "Email and PIN required" }, { status: 400 });
+
+    const staff = await db.dalxicStaff.findUnique({ where: { email } });
+    if (!staff || !staff.pin) return Response.json({ valid: false, error: "Staff not found" });
+    if (!staff.isActive) return Response.json({ valid: false, error: "Account deactivated" });
+
+    const pinHash = await sha256(pin);
+    if (pinHash !== staff.pin) return Response.json({ valid: false, error: "Invalid PIN" });
+
+    // Update last login
+    await db.dalxicStaff.update({ where: { id: staff.id }, data: { lastOpsLoginAt: new Date() } });
+
+    const screens = staff.allowedScreens ? JSON.parse(staff.allowedScreens) : [];
+    return Response.json({ valid: true, staffId: staff.id, staffName: staff.name, allowedScreens: screens });
+  }
+
   return Response.json({ error: "Invalid action" }, { status: 400 });
 }
