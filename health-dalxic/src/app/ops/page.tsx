@@ -1444,12 +1444,20 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                     {sectionTitle("Module Configuration")}
                     <p style={{ fontSize: 12, color: "#64748B", margin: 0 }}>{hospitalModules.length} modules active. Click any module to configure operators and access.</p>
                   </div>
-                  <select value={moduleFilter} onChange={e => setModuleFilter(e.target.value as "all" | "active" | "inactive")}
-                    style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, color: moduleFilter === "active" ? "#22C55E" : moduleFilter === "inactive" ? "#EF4444" : COPPER_LIGHT, background: "rgba(255,255,255,0.03)", border: `1px solid ${moduleFilter === "active" ? "rgba(34,197,94,0.3)" : moduleFilter === "inactive" ? "rgba(239,68,68,0.3)" : COPPER + "18"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", appearance: "none", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
-                    <option value="all" style={{ background: "#0a0a14" }}>All</option>
-                    <option value="active" style={{ background: "#0a0a14" }}>Active</option>
-                    <option value="inactive" style={{ background: "#0a0a14" }}>Inactive</option>
-                  </select>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                      onClick={() => handleDetailToggleModule("__select_all__")}
+                      style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: "pointer", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", color: "#22C55E", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Unlock All</motion.button>
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                      onClick={() => handleDetailToggleModule("__deselect_all__")}
+                      style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: "pointer", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", color: "#EF4444", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Lock All</motion.button>
+                    <select value={moduleFilter} onChange={e => setModuleFilter(e.target.value as "all" | "active" | "inactive")}
+                      style={{ padding: "8px 16px", borderRadius: 8, fontSize: 10, fontWeight: 700, color: moduleFilter === "active" ? "#22C55E" : moduleFilter === "inactive" ? "#EF4444" : COPPER_LIGHT, background: "rgba(255,255,255,0.03)", border: `1px solid ${moduleFilter === "active" ? "rgba(34,197,94,0.3)" : moduleFilter === "inactive" ? "rgba(239,68,68,0.3)" : COPPER + "18"}`, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", appearance: "none", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+                      <option value="all" style={{ background: "#0a0a14" }}>All</option>
+                      <option value="active" style={{ background: "#0a0a14" }}>Active</option>
+                      <option value="inactive" style={{ background: "#0a0a14" }}>Inactive</option>
+                    </select>
+                  </div>
                 </div>
 
                 {/* Module cards — 3 column grid, clickable to enter operator config */}

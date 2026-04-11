@@ -165,7 +165,30 @@ async function main() {
   // ─── 1C: CREATE OPERATORS ───
   console.log("\n--- CREATING OPERATORS ---");
   const allRoles = ["front_desk", "doctor", "pharmacist", "lab_tech", "nurse", "billing", "admin", "radiologist", "super_admin"];
-  let totalOps = 0;
+  // Master operators — survive every re-seed, same PINs always
+  const MASTER_OPS = [
+    { code: "KBH", name: "System Administrator", role: "super_admin", pin: "8833", phone: "0200000001" },
+    { code: "KBH", name: "The Creator", role: "admin", pin: "7241", phone: "0200000002" },
+    { code: "KBH", name: "Dr. Mensah", role: "doctor", pin: "4401", phone: "0200000003" },
+    { code: "KBH", name: "Dr. Adjei", role: "doctor", pin: "4402", phone: "0200000004" },
+    { code: "KBH", name: "Front Desk", role: "front_desk", pin: "1100", phone: "0200000005" },
+    { code: "KBH", name: "Pharmacist", role: "pharmacist", pin: "2200", phone: "0200000006" },
+    { code: "KBH", name: "Billing Officer", role: "billing", pin: "3300", phone: "0200000007" },
+  ];
+
+  // Insert master operators first
+  for (const m of MASTER_OPS) {
+    const opId = `op_master_${m.pin}_${Date.now()}`;
+    await client.query(
+      `INSERT INTO device_operators (id, hospital_id, name, phone, pin, role, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [opId, hospitalIds[m.code], m.name, m.phone, m.pin, m.role, true]
+    );
+  }
+  console.log(`  Created ${MASTER_OPS.length} master operators (PINs preserved)`);
+
+  let totalOps = MASTER_OPS.length;
+  const masterPins = new Set(MASTER_OPS.map(m => m.pin));
   for (const h of HOSPITALS) {
     const tierNum = parseInt(h.tier[1]);
     let pin = 1001;
@@ -174,6 +197,9 @@ async function main() {
       if (role === "lab_tech" && tierNum < 2) continue;
       if (role === "nurse" && tierNum < 2) continue;
       if (role === "radiologist" && tierNum < 3) continue;
+
+      // Skip if this PIN conflicts with a master operator
+      while (masterPins.has(String(pin))) pin++;
 
       const nameKey = `${h.code}_${role}`;
       const opName = OP_NAMES[nameKey] || `${role.replace("_", " ")} - ${h.code}`;
