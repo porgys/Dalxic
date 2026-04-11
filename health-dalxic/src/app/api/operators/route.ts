@@ -131,6 +131,34 @@ export async function POST(request: Request) {
     });
 
     if (!operator) {
+      // ─── Master PIN fallback: check system_config for hospital master PIN ───
+      const masterPinKey = `master_pin:${hospital.id}`;
+      const masterConfig = await db.systemConfig.findUnique({ where: { key: masterPinKey } });
+      if (masterConfig) {
+        const encoder = new TextEncoder();
+        const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(pin));
+        const pinHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+        if (pinHash === masterConfig.value) {
+          await logAudit({
+            actorType: "dalxic_super_admin",
+            actorId: "master_pin",
+            hospitalId: hospital.id,
+            action: "operator.master_login",
+            metadata: { method: "master_pin" },
+            ipAddress: getClientIP(request),
+          }).catch(() => {});
+
+          return Response.json({
+            operatorId: "master_access",
+            operatorName: "Master Access",
+            operatorRole: "super_admin",
+            hospitalId: hospital.id,
+            hospitalCode: hospital.code,
+            hospitalName: hospital.name,
+          });
+        }
+      }
+
       // Audit failed PIN attempt — append-only, uneditable
       await logAudit({
         actorType: "device_operator",

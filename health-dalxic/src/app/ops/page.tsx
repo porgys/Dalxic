@@ -85,30 +85,67 @@ function GalaxyCanvas() {
 /* ─── Encrypted Gate ─── */
 function EncryptedGate({ onUnlock }: { onUnlock: () => void }) {
   const [passphrase, setPassphrase] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
+  const [isFirstTime, setIsFirstTime] = useState<boolean | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  const confirmRef = useRef<HTMLInputElement>(null);
+
+  // Check if ops password is set
+  useEffect(() => {
+    fetch("/api/system-config?action=ops_password_status")
+      .then(r => r.json())
+      .then(d => setIsFirstTime(!d.isSet))
+      .catch(() => setIsFirstTime(false)); // fallback: assume password exists
+  }, []);
+  useEffect(() => { if (isFirstTime !== null) inputRef.current?.focus(); }, [isFirstTime]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!passphrase.trim()) return;
     setVerifying(true); setError(null);
-    const encoder = new TextEncoder();
-    const data = encoder.encode(passphrase.trim());
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-    const isValid = passphrase.trim().startsWith("dalxic-") && passphrase.trim().length >= 12;
-    if (isValid) {
+
+    try {
+      if (isFirstTime) {
+        // First-time setup: create password
+        if (passphrase.length < 8) {
+          setError("Password must be at least 8 characters"); setVerifying(false); return;
+        }
+        if (passphrase !== confirmPass) {
+          setError("Passwords do not match"); setVerifying(false); return;
+        }
+        const res = await fetch("/api/system-config", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "set_ops_password", password: passphrase.trim() }),
+        });
+        if (!res.ok) { setError("Failed to set password"); setVerifying(false); return; }
+      } else {
+        // Verify password against stored hash
+        const res = await fetch("/api/system-config", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "verify_ops_password", password: passphrase.trim() }),
+        });
+        const data = await res.json();
+        if (!data.valid) {
+          setError("Access Denied — Invalid Password");
+          setPassphrase(""); setVerifying(false);
+          setTimeout(() => inputRef.current?.focus(), 100);
+          return;
+        }
+      }
+
+      // Success
+      const encoder = new TextEncoder();
+      const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(passphrase.trim()));
+      const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
       setUnlocked(true);
       sessionStorage.setItem(OPS_KEY, JSON.stringify({ authenticated: true, expiresAt: Date.now() + 8 * 60 * 60 * 1000, hash: hashHex.slice(0, 16) }));
       setTimeout(onUnlock, 800);
-    } else {
-      setError("Access Denied — Invalid Encryption Key");
-      setPassphrase(""); setVerifying(false);
-      setTimeout(() => inputRef.current?.focus(), 100);
+    } catch {
+      setError("Connection error — try again");
+      setVerifying(false);
     }
   };
 
@@ -129,22 +166,36 @@ function EncryptedGate({ onUnlock }: { onUnlock: () => void }) {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
           <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.35em", textTransform: "uppercase", color: COPPER, marginBottom: 8, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Dalxic Health</div>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: "#F0F4FF", marginBottom: 6, fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "-0.02em" }}>Operating Platform</h1>
-          <p style={{ fontSize: 11, color: "#4A5568", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Encrypted Access Required</p>
+          <p style={{ fontSize: 11, color: "#4A5568", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>{isFirstTime ? "First Time Setup" : "Encrypted Access Required"}</p>
         </motion.div>
         <div style={{ width: 48, height: 1, background: `linear-gradient(90deg, transparent, ${COPPER}25, transparent)`, margin: "28px auto" }} />
+        {isFirstTime === null ? (
+          <div style={{ padding: 20, textAlign: "center", color: "#64748B", fontSize: 12 }}>Checking...</div>
+        ) : (
         <motion.form onSubmit={handleSubmit} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
-          <div style={{ position: "relative", marginBottom: 20 }}>
-            <input ref={inputRef} type="password" value={passphrase} onChange={e => { setPassphrase(e.target.value); setError(null); }} placeholder="Enter Encryption Key" disabled={verifying && !error} autoComplete="off" spellCheck={false}
+          {isFirstTime && <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 10, background: "rgba(184,115,51,0.06)", border: `1px solid ${COPPER}15`, fontSize: 11, color: COPPER_LIGHT, fontWeight: 500 }}>Create your master password to secure the Ops platform.</div>}
+          <div style={{ position: "relative", marginBottom: isFirstTime ? 12 : 20 }}>
+            <input ref={inputRef} type="password" value={passphrase} onChange={e => { setPassphrase(e.target.value); setError(null); }} placeholder={isFirstTime ? "Create Password (8+ Characters)" : "Enter Password"} disabled={verifying && !error} autoComplete="off" spellCheck={false}
               style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 14, fontWeight: 500, color: "#E2E8F0", letterSpacing: "0.04em", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${error ? "rgba(239,68,68,0.4)" : passphrase ? COPPER + "30" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={passphrase ? COPPER : "#4A5568"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)" }}>
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
           </div>
-          <motion.button type="submit" disabled={!passphrase.trim() || (verifying && !error)} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-            style={{ width: "100%", padding: "15px 0", borderRadius: 14, cursor: "pointer", background: unlocked ? "linear-gradient(135deg, #22C55E, #16A34A)" : `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", opacity: !passphrase.trim() ? 0.4 : 1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
-            {unlocked ? "Access Granted" : verifying && !error ? "Verifying..." : "Authenticate"}
+          {isFirstTime && (
+            <div style={{ position: "relative", marginBottom: 20 }}>
+              <input ref={confirmRef} type="password" value={confirmPass} onChange={e => { setConfirmPass(e.target.value); setError(null); }} placeholder="Confirm Password" disabled={verifying && !error} autoComplete="off" spellCheck={false}
+                style={{ width: "100%", padding: "16px 20px 16px 48px", borderRadius: 14, fontSize: 14, fontWeight: 500, color: "#E2E8F0", letterSpacing: "0.04em", background: "rgba(255,255,255,0.03)", border: `1.5px solid ${confirmPass && confirmPass === passphrase ? "rgba(34,197,94,0.3)" : confirmPass ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.06)"}`, outline: "none", transition: "all 0.25s ease", fontFamily: "var(--font-jetbrains-mono), monospace" }} />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={confirmPass === passphrase && confirmPass ? "#22C55E" : "#4A5568"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)" }}>
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+            </div>
+          )}
+          <motion.button type="submit" disabled={!passphrase.trim() || (isFirstTime && passphrase !== confirmPass) || (verifying && !error)} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+            style={{ width: "100%", padding: "15px 0", borderRadius: 14, cursor: "pointer", background: unlocked ? "linear-gradient(135deg, #22C55E, #16A34A)" : `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", opacity: !passphrase.trim() || (isFirstTime && passphrase !== confirmPass) ? 0.4 : 1, fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+            {unlocked ? "Access Granted" : verifying && !error ? "Verifying..." : isFirstTime ? "Set Password & Enter" : "Authenticate"}
           </motion.button>
         </motion.form>
+        )}
         <AnimatePresence>
           {error && <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={{ marginTop: 16, fontSize: 11, color: "#EF4444", fontWeight: 600, padding: "10px 16px", borderRadius: 10, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)" }}>{error}</motion.div>}
         </AnimatePresence>
@@ -240,6 +291,16 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const [accessGrants, setAccessGrants] = useState<AccessGrant[]>([]);
   const [newGrant, setNewGrant] = useState({ staffId: "", hospitalId: "", role: "viewer", reason: "", hours: "24" });
   const [grantMsg, setGrantMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  // Master Password + PIN state
+  const [opsPassCurrent, setOpsPassCurrent] = useState("");
+  const [opsPassNew, setOpsPassNew] = useState("");
+  const [opsPassConfirm, setOpsPassConfirm] = useState("");
+  const [opsPassMsg, setOpsPassMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [opsPassIsSet, setOpsPassIsSet] = useState(true);
+  const [masterPinHospital, setMasterPinHospital] = useState("");
+  const [masterPinValue, setMasterPinValue] = useState("");
+  const [masterPinMsg, setMasterPinMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [masterPinMap, setMasterPinMap] = useState<Record<string, boolean>>({});
 
   // ─── Hospital Detail ───
   const [detailHospital, setDetailHospital] = useState<HospitalItem | null>(null);
@@ -478,6 +539,40 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
   const handleRevokeGrant = async (grantId: string) => {
     const res = await fetch("/api/access-grants", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ grantId, revokedBy: "ops-admin" }) });
     if (res.ok) loadAccessGrants();
+  };
+
+  // ─── Master Password Handlers ───
+  const loadOpsPasswordStatus = useCallback(async () => {
+    try { const res = await fetch("/api/system-config?action=ops_password_status"); if (res.ok) { const d = await res.json(); setOpsPassIsSet(d.isSet); } } catch { /* */ }
+  }, []);
+
+  const loadMasterPinStatus = useCallback(async () => {
+    try { const res = await fetch("/api/system-config?action=master_pin_status"); if (res.ok) { const d = await res.json(); setMasterPinMap(d.pins || {}); } } catch { /* */ }
+  }, []);
+
+  const handleSetOpsPassword = async () => {
+    setOpsPassMsg(null);
+    if (opsPassNew.length < 8) { setOpsPassMsg({ type: "err", text: "Password must be at least 8 characters" }); return; }
+    if (opsPassNew !== opsPassConfirm) { setOpsPassMsg({ type: "err", text: "Passwords do not match" }); return; }
+    const body: Record<string, string> = { action: "set_ops_password", password: opsPassNew };
+    if (opsPassIsSet) body.currentPassword = opsPassCurrent;
+    const res = await fetch("/api/system-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (res.ok) { setOpsPassMsg({ type: "ok", text: opsPassIsSet ? "Password changed" : "Password set" }); setOpsPassCurrent(""); setOpsPassNew(""); setOpsPassConfirm(""); setOpsPassIsSet(true); }
+    else { const err = await res.json(); setOpsPassMsg({ type: "err", text: err.error || "Failed" }); }
+  };
+
+  const handleSetMasterPin = async () => {
+    setMasterPinMsg(null);
+    if (!masterPinHospital) { setMasterPinMsg({ type: "err", text: "Select a hospital" }); return; }
+    if (!/^\d{4}$/.test(masterPinValue)) { setMasterPinMsg({ type: "err", text: "PIN must be exactly 4 digits" }); return; }
+    const res = await fetch("/api/system-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "set_master_pin", hospitalId: masterPinHospital, pin: masterPinValue }) });
+    if (res.ok) { setMasterPinMsg({ type: "ok", text: "Master PIN set" }); setMasterPinValue(""); loadMasterPinStatus(); }
+    else { const err = await res.json(); setMasterPinMsg({ type: "err", text: err.error || "Failed" }); }
+  };
+
+  const handleRemoveMasterPin = async (hospitalId: string) => {
+    const res = await fetch("/api/system-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "remove_master_pin", hospitalId }) });
+    if (res.ok) loadMasterPinStatus();
   };
 
   const handleExportAuditCSV = () => {
@@ -729,7 +824,7 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
             const isActive = s === "hospitals" ? (screen === "hospitals" || screen === "hospital-detail") : screen === s;
             const label = s === "create-hospitals" ? "Create" : s;
             return (
-            <motion.button key={s} whileHover={{ scale: 1.05 }} onClick={() => { if (s === "hospitals") { setScreen("hospitals"); setDetailHospital(null); setConfigModule(null); } else { setScreen(s as OpsScreen); } if (s === "audit") loadAuditLogs(); if (s === "access") loadAccessGrants(); }}
+            <motion.button key={s} whileHover={{ scale: 1.05 }} onClick={() => { if (s === "hospitals") { setScreen("hospitals"); setDetailHospital(null); setConfigModule(null); } else { setScreen(s as OpsScreen); } if (s === "audit") loadAuditLogs(); if (s === "access") { loadAccessGrants(); loadOpsPasswordStatus(); loadMasterPinStatus(); } }}
               style={{ background: isActive ? `${COPPER}10` : "none", border: isActive ? `1px solid ${COPPER}20` : "1px solid transparent", color: isActive ? COPPER_LIGHT : "#475569", fontSize: 10, fontWeight: 700, padding: "6px 12px", borderRadius: 8, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
               {s === "create-hospitals" ? "➕" : s === "hospitals" ? "🏥" : s === "operators" ? "👥" : s === "audit" ? "📋" : "🔑"} {label}
             </motion.button>
@@ -1885,12 +1980,70 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
           {screen === "access" && (
             <motion.div key="access" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
               <div style={{ marginBottom: 32 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Staff Access Control</div>
-                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Access Grants</h2>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: COPPER, marginBottom: 8 }}>Security & Access Control</div>
+                <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F0F4FF", fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>Access Management</h2>
               </div>
 
-              <div style={{ padding: "24px 20px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10`, marginBottom: 24 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: COPPER_LIGHT, marginBottom: 14 }}>Grant Temporary Access</div>
+              {/* ─── Section A: Master Password ─── */}
+              <div style={{ padding: "24px 20px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10`, marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                  <span style={{ fontSize: 16 }}>🔐</span>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: COPPER_LIGHT, letterSpacing: "0.06em", textTransform: "uppercase" }}>Ops Master Password</div>
+                  <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 4, background: opsPassIsSet ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)", color: opsPassIsSet ? "#22C55E" : "#F59E0B" }}>{opsPassIsSet ? "Set" : "Not Set"}</span>
+                </div>
+                <div style={{ fontSize: 11, color: "#64748B", marginBottom: 14 }}>This password protects the entire Ops platform. {opsPassIsSet ? "Enter your current password to change it." : "Set a password to secure access."}</div>
+                <div style={{ display: "grid", gridTemplateColumns: opsPassIsSet ? "1fr 1fr 1fr" : "1fr 1fr", gap: 10 }}>
+                  {opsPassIsSet && <input type="password" value={opsPassCurrent} onChange={e => { setOpsPassCurrent(e.target.value); setOpsPassMsg(null); }} placeholder="Current Password" style={{ ...inputStyle, padding: "10px 12px", fontSize: 12 }} />}
+                  <input type="password" value={opsPassNew} onChange={e => { setOpsPassNew(e.target.value); setOpsPassMsg(null); }} placeholder="New Password (8+ Characters)" style={{ ...inputStyle, padding: "10px 12px", fontSize: 12 }} />
+                  <input type="password" value={opsPassConfirm} onChange={e => { setOpsPassConfirm(e.target.value); setOpsPassMsg(null); }} placeholder="Confirm Password" style={{ ...inputStyle, padding: "10px 12px", fontSize: 12, borderColor: opsPassConfirm && opsPassConfirm === opsPassNew ? "rgba(34,197,94,0.3)" : opsPassConfirm ? "rgba(239,68,68,0.3)" : undefined }} />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
+                  <motion.button whileHover={{ scale: 1.02 }} onClick={handleSetOpsPassword} style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none" }}>{opsPassIsSet ? "Change Password" : "Set Password"}</motion.button>
+                  {opsPassMsg && <span style={{ fontSize: 11, fontWeight: 600, color: opsPassMsg.type === "ok" ? "#22C55E" : "#F87171" }}>{opsPassMsg.text}</span>}
+                </div>
+              </div>
+
+              {/* ─── Section B: Master PIN Per Hospital ─── */}
+              <div style={{ padding: "24px 20px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10`, marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                  <span style={{ fontSize: 16 }}>🗝️</span>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: COPPER_LIGHT, letterSpacing: "0.06em", textTransform: "uppercase" }}>Hospital Master PINs</div>
+                </div>
+                <div style={{ fontSize: 11, color: "#64748B", marginBottom: 14 }}>A 4-digit master PIN that unlocks ALL workstations at a hospital as Super Admin. Use this for Dalxic staff access or emergency override.</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 120px auto", gap: 10, alignItems: "end" }}>
+                  <select value={masterPinHospital} onChange={e => setMasterPinHospital(e.target.value)} style={{ ...inputStyle, padding: "10px 12px", fontSize: 12 }}>
+                    <option value="">Select Hospital...</option>
+                    {hospitals.map(h => <option key={h.id} value={h.id}>{h.code} — {h.name}</option>)}
+                  </select>
+                  <input type="password" value={masterPinValue} onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setMasterPinValue(e.target.value); setMasterPinMsg(null); }} placeholder="4-Digit PIN" maxLength={4} style={{ ...inputStyle, padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-jetbrains-mono), monospace", textAlign: "center", letterSpacing: "0.3em" }} />
+                  <motion.button whileHover={{ scale: 1.02 }} onClick={handleSetMasterPin} style={{ padding: "10px 18px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", whiteSpace: "nowrap" as const }}>Set PIN</motion.button>
+                </div>
+                {masterPinMsg && <div style={{ fontSize: 11, fontWeight: 600, color: masterPinMsg.type === "ok" ? "#22C55E" : "#F87171", marginTop: 8 }}>{masterPinMsg.text}</div>}
+                {/* Active master PINs */}
+                {hospitals.filter(h => masterPinMap[h.id]).length > 0 && (
+                  <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#475569", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Active Master PINs</div>
+                    {hospitals.filter(h => masterPinMap[h.id]).map(h => (
+                      <div key={h.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", borderRadius: 8, background: "rgba(255,255,255,0.015)", border: `1px solid ${COPPER}08` }}>
+                        <div>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: "#E2E8F0", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{h.code}</span>
+                          <span style={{ fontSize: 11, color: "#64748B", marginLeft: 8 }}>{h.name}</span>
+                          <span style={{ marginLeft: 10, fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 3, background: "rgba(34,197,94,0.1)", color: "#22C55E" }}>PIN SET</span>
+                        </div>
+                        <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleRemoveMasterPin(h.id)} style={{ padding: "4px 10px", borderRadius: 5, fontSize: 10, fontWeight: 600, color: "#EF4444", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)", cursor: "pointer" }}>Remove</motion.button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ─── Section C: Access Grants ─── */}
+              <div style={{ padding: "24px 20px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10`, marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                  <span style={{ fontSize: 16 }}>👤</span>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: COPPER_LIGHT, letterSpacing: "0.06em", textTransform: "uppercase" }}>Staff Access Grants</div>
+                </div>
+                <div style={{ fontSize: 11, color: "#64748B", marginBottom: 14 }}>Grant temporary access for Dalxic staff to view or manage hospital data.</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <input value={newGrant.staffId} onChange={e => setNewGrant(g => ({ ...g, staffId: e.target.value }))} placeholder="Dalxic Staff ID" style={{ ...inputStyle, padding: "9px 12px", fontSize: 12 }} />
                   <select value={newGrant.hospitalId} onChange={e => setNewGrant(g => ({ ...g, hospitalId: e.target.value }))} style={{ ...inputStyle, padding: "9px 12px", fontSize: 12 }}><option value="">Select Hospital...</option>{hospitals.map(h => <option key={h.id} value={h.id}>{h.code} — {h.name}</option>)}</select>
@@ -1904,8 +2057,9 @@ function OperatingPlatform({ onLogout }: { onLogout: () => void }) {
                 </div>
               </div>
 
+              {/* Active Grants List */}
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {accessGrants.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "#475569", fontSize: 13 }}>No active access grants</div>}
+                {accessGrants.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "#475569", fontSize: 13 }}>No Active Access Grants</div>}
                 {accessGrants.map(grant => {
                   const expired = new Date(grant.expiresAt) < new Date();
                   return (
