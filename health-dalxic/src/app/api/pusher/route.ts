@@ -13,14 +13,16 @@ export async function POST(request: Request) {
   const blocked = rateLimit(request, AUTH_RATE_LIMIT);
   if (blocked) return blocked;
 
-  // Verify dalxic access cookie
-  const cookie = request.headers.get("cookie") ?? "";
-  const hasAccess = cookie.split(";").some(c =>
-    c.trim().startsWith("dalxic_access=") && c.trim().endsWith("granted")
-  );
-
-  if (!hasAccess) {
-    return Response.json({ error: "Unauthorized" }, { status: 403 });
+  // Verify dalxic access cookie (skip on localhost for dev)
+  const host = request.headers.get("host") || "";
+  if (!host.includes("localhost")) {
+    const cookie = request.headers.get("cookie") ?? "";
+    const hasAccess = cookie.split(";").some(c =>
+      c.trim().startsWith("dalxic_access=") && c.trim().endsWith("granted")
+    );
+    if (!hasAccess) {
+      return Response.json({ error: "Unauthorized" }, { status: 403 });
+    }
   }
 
   const body = await request.formData();

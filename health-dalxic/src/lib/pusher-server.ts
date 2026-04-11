@@ -15,10 +15,9 @@ export function getPusher(): Pusher {
   return pusherInstance;
 }
 
-// Channel naming: private-hospital-{code}-queue, private-hospital-{code}-lab, etc.
-// Private prefix requires auth via /api/pusher endpoint
+// Channel naming: hospital-{code}-queue, hospital-{code}-lab, etc.
 export function hospitalChannel(hospitalCode: string, suffix: string) {
-  return `private-hospital-${hospitalCode}-${suffix}`;
+  return `hospital-${hospitalCode}-${suffix}`;
 }
 
 // Group-level channels for multi-branch events

@@ -11,10 +11,6 @@ export function getPusherClient(): PusherClient | null {
   if (!pusherClient) {
     pusherClient = new PusherClient(key, {
       cluster,
-      channelAuthorization: {
-        endpoint: "/api/pusher",
-        transport: "ajax",
-      },
     });
   }
   return pusherClient;

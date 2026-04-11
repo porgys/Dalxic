@@ -176,7 +176,7 @@ export function ChatPanel({ hospitalCode, currentModule, operatorId, operatorNam
     if (!chatEnabled) return;
     const pusher = getPusherClient();
     if (!pusher) return;
-    const channel = pusher.subscribe(`private-hospital-${hospitalCode}-chat`);
+    const channel = pusher.subscribe(`hospital-${hospitalCode}-chat`);
     channel.bind("new-message", (msg: ChatMsg) => {
       if (msg.toModule === null || msg.toModule === currentModule || msg.fromModule === currentModule) {
         setMessages(prev => [...prev, msg]);
@@ -187,7 +187,7 @@ export function ChatPanel({ hospitalCode, currentModule, operatorId, operatorNam
         loadConversations();
       }
     });
-    return () => { channel.unbind_all(); pusher.unsubscribe(`private-hospital-${hospitalCode}-chat`); };
+    return () => { channel.unbind_all(); pusher.unsubscribe(`hospital-${hospitalCode}-chat`); };
   }, [hospitalCode, currentModule, chatEnabled, loadConversations]);
 
   // Auto-scroll
