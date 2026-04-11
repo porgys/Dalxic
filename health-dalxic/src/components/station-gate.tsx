@@ -49,6 +49,32 @@ const STATION_TO_MODULE: Record<string, string> = {
 
 export function StationGate({ hospitalCode, stationName, stationIcon, allowedRoles, moduleKey, children }: StationGateProps) {
   const { session, isAuthenticated, loading, login, logout } = useOperator(hospitalCode);
+  const [moduleLocked, setModuleLocked] = useState(false);
+  const [moduleCheckDone, setModuleCheckDone] = useState(false);
+
+  const resolvedModule = moduleKey || STATION_TO_MODULE[stationName] || stationName.toLowerCase().replace(/[\s/]+/g, "_");
+
+  // Check if this module is active for the hospital — on mount + every 30s
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res = await fetch(`/api/hospitals?code=${hospitalCode}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const hospital = data.hospitals?.[0] || data.hospital;
+        if (!hospital) return;
+        const active = (hospital.activeModules || []) as string[];
+        if (!cancelled) {
+          setModuleLocked(!active.includes(resolvedModule));
+          setModuleCheckDone(true);
+        }
+      } catch { if (!cancelled) setModuleCheckDone(true); }
+    };
+    check();
+    const interval = setInterval(check, 30_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [hospitalCode, resolvedModule]);
 
   // Auto-lock on idle — resets on mouse, keyboard, touch activity
   useEffect(() => {
@@ -70,8 +96,13 @@ export function StationGate({ hospitalCode, stationName, stationIcon, allowedRol
     };
   }, [isAuthenticated, logout]);
 
-  if (loading) {
+  if (loading || !moduleCheckDone) {
     return <GateLoading stationName={stationName} stationIcon={stationIcon} />;
+  }
+
+  // Module disabled by admin — block everything
+  if (moduleLocked) {
+    return <ModuleLocked stationName={stationName} stationIcon={stationIcon} />;
   }
 
   if (!isAuthenticated || !session) {
@@ -99,8 +130,6 @@ export function StationGate({ hospitalCode, stationName, stationIcon, allowedRol
       />
     );
   }
-
-  const resolvedModule = moduleKey || STATION_TO_MODULE[stationName] || stationName.toLowerCase().replace(/[\s/]+/g, "_");
 
   return (
     <>
@@ -583,6 +612,92 @@ function GateLoading({ stationName, stationIcon }: { stationName: string; statio
         }}>
           Loading {stationName}...
         </div>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ─── Module Locked By Admin ─── */
+function ModuleLocked({ stationName, stationIcon }: { stationName: string; stationIcon: string }) {
+  return (
+    <div style={{
+      minHeight: "100vh",
+      background: "radial-gradient(ellipse 120% 80% at 55% 40%, rgba(15,9,5,1) 0%, rgba(6,3,12,1) 50%, rgba(2,3,10,1) 100%)",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      position: "relative",
+    }}>
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 40%, rgba(239,68,68,0.04) 0%, transparent 50%)", pointerEvents: "none" }} />
+
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        style={{
+          textAlign: "center", maxWidth: 440, position: "relative", zIndex: 1,
+          padding: "56px 48px", borderRadius: 28,
+          background: "rgba(255,255,255,0.02)",
+          border: "1px solid rgba(239,68,68,0.12)",
+          backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)",
+        }}
+      >
+        <div style={{ position: "absolute", top: 0, left: "15%", right: "15%", height: 1, background: "linear-gradient(90deg, transparent, rgba(239,68,68,0.3), transparent)" }} />
+
+        <div style={{
+          width: 80, height: 80, borderRadius: 22, margin: "0 auto 24px",
+          background: "rgba(239,68,68,0.05)", border: "1.5px solid rgba(239,68,68,0.15)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          position: "relative",
+        }}>
+          <span style={{ fontSize: 38, filter: "grayscale(0.6) opacity(0.5)" }}>{stationIcon}</span>
+          <div style={{
+            position: "absolute", bottom: -6, right: -6,
+            width: 28, height: 28, borderRadius: 8,
+            background: "rgba(239,68,68,0.12)", border: "1.5px solid rgba(239,68,68,0.3)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </div>
+        </div>
+
+        <h1 style={{
+          fontSize: 22, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase",
+          color: "#EF4444", marginBottom: 12,
+          fontFamily: "var(--font-outfit), Outfit, sans-serif",
+        }}>
+          Locked By Admin
+        </h1>
+
+        <p style={{
+          fontSize: 14, fontWeight: 700, color: "#94A3B8", marginBottom: 8,
+          fontFamily: "var(--font-outfit), Outfit, sans-serif", letterSpacing: "0.02em",
+        }}>
+          {stationName}
+        </p>
+
+        <p style={{
+          fontSize: 12, color: "#475569", lineHeight: 1.6, marginBottom: 0,
+          fontFamily: "var(--font-outfit), Outfit, sans-serif",
+        }}>
+          This module has been disabled by an administrator. Contact your Ops team to re-enable access.
+        </p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6 }}
+        style={{ position: "absolute", bottom: 28, textAlign: "center" }}
+      >
+        <p style={{
+          fontSize: 9, color: "#1E293B", letterSpacing: "0.3em", textTransform: "uppercase",
+          fontFamily: "var(--font-outfit), Outfit, sans-serif", fontWeight: 600,
+        }}>
+          Dalxic Health &mdash; WorkstationGuard™
+        </p>
       </motion.div>
     </div>
   );
