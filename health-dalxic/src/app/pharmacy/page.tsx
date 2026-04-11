@@ -283,6 +283,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
   const [showReceiveStock, setShowReceiveStock] = useState(false);
   const [receiveForm, setReceiveForm] = useState({ drugCatalogId: "", batchNumber: "", expiryDate: "", quantity: "", costPrice: "", sellPrice: "", supplier: "" });
   const [invFilter, setInvFilter] = useState<"all" | "warning" | "critical">("all");
+  const [invViewBy, setInvViewBy] = useState<"category" | "az">("category");
 
   // ═══ Retail state ═══
   const [retailSales, setRetailSales] = useState<RetailSaleItem[]>([]);
@@ -297,6 +298,8 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
 
   // ═══ Reports state ═══
   const [reportStats, setReportStats] = useState<{ totalStockValue: number; expiringCount: number; dispensedToday: number; retailRevenue: number }>({ totalStockValue: 0, expiringCount: 0, dispensedToday: 0, retailRevenue: 0 });
+  const [reportView, setReportView] = useState<"workshop" | "list">("workshop");
+  const [reportExpandedCat, setReportExpandedCat] = useState<string | null>(null);
 
   // ═══ Loaders ═══
   const loadQueue = useCallback(async () => {
@@ -779,7 +782,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
           {/* ═══════════════════════════════════════════ */}
           {activeNav === "inventory" && (
             <motion.div key="inventory" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              {/* Top bar: actions + filter */}
+              {/* Top bar: actions + filter + view toggle */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                 <div style={{ display: "flex", gap: 8 }}>
                   <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setShowAddDrug(true)}
@@ -787,12 +790,25 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                   <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setShowReceiveStock(true)}
                     style={{ padding: "8px 16px", borderRadius: 10, cursor: "pointer", background: `${BLUE}12`, border: `1px solid ${BLUE}25`, color: BLUE, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>+ Receive Stock</motion.button>
                 </div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  {(["all", "warning", "critical"] as const).map((f) => (
-                    <button key={f} onClick={() => setInvFilter(f)} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: "pointer", background: invFilter === f ? `${f === "critical" ? "#EF4444" : f === "warning" ? "#F59E0B" : COPPER}15` : "transparent", border: `1px solid ${invFilter === f ? (f === "critical" ? "#EF444430" : f === "warning" ? "#F59E0B30" : COPPER + "30") : "rgba(255,255,255,0.05)"}`, color: invFilter === f ? (f === "critical" ? "#EF4444" : f === "warning" ? "#F59E0B" : COPPER_LIGHT) : "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                      {f === "all" ? "All Stock" : f === "warning" ? "Expiring 90 Days" : "Expiring 30 Days"}
-                    </button>
-                  ))}
+                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                  {/* View By toggle */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569" }}>View By</span>
+                    {(["category", "az"] as const).map((v) => (
+                      <button key={v} onClick={() => setInvViewBy(v)} style={{ padding: "5px 10px", borderRadius: 7, fontSize: 10, fontWeight: 700, cursor: "pointer", background: invViewBy === v ? `${COPPER}15` : "transparent", border: `1px solid ${invViewBy === v ? COPPER + "30" : "rgba(255,255,255,0.05)"}`, color: invViewBy === v ? COPPER_LIGHT : "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        {v === "category" ? "Category" : "A — Z"}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.06)" }} />
+                  {/* Expiry filter */}
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {(["all", "warning", "critical"] as const).map((f) => (
+                      <button key={f} onClick={() => setInvFilter(f)} style={{ padding: "5px 10px", borderRadius: 7, fontSize: 10, fontWeight: 700, cursor: "pointer", background: invFilter === f ? `${f === "critical" ? "#EF4444" : f === "warning" ? "#F59E0B" : COPPER}15` : "transparent", border: `1px solid ${invFilter === f ? (f === "critical" ? "#EF444430" : f === "warning" ? "#F59E0B30" : COPPER + "30") : "rgba(255,255,255,0.05)"}`, color: invFilter === f ? (f === "critical" ? "#EF4444" : f === "warning" ? "#F59E0B" : COPPER_LIGHT) : "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        {f === "all" ? "All" : f === "warning" ? "90d" : "30d"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -801,47 +817,121 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                 <DInput value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} placeholder="Search Drug Catalog..." />
               </div>
 
-              {/* Drug catalog cards */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 32 }}>
-                {catalog.map((drug, i) => (
-                  <motion.div key={drug.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
-                    style={{ padding: "18px 20px", borderRadius: 16, background: theme.cardBg, border: `1px solid ${stockColor(drug.stockStatus)}15`, backdropFilter: "blur(12px)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: "#F0F4FF" }}>{drug.name}</div>
-                        {drug.genericName && <div style={{ fontSize: 11, color: "#64748B", fontStyle: "italic" }}>{drug.genericName}</div>}
-                      </div>
-                      <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: `${stockColor(drug.stockStatus)}12`, color: stockColor(drug.stockStatus), textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                        {drug.stockStatus === "OUT" ? "Out" : drug.stockStatus === "LOW" ? "Low" : "OK"}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#94A3B8" }}>{drug.category}</span>
-                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#94A3B8" }}>{drug.unit}</span>
-                      {drug.controlledSubstance && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: "rgba(239,68,68,0.08)", color: "#EF4444" }}>Controlled</span>}
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-                      <div>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: stockColor(drug.stockStatus), fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.totalStock}</div>
-                        <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>In Stock</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.batchCount}</div>
-                        <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Batches</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: expiryColor(drug.daysToExpiry), fontFamily: "var(--font-jetbrains-mono), monospace" }}>
-                          {drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}
+              {/* ═══ CATEGORY VIEW ═══ */}
+              {invViewBy === "category" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 28, marginBottom: 32 }}>
+                  {(() => {
+                    const grouped = new Map<string, CatalogDrug[]>();
+                    catalog.forEach((d) => {
+                      const arr = grouped.get(d.category) || [];
+                      arr.push(d);
+                      grouped.set(d.category, arr);
+                    });
+                    return Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([cat, drugs]) => {
+                      const catStock = drugs.reduce((s, d) => s + d.totalStock, 0);
+                      const catValue = drugs.reduce((s, d) => s + d.totalStock * d.defaultPrice, 0);
+                      return (
+                        <motion.div key={cat} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+                          {/* Category header */}
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, padding: "12px 18px", borderRadius: 14, background: `${COPPER}06`, border: `1px solid ${COPPER}15` }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: COPPER_LIGHT }}>{cat}</span>
+                              <span style={{ fontSize: 11, fontWeight: 600, color: "#64748B" }}>{drugs.length} {drugs.length === 1 ? "Drug" : "Drugs"}</span>
+                            </div>
+                            <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#94A3B8" }}>{catStock} Units</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER_LIGHT }}>GHS {catValue.toFixed(2)}</span>
+                            </div>
+                          </div>
+                          {/* Drug cards in this category */}
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+                            {drugs.map((drug, i) => (
+                              <motion.div key={drug.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
+                                style={{ padding: "18px 20px", borderRadius: 16, background: theme.cardBg, border: `1px solid ${stockColor(drug.stockStatus)}15`, backdropFilter: "blur(12px)" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                                  <div>
+                                    <div style={{ fontSize: 14, fontWeight: 800, color: theme.textPrimary, transition: "color 0.4s ease" }}>{drug.name}</div>
+                                    {drug.genericName && <div style={{ fontSize: 11, color: "#64748B", fontStyle: "italic" }}>{drug.genericName}</div>}
+                                  </div>
+                                  <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: `${stockColor(drug.stockStatus)}12`, color: stockColor(drug.stockStatus), textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                                    {drug.stockStatus === "OUT" ? "Out" : drug.stockStatus === "LOW" ? "Low" : "OK"}
+                                  </span>
+                                </div>
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                                  <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#94A3B8" }}>{drug.unit}</span>
+                                  {drug.controlledSubstance && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: "rgba(239,68,68,0.08)", color: "#EF4444" }}>Controlled</span>}
+                                  {drug.requiresPrescription && <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(14,165,233,0.06)", border: "1px solid rgba(14,165,233,0.12)", color: "#64748B" }}>Rx</span>}
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                                  <div>
+                                    <div style={{ fontSize: 18, fontWeight: 800, color: stockColor(drug.stockStatus), fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.totalStock}</div>
+                                    <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>In Stock</div>
+                                  </div>
+                                  <div>
+                                    <div style={{ fontSize: 18, fontWeight: 800, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.batchCount}</div>
+                                    <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Batches</div>
+                                  </div>
+                                  <div>
+                                    <div style={{ fontSize: 14, fontWeight: 800, color: expiryColor(drug.daysToExpiry), fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                                      {drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}
+                                    </div>
+                                    <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Expiry</div>
+                                  </div>
+                                </div>
+                                <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: theme.textPrimary, fontFamily: "var(--font-jetbrains-mono), monospace", transition: "color 0.4s ease" }}>
+                                  GHS {drug.defaultPrice.toFixed(2)} <span style={{ fontSize: 10, color: "#475569", fontWeight: 500 }}>/ {drug.unit}</span>
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      );
+                    });
+                  })()}
+                </div>
+              ) : (
+                /* ═══ A-Z VIEW ═══ */
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 32 }}>
+                  {[...catalog].sort((a, b) => a.name.localeCompare(b.name)).map((drug, i) => (
+                    <motion.div key={drug.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
+                      style={{ padding: "18px 20px", borderRadius: 16, background: theme.cardBg, border: `1px solid ${stockColor(drug.stockStatus)}15`, backdropFilter: "blur(12px)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: theme.textPrimary, transition: "color 0.4s ease" }}>{drug.name}</div>
+                          {drug.genericName && <div style={{ fontSize: 11, color: "#64748B", fontStyle: "italic" }}>{drug.genericName}</div>}
                         </div>
-                        <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Expiry</div>
+                        <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: `${stockColor(drug.stockStatus)}12`, color: stockColor(drug.stockStatus), textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                          {drug.stockStatus === "OUT" ? "Out" : drug.stockStatus === "LOW" ? "Low" : "OK"}
+                        </span>
                       </div>
-                    </div>
-                    <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: "#F0F4FF", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
-                      GHS {drug.defaultPrice.toFixed(2)} <span style={{ fontSize: 10, color: "#475569", fontWeight: 500 }}>/ {drug.unit}</span>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#94A3B8" }}>{drug.category}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#94A3B8" }}>{drug.unit}</span>
+                        {drug.controlledSubstance && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: "rgba(239,68,68,0.08)", color: "#EF4444" }}>Controlled</span>}
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: stockColor(drug.stockStatus), fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.totalStock}</div>
+                          <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>In Stock</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.batchCount}</div>
+                          <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Batches</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: expiryColor(drug.daysToExpiry), fontFamily: "var(--font-jetbrains-mono), monospace" }}>
+                            {drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}
+                          </div>
+                          <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Expiry</div>
+                        </div>
+                      </div>
+                      <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: theme.textPrimary, fontFamily: "var(--font-jetbrains-mono), monospace", transition: "color 0.4s ease" }}>
+                        GHS {drug.defaultPrice.toFixed(2)} <span style={{ fontSize: 10, color: "#475569", fontWeight: 500 }}>/ {drug.unit}</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
 
               {catalog.length === 0 && (
                 <div style={{ textAlign: "center", padding: "48px 0", color: "#475569" }}>
@@ -860,9 +950,9 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                   <div style={{ maxHeight: 400, overflow: "auto" }}>
                     {inventory.map((s) => (
                       <div key={s.id} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", gap: 8, padding: "10px 12px", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.02)" }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: "#F0F4FF" }}>{s.drugName}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary, transition: "color 0.4s ease" }}>{s.drugName}</span>
                         <span style={{ fontSize: 11, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#94A3B8" }}>{s.batchNumber}</span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: s.quantityRemaining === 0 ? "#EF4444" : "#F0F4FF" }}>{s.quantityRemaining} / {s.quantityReceived}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: s.quantityRemaining === 0 ? "#EF4444" : theme.textPrimary }}>{s.quantityRemaining} / {s.quantityReceived}</span>
                         <span style={{ fontSize: 12, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER_LIGHT }}>GHS {s.sellPrice.toFixed(2)}</span>
                         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                           <div style={{ width: 6, height: 6, borderRadius: "50%", background: expiryColor(s.daysToExpiry), boxShadow: s.daysToExpiry <= 30 ? `0 0 6px ${expiryColor(s.daysToExpiry)}` : "none" }} />
@@ -976,50 +1066,223 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                 ))}
               </div>
 
-              {/* Stock by category */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                <div style={{ background: theme.cardBg, border: theme.cardBorder, borderRadius: 20, padding: 24, backdropFilter: "blur(12px)" }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 16 }}>Stock By Category</div>
+              {/* View toggle for category breakdown */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: COPPER_LIGHT }}>Sales By Category</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569" }}>Display</span>
+                  {(["workshop", "list"] as const).map((v) => (
+                    <button key={v} onClick={() => setReportView(v)} style={{ padding: "5px 10px", borderRadius: 7, fontSize: 10, fontWeight: 700, cursor: "pointer", background: reportView === v ? `${COPPER}15` : "transparent", border: `1px solid ${reportView === v ? COPPER + "30" : "rgba(255,255,255,0.05)"}`, color: reportView === v ? COPPER_LIGHT : "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                      {v === "workshop" ? "Cards" : "List"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ═══ WORKSHOP (Card) VIEW ═══ */}
+              {reportView === "workshop" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 28 }}>
                   {(() => {
-                    const byCategory = new Map<string, { count: number; stock: number; value: number }>();
+                    const byCategory = new Map<string, { drugs: CatalogDrug[]; stock: number; value: number; retailSold: number }>();
                     catalog.forEach((d) => {
-                      const cur = byCategory.get(d.category) || { count: 0, stock: 0, value: 0 };
-                      cur.count++;
+                      const cur = byCategory.get(d.category) || { drugs: [], stock: 0, value: 0, retailSold: 0 };
+                      cur.drugs.push(d);
                       cur.stock += d.totalStock;
                       cur.value += d.totalStock * d.defaultPrice;
                       byCategory.set(d.category, cur);
                     });
-                    return Array.from(byCategory.entries()).sort((a, b) => b[1].value - a[1].value).map(([cat, data]) => (
-                      <div key={cat} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                        <div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#F0F4FF" }}>{cat}</span>
-                          <span style={{ fontSize: 11, color: "#64748B", marginLeft: 8 }}>{data.count} drugs, {data.stock} units</span>
-                        </div>
-                        <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER_LIGHT }}>GHS {data.value.toFixed(2)}</span>
-                      </div>
-                    ));
-                  })()}
-                  {catalog.length === 0 && <div style={{ color: "#475569", fontSize: 13, textAlign: "center", padding: "24px 0" }}>No Data</div>}
-                </div>
+                    // Count retail sales per category
+                    retailSales.filter((s) => s.paymentStatus === "PAID").forEach((sale) => {
+                      sale.items.forEach((item) => {
+                        const drug = catalog.find((d) => d.id === item.drugCatalogId);
+                        if (drug) {
+                          const cur = byCategory.get(drug.category);
+                          if (cur) cur.retailSold += item.total;
+                        }
+                      });
+                    });
+                    return Array.from(byCategory.entries()).sort((a, b) => b[1].value - a[1].value).map(([cat, data]) => {
+                      const isExpanded = reportExpandedCat === cat;
+                      const lowCount = data.drugs.filter((d) => d.stockStatus === "LOW" || d.stockStatus === "OUT").length;
+                      return (
+                        <motion.div key={cat} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+                          {/* Category workshop card */}
+                          <motion.div
+                            onClick={() => setReportExpandedCat(isExpanded ? null : cat)}
+                            whileHover={{ y: -2 }}
+                            style={{ padding: "20px 24px", borderRadius: 20, background: theme.cardBg, border: `1px solid ${COPPER}15`, backdropFilter: "blur(12px)", cursor: "pointer", transition: "border-color 0.3s" }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+                              <div>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, transition: "color 0.4s ease" }}>{cat}</div>
+                                <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>{data.drugs.length} Medications{lowCount > 0 ? ` — ${lowCount} Low/Out` : ""}</div>
+                              </div>
+                              <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} style={{ fontSize: 14, color: COPPER_LIGHT }}>▾</motion.span>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16 }}>
+                              <div>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>{data.stock}</div>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>Total Units</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: theme.textPrimary, fontFamily: "var(--font-jetbrains-mono), monospace", transition: "color 0.4s ease" }}>GHS {data.value.toFixed(0)}</div>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>Stock Value</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: "#22C55E", fontFamily: "var(--font-jetbrains-mono), monospace" }}>GHS {data.retailSold.toFixed(0)}</div>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>Retail Sales</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: lowCount > 0 ? "#F59E0B" : "#22C55E", fontFamily: "var(--font-jetbrains-mono), monospace" }}>{data.drugs.length - lowCount}/{data.drugs.length}</div>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>In Stock</div>
+                              </div>
+                            </div>
+                          </motion.div>
 
-                <div style={{ background: theme.cardBg, border: theme.cardBorder, borderRadius: 20, padding: 24, backdropFilter: "blur(12px)" }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 16 }}>Low Stock Alerts</div>
-                  {catalog.filter((d) => d.stockStatus === "LOW" || d.stockStatus === "OUT").length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "24px 0", color: "#22C55E", fontSize: 13, fontWeight: 600 }}>All Stock Levels Healthy</div>
-                  ) : (
-                    catalog.filter((d) => d.stockStatus === "LOW" || d.stockStatus === "OUT").map((d) => (
-                      <div key={d.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: stockColor(d.stockStatus), boxShadow: `0 0 6px ${stockColor(d.stockStatus)}` }} />
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#F0F4FF" }}>{d.name}</span>
+                          {/* Expanded: drug breakdown */}
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginTop: 12, paddingLeft: 8, paddingRight: 8 }}>
+                                  {data.drugs.sort((a, b) => b.totalStock - a.totalStock).map((drug, i) => (
+                                    <motion.div key={drug.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                                      style={{ padding: "14px 16px", borderRadius: 14, background: theme.navInactiveBg, border: `1px solid ${stockColor(drug.stockStatus)}12`, transition: "background 0.3s" }}>
+                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                        <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary, transition: "color 0.4s ease" }}>{drug.name}</span>
+                                        <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: `${stockColor(drug.stockStatus)}12`, color: stockColor(drug.stockStatus), textTransform: "uppercase" }}>
+                                          {drug.stockStatus}
+                                        </span>
+                                      </div>
+                                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                                        <div>
+                                          <div style={{ fontSize: 15, fontWeight: 800, color: stockColor(drug.stockStatus), fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.totalStock}</div>
+                                          <div style={{ fontSize: 8, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Stock</div>
+                                        </div>
+                                        <div>
+                                          <div style={{ fontSize: 13, fontWeight: 700, color: COPPER_LIGHT, fontFamily: "var(--font-jetbrains-mono), monospace" }}>GHS {drug.defaultPrice.toFixed(2)}</div>
+                                          <div style={{ fontSize: 8, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Price</div>
+                                        </div>
+                                        <div>
+                                          <div style={{ fontSize: 13, fontWeight: 700, color: expiryColor(drug.daysToExpiry), fontFamily: "var(--font-jetbrains-mono), monospace" }}>{drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}</div>
+                                          <div style={{ fontSize: 8, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Expiry</div>
+                                        </div>
+                                      </div>
+                                    </motion.div>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      );
+                    });
+                  })()}
+                </div>
+              ) : (
+                /* ═══ LIST VIEW ═══ */
+                <div style={{ background: theme.cardBg, border: theme.cardBorder, borderRadius: 20, padding: 24, backdropFilter: "blur(12px)", marginBottom: 28 }}>
+                  {(() => {
+                    const byCategory = new Map<string, { drugs: CatalogDrug[]; stock: number; value: number; retailSold: number }>();
+                    catalog.forEach((d) => {
+                      const cur = byCategory.get(d.category) || { drugs: [], stock: 0, value: 0, retailSold: 0 };
+                      cur.drugs.push(d);
+                      cur.stock += d.totalStock;
+                      cur.value += d.totalStock * d.defaultPrice;
+                      byCategory.set(d.category, cur);
+                    });
+                    retailSales.filter((s) => s.paymentStatus === "PAID").forEach((sale) => {
+                      sale.items.forEach((item) => {
+                        const drug = catalog.find((d) => d.id === item.drugCatalogId);
+                        if (drug) {
+                          const cur = byCategory.get(drug.category);
+                          if (cur) cur.retailSold += item.total;
+                        }
+                      });
+                    });
+                    return Array.from(byCategory.entries()).sort((a, b) => b[1].value - a[1].value).map(([cat, data]) => {
+                      const isExpanded = reportExpandedCat === cat;
+                      return (
+                        <div key={cat}>
+                          {/* Category row */}
+                          <div onClick={() => setReportExpandedCat(isExpanded ? null : cat)}
+                            style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto", gap: 12, padding: "14px 16px", alignItems: "center", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.04)", borderRadius: isExpanded ? "12px 12px 0 0" : 0, background: isExpanded ? `${COPPER}06` : "transparent", transition: "background 0.2s" }}>
+                            <div>
+                              <span style={{ fontSize: 14, fontWeight: 800, color: theme.textPrimary, transition: "color 0.4s ease" }}>{cat}</span>
+                              <span style={{ fontSize: 11, color: "#64748B", marginLeft: 8 }}>{data.drugs.length} drugs</span>
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#94A3B8" }}>{data.stock} units</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER_LIGHT }}>GHS {data.value.toFixed(0)}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#22C55E" }}>GHS {data.retailSold.toFixed(0)}</span>
+                            <div>
+                              {data.drugs.filter((d) => d.stockStatus === "LOW" || d.stockStatus === "OUT").length > 0 && (
+                                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: "rgba(245,158,11,0.1)", color: "#F59E0B" }}>
+                                  {data.drugs.filter((d) => d.stockStatus === "LOW" || d.stockStatus === "OUT").length} Alert{data.drugs.filter((d) => d.stockStatus === "LOW" || d.stockStatus === "OUT").length > 1 ? "s" : ""}
+                                </span>
+                              )}
+                            </div>
+                            <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} style={{ fontSize: 12, color: COPPER_LIGHT }}>▾</motion.span>
+                          </div>
+
+                          {/* Expanded drug rows */}
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
+                                {/* Sub-header */}
+                                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 80px", gap: 12, padding: "6px 16px 6px 32px", fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", background: `${COPPER}04` }}>
+                                  <span>Drug</span><span>Stock</span><span>Price</span><span>Value</span><span>Expiry</span><span>Status</span>
+                                </div>
+                                {data.drugs.sort((a, b) => b.totalStock - a.totalStock).map((drug) => (
+                                  <div key={drug.id} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 80px", gap: 12, padding: "10px 16px 10px 32px", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.02)", background: `${COPPER}02` }}>
+                                    <div>
+                                      <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary, transition: "color 0.4s ease" }}>{drug.name}</span>
+                                      {drug.genericName && <span style={{ fontSize: 10, color: "#64748B", marginLeft: 6, fontStyle: "italic" }}>{drug.genericName}</span>}
+                                    </div>
+                                    <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-jetbrains-mono), monospace", color: stockColor(drug.stockStatus) }}>{drug.totalStock}</span>
+                                    <span style={{ fontSize: 12, fontFamily: "var(--font-jetbrains-mono), monospace", color: COPPER_LIGHT }}>GHS {drug.defaultPrice.toFixed(2)}</span>
+                                    <span style={{ fontSize: 12, fontFamily: "var(--font-jetbrains-mono), monospace", color: "#94A3B8" }}>GHS {(drug.totalStock * drug.defaultPrice).toFixed(0)}</span>
+                                    <span style={{ fontSize: 11, fontWeight: 600, color: expiryColor(drug.daysToExpiry) }}>{drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}</span>
+                                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: `${stockColor(drug.stockStatus)}12`, color: stockColor(drug.stockStatus), textTransform: "uppercase", textAlign: "center" }}>{drug.stockStatus}</span>
+                                  </div>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: stockColor(d.stockStatus) }}>
-                          {d.totalStock} / {d.minStockThreshold} min
-                        </span>
-                      </div>
-                    ))
+                      );
+                    });
+                  })()}
+                  {/* Column header */}
+                  {catalog.length > 0 && (
+                    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto", gap: 12, padding: "8px 16px", fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "1px solid rgba(255,255,255,0.05)", order: -1, position: "sticky", top: 0 }}>
+                      <span>Category</span><span>Units</span><span>Value</span><span>Revenue</span><span>Alerts</span><span />
+                    </div>
                   )}
                 </div>
+              )}
+
+              {/* Low stock alerts panel */}
+              <div style={{ background: theme.cardBg, border: theme.cardBorder, borderRadius: 20, padding: 24, backdropFilter: "blur(12px)" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 16 }}>Low Stock Alerts</div>
+                {catalog.filter((d) => d.stockStatus === "LOW" || d.stockStatus === "OUT").length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "24px 0", color: "#22C55E", fontSize: 13, fontWeight: 600 }}>All Stock Levels Healthy</div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {catalog.filter((d) => d.stockStatus === "LOW" || d.stockStatus === "OUT").map((d) => (
+                      <div key={d.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, background: `${stockColor(d.stockStatus)}06`, border: `1px solid ${stockColor(d.stockStatus)}15` }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: stockColor(d.stockStatus), boxShadow: `0 0 6px ${stockColor(d.stockStatus)}` }} />
+                          <div>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary, transition: "color 0.4s ease" }}>{d.name}</span>
+                            <div style={{ fontSize: 10, color: "#64748B" }}>{d.category}</div>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 14, fontWeight: 800, fontFamily: "var(--font-jetbrains-mono), monospace", color: stockColor(d.stockStatus) }}>
+                          {d.totalStock} <span style={{ fontSize: 10, fontWeight: 500, color: "#475569" }}>/ {d.minStockThreshold} min</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
