@@ -631,6 +631,10 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
     setQueue((prev) => prev.slice(1));
     setDoctorStatus("IN_CONSULTATION");
 
+    // Update patient visit status to in_consultation
+    try {
+      await fetch("/api/records", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: next.id, hospitalCode: HOSPITAL_CODE, visitStatus: "in_consultation" }) });
+    } catch { /* silent */ }
     // Trigger voice callout + Pusher broadcast
     try {
       await fetch("/api/callout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, token: next.token, patientName: next.patientName, department: next.department, calledBy: "Doctor" }) });

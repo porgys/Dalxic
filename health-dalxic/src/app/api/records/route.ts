@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 // PATCH: Update patient record — diagnosis, treatment, referrals, notes
 export async function PATCH(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
-  const { recordId, hospitalCode, diagnosis, treatment, referral, addReferral, admissionOrder } = body as {
+  const { recordId, hospitalCode, diagnosis, treatment, referral, addReferral, admissionOrder, visitStatus } = body as {
     recordId: string;
     hospitalCode: string;
     diagnosis?: { primary: string | null; secondary: string[]; icdCodes: string[]; notes: string | null };
@@ -33,6 +33,7 @@ export async function PATCH(request: Request) {
     referral?: unknown;
     addReferral?: { targetStation: string; reason: string; urgency: string; referredBy: string; notes?: string };
     admissionOrder?: { reason: string; orderedBy: string; orderedByName: string };
+    visitStatus?: string;
   };
 
   if (!recordId || !hospitalCode) {
@@ -74,6 +75,12 @@ export async function PATCH(request: Request) {
       status: "pending", // pending | accepted | completed
     });
     updates.visit = JSON.parse(JSON.stringify({ ...visit, referrals }));
+  }
+
+  // Update visit status (e.g. active → in_consultation)
+  if (visitStatus) {
+    const visit = record.visit as Record<string, unknown>;
+    updates.visit = JSON.parse(JSON.stringify({ ...visit, ...(updates.visit as Record<string, unknown> || {}), visitStatus }));
   }
 
   // Doctor orders admission — sets flag in visit JSON for ward nurse to execute
