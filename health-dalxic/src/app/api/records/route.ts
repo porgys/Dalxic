@@ -25,13 +25,14 @@ export async function GET(request: Request) {
 // PATCH: Update patient record — diagnosis, treatment, referrals, notes
 export async function PATCH(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
-  const { recordId, hospitalCode, diagnosis, treatment, referral, addReferral } = body as {
+  const { recordId, hospitalCode, diagnosis, treatment, referral, addReferral, admissionOrder } = body as {
     recordId: string;
     hospitalCode: string;
     diagnosis?: { primary: string | null; secondary: string[]; icdCodes: string[]; notes: string | null };
     treatment?: { prescriptions: unknown[]; procedures: unknown[]; followUp: string | null; nextAppointment: string | null };
     referral?: unknown;
     addReferral?: { targetStation: string; reason: string; urgency: string; referredBy: string; notes?: string };
+    admissionOrder?: { reason: string; orderedBy: string; orderedByName: string };
   };
 
   if (!recordId || !hospitalCode) {
@@ -73,6 +74,19 @@ export async function PATCH(request: Request) {
       status: "pending", // pending | accepted | completed
     });
     updates.visit = JSON.parse(JSON.stringify({ ...visit, referrals }));
+  }
+
+  // Doctor orders admission — sets flag in visit JSON for ward nurse to execute
+  if (admissionOrder) {
+    const visit = record.visit as Record<string, unknown>;
+    updates.visit = JSON.parse(JSON.stringify({
+      ...visit,
+      admissionOrdered: true,
+      admissionReason: admissionOrder.reason || "",
+      admissionOrderedBy: admissionOrder.orderedBy || "doctor",
+      admissionOrderedByName: admissionOrder.orderedByName || "Doctor",
+      admissionOrderedAt: new Date().toISOString(),
+    }));
   }
 
   // Direct referral field override

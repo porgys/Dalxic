@@ -327,7 +327,8 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
   const [groupMsg, setGroupMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // ─── Operator form ───
-  const [newOp, setNewOp] = useState({ name: "", phone: "", pin: "", role: "front_desk", specialty: "general" });
+  const [newOp, setNewOp] = useState({ name: "", phone: "", pin: "", role: "front_desk", specialty: "general", assignedWard: "" });
+  const [configWards, setConfigWards] = useState<Array<{ id: string; name: string }>>([]);
   const [addingOp, setAddingOp] = useState(false);
   const [opMsg, setOpMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [editOp, setEditOp] = useState<OperatorItem | null>(null);
@@ -504,6 +505,16 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
     setActiveModules(prev => prev.includes(key) ? prev.filter(m => m !== key) : [...prev, key]);
   };
 
+  const loadConfigWards = async (hospCode: string) => {
+    try {
+      const res = await fetch(`/api/beds?hospitalCode=${hospCode}`);
+      if (res.ok) {
+        const data = await res.json();
+        setConfigWards((data.wards || []).map((w: { id: string; name: string }) => ({ id: w.id, name: w.name })));
+      }
+    } catch { /* */ }
+  };
+
   const enterModuleConfig = (moduleKey: string) => {
     setConfigModule(moduleKey);
     setScreen("module-config");
@@ -511,14 +522,23 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
     const relevantRole = ROLE_OPTIONS.find(r => r.modules.includes(moduleKey));
     if (relevantRole) setNewOp(o => ({ ...o, role: relevantRole.value }));
     // Auto-select hospital if one is assigned
-    if (selectedHospital) loadOperators(selectedHospital);
+    if (selectedHospital) {
+      loadOperators(selectedHospital);
+      if (moduleKey === "ward_ipd") loadConfigWards(selectedHospital);
+    }
   };
 
   const handleAddOperator = async () => {
     if (!selectedHospital || !newOp.name || !newOp.pin || !newOp.role) return;
     setAddingOp(true); setOpMsg(null);
     try {
-      const res = await fetch("/api/operators", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: selectedHospital, action: "create", name: newOp.name, phone: newOp.phone, pin: newOp.pin, role: newOp.role }) });
+      // Build meta for ward assignment
+      const isWardModule = configModule === "ward_ipd";
+      const wardMeta = isWardModule && newOp.assignedWard ? (() => {
+        const ward = configWards.find(w => w.id === newOp.assignedWard);
+        return ward ? { assignedWardId: ward.id, assignedWardName: ward.name } : undefined;
+      })() : undefined;
+      const res = await fetch("/api/operators", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: selectedHospital, action: "create", name: newOp.name, phone: newOp.phone, pin: newOp.pin, role: newOp.role, meta: wardMeta }) });
       if (res.ok) {
         // Auto-create Doctor profile when adding a doctor-role operator
         const isDoctorRole = ["doctor", "specialist", "surgeon"].includes(newOp.role);
@@ -526,8 +546,9 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
           const docRole = newOp.role === "specialist" ? "attending" : newOp.role === "surgeon" ? "attending" : "attending";
           await fetch("/api/doctors", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: selectedHospital, name: newOp.name, specialty: newOp.specialty || "general", role: docRole }) }).catch(() => {});
         }
-        setOpMsg({ type: "ok", text: `${newOp.name} added${isDoctorRole && configModule === "doctor" ? ` — ${DOCTOR_SPECIALTIES.find(s => s.value === newOp.specialty)?.label || "General"} specialty` : ""}` });
-        setNewOp({ name: "", phone: "", pin: "", role: "front_desk", specialty: "general" }); loadOperators(selectedHospital);
+        const wardLabel = wardMeta ? ` — ${wardMeta.assignedWardName}` : "";
+        setOpMsg({ type: "ok", text: `${newOp.name} added${isDoctorRole && configModule === "doctor" ? ` — ${DOCTOR_SPECIALTIES.find(s => s.value === newOp.specialty)?.label || "General"} specialty` : wardLabel}` });
+        setNewOp({ name: "", phone: "", pin: "", role: "front_desk", specialty: "general", assignedWard: "" }); loadOperators(selectedHospital);
       }
       else { const err = await res.json(); setOpMsg({ type: "err", text: err.error || "Failed" }); }
     } catch { setOpMsg({ type: "err", text: "Network error" }); } finally { setAddingOp(false); }
@@ -1236,7 +1257,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                     <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 18 }}>
                       Add Operator To {configWs.title}
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: configModule === "doctor" ? "1fr 1fr 100px 1fr 1fr auto" : "1fr 1fr 100px 1fr auto", gap: 12, alignItems: "end" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: configModule === "doctor" ? "1fr 1fr 100px 1fr 1fr auto" : configModule === "ward_ipd" ? "1fr 1fr 100px 1fr 1fr auto" : "1fr 1fr 100px 1fr auto", gap: 12, alignItems: "end" }}>
                       <div>
                         <label style={labelStyle}>Full Name</label>
                         <input placeholder="e.g. Ama Mensah" value={newOp.name} onChange={e => setNewOp(o => ({ ...o, name: e.target.value }))} style={inputStyle} />
@@ -1256,6 +1277,15 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                           <label style={labelStyle}>Specialty</label>
                           <select value={newOp.specialty} onChange={e => setNewOp(o => ({ ...o, specialty: e.target.value }))} style={{ ...inputStyle, appearance: "none" }}>
                             {DOCTOR_SPECIALTIES.map(s => <option key={s.value} value={s.value} style={{ background: "#0a0a14" }}>{s.icon} {s.label}</option>)}
+                          </select>
+                        </div>
+                      )}
+                      {configModule === "ward_ipd" && (
+                        <div>
+                          <label style={labelStyle}>Assigned Ward</label>
+                          <select value={newOp.assignedWard} onChange={e => setNewOp(o => ({ ...o, assignedWard: e.target.value }))} style={{ ...inputStyle, appearance: "none" }}>
+                            <option value="" style={{ background: "#0a0a14" }}>All Wards</option>
+                            {configWards.map(w => <option key={w.id} value={w.id} style={{ background: "#0a0a14" }}>🛏️ {w.name}</option>)}
                           </select>
                         </div>
                       )}

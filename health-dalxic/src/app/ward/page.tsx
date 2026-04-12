@@ -154,6 +154,10 @@ export default function WardIPDPage() {
 
 function WardIPDContent({ operator }: { operator: OperatorSession }) {
   const theme = useStationTheme();
+  // Ward scoping — nurses see only their assigned ward, admin/super_admin see all
+  const isAdmin = ["admin", "super_admin"].includes(operator.operatorRole);
+  const assignedWardId = (operator.meta as Record<string, unknown> | null)?.assignedWardId as string | undefined;
+  const assignedWardName = (operator.meta as Record<string, unknown> | null)?.assignedWardName as string | undefined;
   const [activeNav, setActiveNav] = useState<"inpatients" | "admit" | "discharged">("inpatients");
   const [inpatients, setInpatients] = useState<Inpatient[]>([]);
   const [counts, setCounts] = useState({ admitted: 0, discharged: 0, total: 0 });
@@ -162,13 +166,16 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
   const [expandedSection, setExpandedSection] = useState<string | null>(null); // "round" | "discharge" | "prescriptions" | "doctor"
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // Admit form — with bed picker
-  const [admitForm, setAdmitForm] = useState({ recordId: "", admissionReason: "" });
+  // Admit form — pending orders + bed picker
+  interface PendingOrder { recordId: string; patientName: string; age?: number; gender?: string; queueToken: string; department: string; chiefComplaint?: string; admissionReason: string; orderedByName: string; orderedAt?: string; diagnosis?: string | null }
+  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<PendingOrder | null>(null);
   const [admitting, setAdmitting] = useState(false);
   const [wards, setWards] = useState<WardData[]>([]);
   const [selectedWardId, setSelectedWardId] = useState("");
   const [selectedBed, setSelectedBed] = useState<{ id: string; label: string; wardName: string } | null>(null);
   const [loadingWards, setLoadingWards] = useState(false);
+  const [loadingOrders, setLoadingOrders] = useState(false);
 
   // Round form
   const [roundNotes, setRoundNotes] = useState("");
@@ -197,11 +204,16 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
       const res = await fetch(`/api/ward-ipd?hospitalCode=${HOSPITAL_CODE}&status=${status}`);
       if (res.ok) {
         const data = await res.json();
-        setInpatients(data.inpatients || []);
+        let list: Inpatient[] = data.inpatients || [];
+        // Ward scoping: non-admin operators only see their assigned ward
+        if (!isAdmin && assignedWardName) {
+          list = list.filter(p => p.wardName === assignedWardName);
+        }
+        setInpatients(list);
         setCounts(data.counts || { admitted: 0, discharged: 0, total: 0 });
       }
     } catch { /* retry */ }
-  }, [activeNav]);
+  }, [activeNav, isAdmin, assignedWardName]);
 
   const loadWards = useCallback(async () => {
     setLoadingWards(true);
@@ -215,33 +227,49 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
     setLoadingWards(false);
   }, []);
 
+  const loadPendingOrders = useCallback(async () => {
+    setLoadingOrders(true);
+    try {
+      const res = await fetch(`/api/ward-ipd?hospitalCode=${HOSPITAL_CODE}&status=pending_orders`);
+      if (res.ok) {
+        const data = await res.json();
+        setPendingOrders(data.pendingOrders || []);
+      }
+    } catch { /* */ }
+    setLoadingOrders(false);
+  }, []);
+
+  // Filter wards for non-admin: only show assigned ward
+  const visibleWards = (!isAdmin && assignedWardId) ? wards.filter(w => w.id === assignedWardId) : wards;
+
   useEffect(() => { loadInpatients(); }, [loadInpatients]);
-  useEffect(() => { if (activeNav === "admit") loadWards(); }, [activeNav, loadWards]);
+  useEffect(() => { if (activeNav === "admit") { loadWards(); loadPendingOrders(); } }, [activeNav, loadWards, loadPendingOrders]);
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
 
   const admitPatient = async () => {
-    if (!admitForm.recordId.trim() || !selectedBed) return;
+    if (!selectedOrder || !selectedBed) return;
     setAdmitting(true);
     try {
       const res = await fetch("/api/ward-ipd", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           hospitalCode: HOSPITAL_CODE, action: "admit",
-          recordId: admitForm.recordId,
+          recordId: selectedOrder.recordId,
           wardName: selectedBed.wardName,
           bedLabel: selectedBed.label,
           bedId: selectedBed.id,
-          admissionReason: admitForm.admissionReason,
+          admissionReason: selectedOrder.admissionReason,
           admittedBy: operator.operatorName || "ward_nurse",
         }),
       });
       if (res.ok) {
         showToast("Patient Admitted");
-        setAdmitForm({ recordId: "", admissionReason: "" });
+        setSelectedOrder(null);
         setSelectedBed(null);
         setSelectedWardId("");
         loadInpatients();
-        loadWards(); // Refresh bed availability
+        loadWards();
+        loadPendingOrders();
       } else { showToast("Admission Failed", "error"); }
     } catch { showToast("Network Error", "error"); }
     setAdmitting(false);
@@ -338,6 +366,11 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Ward / IPD</span>
+          {assignedWardName && !isAdmin && (
+            <span style={{ padding: "3px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", color: "#C084FC" }}>
+              {assignedWardName}
+            </span>
+          )}
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
@@ -386,96 +419,134 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
           {/* ADMIT — with bed picker */}
           {activeNav === "admit" && (
             <motion.div key="admit" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <WorkshopBox title="Admit Patient" icon="➕">
-                {/* Record ID + Reason */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-                  <DInput label="Patient Record ID" value={admitForm.recordId} onChange={(e) => setAdmitForm({ ...admitForm, recordId: e.target.value })} placeholder="Enter record ID..." required />
-                  <DInput label="Admission Reason" value={admitForm.admissionReason} onChange={(e) => setAdmitForm({ ...admitForm, admissionReason: e.target.value })} placeholder="Reason for admission..." />
-                </div>
-
-                {/* Ward Selector */}
-                <div style={{ marginBottom: 12 }}>
-                  <label className="block text-xs font-medium font-body mb-2" style={{ color: "#94A3B8" }}>Select Ward</label>
-                  {loadingWards ? (
-                    <p style={{ fontSize: 12, color: "#64748B", padding: 12 }}>Loading Wards...</p>
-                  ) : wards.length === 0 ? (
-                    <p style={{ fontSize: 12, color: "#F59E0B", padding: 12 }}>No Wards Configured. Set Up Wards In Bed Management First.</p>
-                  ) : (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                      {wards.map((w) => {
-                        const available = w.rooms.flatMap((r) => r.beds).filter((b) => b.status === "AVAILABLE").length;
-                        const isSelected = selectedWardId === w.id;
-                        return (
-                          <motion.button key={w.id} type="button" whileHover={{ y: -2 }}
-                            onClick={() => { setSelectedWardId(isSelected ? "" : w.id); setSelectedBed(null); }}
-                            style={{
-                              padding: "10px 16px", borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "none",
-                              background: isSelected ? `${COPPER}15` : "rgba(255,255,255,0.03)",
-                              color: isSelected ? "#D4956B" : "#94A3B8",
-                              outline: isSelected ? `1px solid ${COPPER}40` : "1px solid rgba(255,255,255,0.06)",
-                            }}>
-                            {w.name}
-                            <span style={{ display: "block", fontSize: 9, marginTop: 2, color: available > 0 ? "#22C55E" : "#EF4444" }}>
-                              {available} Beds Free
+              {/* Pending Admission Orders from Doctors */}
+              <WorkshopBox title={`Pending Admission Orders (${pendingOrders.length})`} icon="📋">
+                {loadingOrders ? (
+                  <p style={{ fontSize: 12, color: "#64748B", textAlign: "center", padding: 16 }}>Loading Orders...</p>
+                ) : pendingOrders.length === 0 ? (
+                  <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>No Pending Admission Orders From Doctors.</p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                    {pendingOrders.map((order) => {
+                      const isSelected = selectedOrder?.recordId === order.recordId;
+                      return (
+                        <motion.button key={order.recordId} type="button" whileHover={{ y: -1 }}
+                          onClick={() => { setSelectedOrder(isSelected ? null : order); setSelectedWardId(""); setSelectedBed(null); }}
+                          style={{
+                            padding: 16, borderRadius: 14, cursor: "pointer", border: "none", textAlign: "left", width: "100%",
+                            background: isSelected ? "rgba(168,85,247,0.08)" : "rgba(255,255,255,0.02)",
+                            outline: isSelected ? "1.5px solid rgba(168,85,247,0.35)" : "1px solid rgba(255,255,255,0.06)",
+                          }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <span style={{ fontSize: 12, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{order.queueToken}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{order.patientName}</span>
+                              {order.age && <span style={{ fontSize: 11, color: "#64748B" }}>{order.age}y {order.gender || ""}</span>}
+                            </div>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: "#A855F7", textTransform: "uppercase" }}>
+                              {isSelected ? "✓ Selected" : "Select"}
                             </span>
-                          </motion.button>
+                          </div>
+                          <div style={{ display: "flex", gap: 16, fontSize: 11, color: "#94A3B8" }}>
+                            <span>Reason: <strong style={{ color: "#D4956B" }}>{order.admissionReason || order.chiefComplaint || "—"}</strong></span>
+                            <span>By: <strong>{order.orderedByName}</strong></span>
+                            {order.diagnosis && <span>Dx: <strong>{order.diagnosis}</strong></span>}
+                            {order.orderedAt && <span>{new Date(order.orderedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>}
+                          </div>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                )}
+              </WorkshopBox>
+
+              {/* Ward + Bed Picker — shows when an order is selected */}
+              {selectedOrder && (
+                <WorkshopBox title={`Assign Bed For ${selectedOrder.patientName}`} icon="🛏️" delay={0.1}>
+                  {/* Ward Selector */}
+                  <div style={{ marginBottom: 12 }}>
+                    <label className="block text-xs font-medium font-body mb-2" style={{ color: "#94A3B8" }}>Select Ward</label>
+                    {loadingWards ? (
+                      <p style={{ fontSize: 12, color: "#64748B", padding: 12 }}>Loading Wards...</p>
+                    ) : visibleWards.length === 0 ? (
+                      <p style={{ fontSize: 12, color: "#F59E0B", padding: 12 }}>No Wards Configured. Set Up Wards In Bed Management First.</p>
+                    ) : (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {visibleWards.map((w) => {
+                          const available = w.rooms.flatMap((r) => r.beds).filter((b) => b.status === "AVAILABLE").length;
+                          const isSelected = selectedWardId === w.id;
+                          return (
+                            <motion.button key={w.id} type="button" whileHover={{ y: -2 }}
+                              onClick={() => { setSelectedWardId(isSelected ? "" : w.id); setSelectedBed(null); }}
+                              style={{
+                                padding: "10px 16px", borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "none",
+                                background: isSelected ? `${COPPER}15` : "rgba(255,255,255,0.03)",
+                                color: isSelected ? "#D4956B" : "#94A3B8",
+                                outline: isSelected ? `1px solid ${COPPER}40` : "1px solid rgba(255,255,255,0.06)",
+                              }}>
+                              {w.name}
+                              <span style={{ display: "block", fontSize: 9, marginTop: 2, color: available > 0 ? "#22C55E" : "#EF4444" }}>
+                                {available} Beds Free
+                              </span>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bed Grid */}
+                  {selectedWardId && (
+                    <div style={{ marginBottom: 16 }}>
+                      <label className="block text-xs font-medium font-body mb-2" style={{ color: "#94A3B8" }}>Select Bed</label>
+                      {(() => {
+                        const ward = wards.find((w) => w.id === selectedWardId);
+                        if (!ward) return null;
+                        const allBeds = ward.rooms.flatMap((r) => r.beds.map((b) => ({ ...b, roomName: r.name, wardName: ward.name })));
+                        if (allBeds.length === 0) return <p style={{ fontSize: 12, color: "#F59E0B", padding: 8 }}>No Beds In This Ward. Add Beds In Bed Management.</p>;
+                        return (
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8 }}>
+                            {allBeds.map((bed) => {
+                              const isAvailable = bed.status === "AVAILABLE";
+                              const isSel = selectedBed?.id === bed.id;
+                              return (
+                                <motion.button key={bed.id} type="button" whileHover={isAvailable ? { y: -2 } : {}}
+                                  onClick={() => isAvailable && setSelectedBed({ id: bed.id, label: bed.label, wardName: bed.wardName })}
+                                  style={{
+                                    padding: "12px 8px", borderRadius: 12, cursor: isAvailable ? "pointer" : "not-allowed", border: "none", textAlign: "center",
+                                    background: isSel ? "rgba(34,197,94,0.12)" : !isAvailable ? "rgba(255,255,255,0.01)" : "rgba(255,255,255,0.03)",
+                                    outline: isSel ? "1.5px solid rgba(34,197,94,0.4)" : "1px solid rgba(255,255,255,0.06)",
+                                    opacity: isAvailable ? 1 : 0.35,
+                                  }}>
+                                  <div style={{ fontSize: 15, fontWeight: 800, fontFamily: fontFamily.mono, color: isSel ? "#22C55E" : isAvailable ? "white" : "#64748B" }}>{bed.label}</div>
+                                  <div style={{ fontSize: 9, color: "#64748B", marginTop: 2 }}>{bed.roomName}</div>
+                                  <div style={{ fontSize: 8, marginTop: 3, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px",
+                                    color: bed.status === "AVAILABLE" ? "#22C55E" : bed.status === "OCCUPIED" ? "#38BDF8" : bed.status === "CLEANING" ? "#FB923C" : bed.status === "MAINTENANCE" ? "#A855F7" : "#F59E0B",
+                                  }}>{bed.status}</div>
+                                </motion.button>
+                              );
+                            })}
+                          </div>
                         );
-                      })}
+                      })()}
                     </div>
                   )}
-                </div>
 
-                {/* Bed Grid — shows when ward selected */}
-                {selectedWardId && (
-                  <div style={{ marginBottom: 16 }}>
-                    <label className="block text-xs font-medium font-body mb-2" style={{ color: "#94A3B8" }}>Select Bed</label>
-                    {(() => {
-                      const ward = wards.find((w) => w.id === selectedWardId);
-                      if (!ward) return null;
-                      const allBeds = ward.rooms.flatMap((r) => r.beds.map((b) => ({ ...b, roomName: r.name, wardName: ward.name })));
-                      if (allBeds.length === 0) return <p style={{ fontSize: 12, color: "#F59E0B", padding: 8 }}>No Beds In This Ward. Add Beds In Bed Management.</p>;
-                      return (
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8 }}>
-                          {allBeds.map((bed) => {
-                            const isAvailable = bed.status === "AVAILABLE";
-                            const isSelected = selectedBed?.id === bed.id;
-                            return (
-                              <motion.button key={bed.id} type="button" whileHover={isAvailable ? { y: -2 } : {}}
-                                onClick={() => isAvailable && setSelectedBed({ id: bed.id, label: bed.label, wardName: bed.wardName })}
-                                style={{
-                                  padding: "12px 8px", borderRadius: 12, cursor: isAvailable ? "pointer" : "not-allowed", border: "none", textAlign: "center",
-                                  background: isSelected ? "rgba(34,197,94,0.12)" : !isAvailable ? "rgba(255,255,255,0.01)" : "rgba(255,255,255,0.03)",
-                                  outline: isSelected ? "1.5px solid rgba(34,197,94,0.4)" : "1px solid rgba(255,255,255,0.06)",
-                                  opacity: isAvailable ? 1 : 0.35,
-                                }}>
-                                <div style={{ fontSize: 15, fontWeight: 800, fontFamily: fontFamily.mono, color: isSelected ? "#22C55E" : isAvailable ? "white" : "#64748B" }}>{bed.label}</div>
-                                <div style={{ fontSize: 9, color: "#64748B", marginTop: 2 }}>{bed.roomName}</div>
-                                <div style={{ fontSize: 8, marginTop: 3, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px",
-                                  color: bed.status === "AVAILABLE" ? "#22C55E" : bed.status === "OCCUPIED" ? "#38BDF8" : bed.status === "CLEANING" ? "#FB923C" : bed.status === "MAINTENANCE" ? "#A855F7" : "#F59E0B",
-                                }}>{bed.status}</div>
-                              </motion.button>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
+                  {/* Selected Summary */}
+                  {selectedBed && (
+                    <div style={{ padding: 12, borderRadius: 12, background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", marginBottom: 16 }}>
+                      <p style={{ fontSize: 12, color: "#22C55E", fontWeight: 700 }}>
+                        ✓ {selectedBed.wardName} — Bed {selectedBed.label}
+                      </p>
+                    </div>
+                  )}
 
-                {/* Selected Summary */}
-                {selectedBed && (
-                  <div style={{ padding: 12, borderRadius: 12, background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", marginBottom: 16 }}>
-                    <p style={{ fontSize: 12, color: "#22C55E", fontWeight: 700 }}>
-                      ✓ {selectedBed.wardName} — Bed {selectedBed.label}
-                    </p>
-                  </div>
-                )}
-
-                <motion.button type="button" onClick={admitPatient} disabled={admitting || !admitForm.recordId.trim() || !selectedBed} whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
-                  style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: admitting ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: admitting || !admitForm.recordId.trim() || !selectedBed ? 0.5 : 1 }}>
-                  {admitting ? "Admitting..." : "Admit Patient"}
-                </motion.button>
-              </WorkshopBox>
+                  <motion.button type="button" onClick={admitPatient} disabled={admitting || !selectedBed} whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
+                    style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: admitting ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: admitting || !selectedBed ? 0.5 : 1 }}>
+                    {admitting ? "Admitting..." : "Admit Patient"}
+                  </motion.button>
+                </WorkshopBox>
+              )}
             </motion.div>
           )}
 

@@ -448,6 +448,7 @@ model DeviceOperator {
   phone      String?
   pin        String   // 4-digit PIN (plain text — hospital-level, not internet-facing auth)
   role       String   // front_desk | doctor | pharmacist | lab_tech | nurse | radiologist | admin | billing
+  meta       Json?    // Operator-specific config: { assignedWardId, assignedWardName, ... }
   isActive   Boolean  @default(true) @map("is_active")
   createdAt  DateTime @default(now()) @map("created_at")
   lastLoginAt DateTime? @map("last_login_at")

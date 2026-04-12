@@ -103,7 +103,6 @@ export const TIER_DEFAULTS = {
       "blood_bank",
       "admin",
       "beds",
-      "display",
     ],
     maxDevices: 999,
     whatsappBundlePerMonth: 50000,
@@ -141,7 +140,6 @@ export const ROUTE_MAP = {
   "blood_bank":        "/w/kQ5~hW9sZr2P-tB6nF3dYm8jLv",
   "admin":             "/w/Vt8_mA4bXk1R~wN7rJ0nDs3hFy",
   "beds":              "/w/nF3~jK7dZs9W-yR2vH5mBt1xQa",
-  "display":           "/w/Hp6_wB0nXr4T~kF8dJ3mYv5tLs",
   "platform":          "/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh",
   "kiosk":             "/w/Ys9_dF2bXh6R~mK0rV3nJt7wLp",
   "ops":               "/s/ZXJ2LkQ9Mnx0V3hCYTVrUw.aGVhbHRo",
@@ -154,7 +152,7 @@ export const ROUTE_MAP = {
 export const ALL_WORKSTATIONS = [
   // T1 — Core
   { key: "front_desk", href: ROUTE_MAP.front_desk, icon: "🏥", title: "Front Desk", desc: "Patient Registration & Check-In", role: "Device Operator" },
-  { key: "waiting_room", href: ROUTE_MAP.waiting_room, icon: "📺", title: "Waiting Room", desc: "Live Queue Display", role: "Public Display" },
+  { key: "waiting_room", href: ROUTE_MAP.waiting_room, icon: "📺", title: "Waiting Room", desc: "Live Queue Display & Voice Callout", role: "Public Display" },
   { key: "doctor", href: ROUTE_MAP.doctor, icon: "🩺", title: "Doctor View", desc: "Consultation & Session Management", role: "Doctor" },
   { key: "pharmacy", href: ROUTE_MAP.pharmacy, icon: "💊", title: "Pharmacy", desc: "Prescription Dispensing", role: "Pharmacist" },
   { key: "billing", href: ROUTE_MAP.billing, icon: "🧾", title: "Billing", desc: "Invoice & Payment Collection", role: "Billing Officer" },
@@ -178,7 +176,6 @@ export const ALL_WORKSTATIONS = [
 export const UTILITY_STATIONS = [
   { key: "admin", href: ROUTE_MAP.admin, icon: "⚙️", title: "Hospital Admin", desc: "Device & Book Management", role: "Hospital Admin" },
   { key: "beds", href: ROUTE_MAP.beds, icon: "🛏️", title: "Bed Management", desc: "Ward & Bed Status Tracking", role: "Ward Manager" },
-  { key: "display", href: ROUTE_MAP.display, icon: "📢", title: "Display Board", desc: "Queue Callout & Voice Announcements", role: "Public Display" },
 ] as const;
 
 /** Get tier defaults for a tier key */

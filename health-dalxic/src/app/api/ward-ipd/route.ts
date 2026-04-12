@@ -84,6 +84,34 @@ export async function GET(request: Request) {
       };
     });
 
+  // Pending admission orders — doctors ordered admission but nurse hasn't executed yet
+  if (status === "pending_orders") {
+    const pendingOrders = records
+      .filter((r) => {
+        const visit = r.visit as { admissionOrdered?: boolean; admission?: { admitted?: boolean } };
+        return visit.admissionOrdered && !visit.admission?.admitted;
+      })
+      .map((r) => {
+        const patient = r.patient as { fullName: string; age?: number; gender?: string; phone?: string };
+        const visit = r.visit as { queueToken: string; department: string; chiefComplaint?: string; admissionReason?: string; admissionOrderedBy?: string; admissionOrderedByName?: string; admissionOrderedAt?: string };
+        const diagnosis = r.diagnosis as { primary?: string; notes?: string } | null;
+        return {
+          recordId: r.id,
+          patientName: patient.fullName,
+          age: patient.age,
+          gender: patient.gender,
+          queueToken: visit.queueToken,
+          department: visit.department,
+          chiefComplaint: visit.chiefComplaint,
+          admissionReason: visit.admissionReason || "",
+          orderedByName: visit.admissionOrderedByName || "Doctor",
+          orderedAt: visit.admissionOrderedAt,
+          diagnosis: diagnosis?.primary || null,
+        };
+      });
+    return Response.json({ pendingOrders, counts: { pendingOrders: pendingOrders.length } });
+  }
+
   const filtered = status === "discharged"
     ? inpatients.filter((p) => p.discharged)
     : status === "admitted"

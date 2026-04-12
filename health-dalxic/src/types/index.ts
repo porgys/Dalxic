@@ -250,6 +250,7 @@ export interface OperatorSession {
   operatorRole: OperatorRole;
   hospitalId: string;
   hospitalCode: string;
+  meta?: Record<string, unknown> | null;
   loginAt: string; // ISO
 }
 

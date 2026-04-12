@@ -37,6 +37,7 @@ export async function GET(request: Request) {
       name: true,
       phone: true,
       role: true,
+      meta: true,
       isActive: true,
       lastLoginAt: true,
       createdAt: true,
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
 
   // ─── CREATE: Register a new operator ───
   if (action === "create") {
-    const { name, phone, pin, role } = body;
+    const { name, phone, pin, role, meta } = body;
 
     if (!name?.trim() || !pin || !role) {
       return Response.json({ error: "name, pin, and role required" }, { status: 400 });
@@ -97,6 +98,7 @@ export async function POST(request: Request) {
         phone: phone?.trim() || null,
         pin,
         role,
+        meta: meta ? JSON.parse(JSON.stringify(meta)) : undefined,
         isActive: true,
       },
     });
@@ -206,6 +208,7 @@ export async function POST(request: Request) {
       operatorRole: operator.role,
       hospitalId: hospital.id,
       hospitalCode,
+      meta: operator.meta || null,
       loginAt: new Date().toISOString(),
     });
   }
@@ -250,7 +253,7 @@ export async function POST(request: Request) {
 // PATCH: Update operator details (name, phone, role, active status, PIN reset)
 export async function PATCH(request: Request) {
   const blocked = rateLimit(request, AUTH_RATE_LIMIT); if (blocked) return blocked;  const body = await request.json();
-  const { hospitalCode, operatorId, name, phone, role, isActive, newPin } = body;
+  const { hospitalCode, operatorId, name, phone, role, isActive, newPin, meta } = body;
 
   if (!hospitalCode || !operatorId) {
     return Response.json({ error: "hospitalCode and operatorId required" }, { status: 400 });
@@ -272,6 +275,7 @@ export async function PATCH(request: Request) {
   if (phone !== undefined) updates.phone = phone?.trim() || null;
   if (role) updates.role = role;
   if (isActive !== undefined) updates.isActive = isActive;
+  if (meta !== undefined) updates.meta = meta ? JSON.parse(JSON.stringify(meta)) : null;
 
   // PIN reset
   if (newPin) {
