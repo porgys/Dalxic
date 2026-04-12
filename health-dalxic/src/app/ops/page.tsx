@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TIER_DEFAULTS, ALL_WORKSTATIONS, UTILITY_STATIONS, type TierKey } from "@/lib/tier-defaults";
-import { COPPER, COPPER_LIGHT, BLUE, fontSize, fontWeight, fontFamily, radius, spacing, getStyles } from "@/hooks/use-station-theme";
+import { COPPER, COPPER_LIGHT, BLUE, fontFamily, getStyles } from "@/hooks/use-station-theme";
 
 /* ─── Constants ─── */
 const OPS_KEY = "dalxic_ops_session";
