@@ -90,7 +90,7 @@ export async function POST(request: Request) {
 // PATCH: Update doctor status, patient count, or profile
 export async function PATCH(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
-  const { doctorId, status, activePatientCount, breakReason, meta } = body;
+  const { doctorId, status, activePatientCount, breakReason, meta, specialty } = body;
 
   if (!doctorId) {
     return Response.json({ error: "doctorId required" }, { status: 400 });
@@ -122,6 +122,10 @@ export async function PATCH(request: Request) {
 
   if (typeof activePatientCount === "number") {
     data.activePatientCount = activePatientCount;
+  }
+
+  if (specialty) {
+    data.specialty = specialty;
   }
 
   if (meta) {

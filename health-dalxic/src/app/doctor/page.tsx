@@ -405,7 +405,10 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
           const match = doctors.find((d: { name: string }) => d.name === operator.operatorName);
           if (match) {
             setDoctorId(match.id);
-            setDoctorSpecialty(match.specialty || "general");
+            // Normalize specialty — API may store label ("General Medicine") or value ("general")
+            const raw = (match.specialty || "general").toLowerCase();
+            const normalized = raw === "general medicine" ? "general" : raw === "ob/gyn" ? "obstetrics" : raw === "eye clinic" ? "eye" : raw;
+            setDoctorSpecialty(normalized);
           }
         }
       } catch { /* fallback to general */ }
