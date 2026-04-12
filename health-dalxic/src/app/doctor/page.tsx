@@ -557,22 +557,41 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
       const res = await fetch(`/api/queue?hospitalCode=${HOSPITAL_CODE}`);
       if (res.ok) {
         const data = await res.json();
+        const deptMatch = (d: { department?: string }) => {
+          if (doctorSpecialty === "all") return true;
+          const dept = (d.department || "general").toLowerCase();
+          if (doctorSpecialty === "general") return dept === "general" || dept === "general medicine" || !["emergency","pediatrics","obstetrics","surgery","dental","eye","ent"].includes(dept);
+          return dept === doctorSpecialty;
+        };
         // Filter: show active, lab_results_ready patients (not closed/paused_for_lab/etc)
         const visible = data.filter((d: { visitStatus?: string; department?: string }) => {
           const vs = d.visitStatus ?? "active";
           if (vs !== "active" && vs !== "lab_results_ready") return false;
-          // Admin "all" mode — show every department
-          if (doctorSpecialty === "all") return true;
-          // Filter by doctor's specialty — "general" sees general + unmatched departments
-          const dept = (d.department || "general").toLowerCase();
-          if (doctorSpecialty === "general") return dept === "general" || dept === "General Medicine" || !["emergency","pediatrics","obstetrics","surgery","dental","eye","ent"].includes(dept);
-          return dept === doctorSpecialty;
+          return deptMatch(d);
         });
         setQueue(sortQueue(visible.map((d: { id: string; token: string; patientName: string; chiefComplaint: string; department: string; symptomSeverity: number | null; emergencyFlag: boolean; emergencyReason: string | null; visitStatus?: string; priorityReturn?: boolean; createdAt: string }) => ({
           ...d,
           visitStatus: d.visitStatus ?? "active",
           priorityReturn: d.priorityReturn ?? false,
         }))));
+        // Admin switching departments: auto-resume active consultation in this department
+        const inConsult = data.filter((d: { visitStatus?: string; department?: string }) => {
+          const vs = d.visitStatus ?? "active";
+          return vs === "in_consultation" && deptMatch(d);
+        });
+        if (inConsult.length > 0) {
+          setActiveSession((prev) => {
+            // Don't override if doctor already has a session loaded
+            if (prev) return prev;
+            const p = inConsult[0];
+            setDoctorStatus("IN_CONSULTATION");
+            return {
+              recordId: p.id,
+              patient: { fullName: p.patientName },
+              visit: { queueToken: p.token, chiefComplaint: p.chiefComplaint, department: p.department, date: p.createdAt, symptomSeverity: p.symptomSeverity ?? undefined, emergencyFlag: p.emergencyFlag },
+            };
+          });
+        }
       }
     } catch { /* retry */ }
   }, [doctorSpecialty]);
@@ -930,7 +949,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                 {ALL_DEPARTMENTS.map(d => (
                   <div
                     key={d.value}
-                    onClick={() => { setDoctorSpecialty(d.value); setShowDeptSwitcher(false); }}
+                    onClick={() => { setDoctorSpecialty(d.value); setShowDeptSwitcher(false); setActiveSession(null); setDoctorStatus("AVAILABLE"); }}
                     style={{ padding: "6px 12px", fontSize: 11, fontWeight: doctorSpecialty === d.value ? 700 : 500, color: doctorSpecialty === d.value ? COPPER : "#94A3B8", cursor: "pointer", borderRadius: 4, background: doctorSpecialty === d.value ? `${COPPER}10` : "transparent" }}
                     onMouseEnter={e => { (e.target as HTMLDivElement).style.background = `${COPPER}10`; }}
                     onMouseLeave={e => { (e.target as HTMLDivElement).style.background = doctorSpecialty === d.value ? `${COPPER}10` : "transparent"; }}
