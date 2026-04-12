@@ -64,7 +64,7 @@ export default function BloodBankPage() {
 
 function BloodBankContent({ operator }: { operator: OperatorSession }) {
   const theme = useStationTheme();
-  const [activeNav, setActiveNav] = useState<"inventory" | "requests" | "history">("inventory");
+  const [activeNav, setActiveNav] = useState<"inventory" | "requests" | "history" | "donors">("inventory");
   const [inventory, setInventory] = useState<BloodInventory[]>([]);
   const [requests, setRequests] = useState<TransfusionRequest[]>([]);
   const [counts, setCounts] = useState({ pendingRequests: 0, crossMatched: 0, issued: 0, totalRequests: 0 });
@@ -72,9 +72,34 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
+  // Donor state
+  interface DonorRecord {
+    id: string; fullName: string; phone?: string; dateOfBirth?: string; gender?: string; bloodGroup?: string;
+    donorToken: string; donorStatus: string; registeredAt: string; registeredBy: string;
+    screening?: { weight?: number; bloodPressure?: string; hemoglobin?: number; pulse?: number; temperature?: number; eligible: boolean; deferralReason?: string; screenedAt: string };
+    collection?: { bloodGroup: string; component: string; units: number; collectedAt: string };
+    createdAt: string;
+  }
+  const [donors, setDonors] = useState<DonorRecord[]>([]);
+  const [donorForm, setDonorForm] = useState({ donorName: "", phone: "", dateOfBirth: "", gender: "", bloodGroup: "" });
+  const [screeningForm, setScreeningForm] = useState<{ recordId: string; weight: string; bloodPressure: string; hemoglobin: string; pulse: string; temperature: string } | null>(null);
+  const [collectForm, setCollectForm] = useState<{ recordId: string; bloodGroup: string; component: string; units: string } | null>(null);
+  const [donorSubmitting, setDonorSubmitting] = useState(false);
+
   const showToast = (msg: string, type: "success" | "error" = "success") => { setToast({ message: msg, type }); setTimeout(() => setToast(null), 4000); };
 
+  const loadDonors = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/blood-bank?hospitalCode=${HOSPITAL_CODE}&view=donors`);
+      if (res.ok) {
+        const d = await res.json();
+        if (d.donors) setDonors(d.donors);
+      }
+    } catch { /* retry */ }
+  }, []);
+
   const loadData = useCallback(async () => {
+    if (activeNav === "donors") { loadDonors(); return; }
     try {
       const view = activeNav === "history" ? "history" : activeNav === "requests" ? "requests" : "";
       const res = await fetch(`/api/blood-bank?hospitalCode=${HOSPITAL_CODE}${view ? `&view=${view}` : ""}`);
@@ -85,10 +110,57 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
         if (d.counts) setCounts(d.counts);
       }
     } catch { /* retry */ }
-  }, [activeNav]);
+  }, [activeNav, loadDonors]);
 
   useEffect(() => { loadData(); }, [loadData]);
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
+
+  // Donor actions
+  const registerDonor = async () => {
+    if (!donorForm.donorName.trim()) return;
+    setDonorSubmitting(true);
+    try {
+      const res = await fetch("/api/blood-bank", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, action: "register_donor", ...donorForm, registeredBy: operator.operatorName }) });
+      if (res.ok) {
+        const d = await res.json();
+        showToast(`Donor Registered — ${d.donorToken}`);
+        setDonorForm({ donorName: "", phone: "", dateOfBirth: "", gender: "", bloodGroup: "" });
+        loadDonors();
+      } else { const e = await res.json(); showToast(e.error || "Failed", "error"); }
+    } catch { showToast("Failed", "error"); }
+    setDonorSubmitting(false);
+  };
+
+  const screenDonor = async () => {
+    if (!screeningForm) return;
+    setDonorSubmitting(true);
+    try {
+      const hb = parseFloat(screeningForm.hemoglobin);
+      const eligible = !isNaN(hb) ? hb >= 12.5 : true; // WHO minimum: 12.5 g/dL
+      const res = await fetch("/api/blood-bank", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, action: "screen_donor", recordId: screeningForm.recordId, weight: screeningForm.weight ? parseFloat(screeningForm.weight) : null, bloodPressure: screeningForm.bloodPressure || null, hemoglobin: !isNaN(hb) ? hb : null, pulse: screeningForm.pulse ? parseInt(screeningForm.pulse) : null, temperature: screeningForm.temperature ? parseFloat(screeningForm.temperature) : null, eligible, deferralReason: !eligible ? "Hemoglobin below 12.5 g/dL" : null, screenedBy: operator.operatorName }) });
+      if (res.ok) {
+        const d = await res.json();
+        showToast(d.status === "deferred" ? "Donor Deferred — Low Hemoglobin" : "Screening Complete — Eligible");
+        setScreeningForm(null);
+        loadDonors();
+      } else { const e = await res.json(); showToast(e.error || "Failed", "error"); }
+    } catch { showToast("Failed", "error"); }
+    setDonorSubmitting(false);
+  };
+
+  const collectDonation = async () => {
+    if (!collectForm || !collectForm.bloodGroup) return;
+    setDonorSubmitting(true);
+    try {
+      const res = await fetch("/api/blood-bank", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, action: "collect_donation", recordId: collectForm.recordId, bloodGroup: collectForm.bloodGroup, component: collectForm.component || "whole_blood", units: collectForm.units ? parseInt(collectForm.units) : 1, collectedBy: operator.operatorName }) });
+      if (res.ok) {
+        showToast("Donation Collected — Inventory Updated");
+        setCollectForm(null);
+        loadDonors();
+      } else { const e = await res.json(); showToast(e.error || "Failed", "error"); }
+    } catch { showToast("Failed", "error"); }
+    setDonorSubmitting(false);
+  };
 
   const crossMatch = async (req: TransfusionRequest) => {
     setProcessingId(req.id);
@@ -113,6 +185,7 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
   const NAV_ITEMS = [
     { id: "inventory" as const, icon: "🩸", label: "Inventory" },
     { id: "requests" as const, icon: "📋", label: "Requests" },
+    { id: "donors" as const, icon: "🫀", label: "Donors" },
     { id: "history" as const, icon: "✅", label: "Issued History" },
   ];
 
@@ -251,6 +324,209 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
                   })}
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {activeNav === "donors" && (
+            <motion.div key="donors" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              {/* Register Donor Form */}
+              <WorkshopBox title="Register Walk-In Donor" icon="🫀" delay={0}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Donor Name *</label>
+                    <input value={donorForm.donorName} onChange={(e) => setDonorForm({ ...donorForm, donorName: e.target.value })} placeholder="Full Name"
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Phone</label>
+                    <input value={donorForm.phone} onChange={(e) => setDonorForm({ ...donorForm, phone: e.target.value })} placeholder="0XX XXX XXXX"
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Gender</label>
+                    <select value={donorForm.gender} onChange={(e) => setDonorForm({ ...donorForm, gender: e.target.value })}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }}>
+                      <option value="" style={{ background: "#1a1a2e" }}>Select</option>
+                      <option value="male" style={{ background: "#1a1a2e" }}>Male</option>
+                      <option value="female" style={{ background: "#1a1a2e" }}>Female</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Blood Group (If Known)</label>
+                    <select value={donorForm.bloodGroup} onChange={(e) => setDonorForm({ ...donorForm, bloodGroup: e.target.value })}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }}>
+                      <option value="" style={{ background: "#1a1a2e" }}>Unknown</option>
+                      {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => <option key={bg} value={bg} style={{ background: "#1a1a2e" }}>{bg}</option>)}
+                    </select>
+                  </div>
+                  <motion.button type="button" onClick={registerDonor} disabled={donorSubmitting || !donorForm.donorName.trim()} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
+                    style={{ padding: "10px 24px", borderRadius: 10, fontSize: 11, fontWeight: 700, color: "#EF4444", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", cursor: "pointer", textTransform: "uppercase", letterSpacing: "1px", whiteSpace: "nowrap" }}>
+                    Register
+                  </motion.button>
+                </div>
+              </WorkshopBox>
+
+              {/* Screening Modal */}
+              {screeningForm && (
+                <WorkshopBox title="Screen Donor — Vitals Check" icon="🩺" delay={0.05}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", gap: 10, alignItems: "end", marginBottom: 16 }}>
+                    <div>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Weight (Kg)</label>
+                      <input value={screeningForm.weight} onChange={(e) => setScreeningForm({ ...screeningForm, weight: e.target.value })} placeholder="50+"
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Blood Pressure</label>
+                      <input value={screeningForm.bloodPressure} onChange={(e) => setScreeningForm({ ...screeningForm, bloodPressure: e.target.value })} placeholder="120/80"
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Hemoglobin (g/dL) *</label>
+                      <input value={screeningForm.hemoglobin} onChange={(e) => setScreeningForm({ ...screeningForm, hemoglobin: e.target.value })} placeholder="≥12.5"
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Pulse (BPM)</label>
+                      <input value={screeningForm.pulse} onChange={(e) => setScreeningForm({ ...screeningForm, pulse: e.target.value })} placeholder="60-100"
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Temp (°C)</label>
+                      <input value={screeningForm.temperature} onChange={(e) => setScreeningForm({ ...screeningForm, temperature: e.target.value })} placeholder="36.5-37.5"
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <motion.button type="button" onClick={screenDonor} disabled={donorSubmitting} whileHover={{ y: -1 }}
+                      style={{ padding: "10px 24px", borderRadius: 10, fontSize: 11, fontWeight: 700, color: "#22C55E", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", cursor: "pointer", textTransform: "uppercase" }}>
+                      Complete Screening
+                    </motion.button>
+                    <motion.button type="button" onClick={() => setScreeningForm(null)} whileHover={{ y: -1 }}
+                      style={{ padding: "10px 24px", borderRadius: 10, fontSize: 11, fontWeight: 700, color: "#64748B", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer", textTransform: "uppercase" }}>
+                      Cancel
+                    </motion.button>
+                  </div>
+                </WorkshopBox>
+              )}
+
+              {/* Collection Modal */}
+              {collectForm && (
+                <WorkshopBox title="Collect Donation" icon="🩸" delay={0.05}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
+                    <div>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Blood Group *</label>
+                      <select value={collectForm.bloodGroup} onChange={(e) => setCollectForm({ ...collectForm, bloodGroup: e.target.value })}
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }}>
+                        <option value="" style={{ background: "#1a1a2e" }}>Select Blood Group</option>
+                        {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => <option key={bg} value={bg} style={{ background: "#1a1a2e" }}>{bg}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Component</label>
+                      <select value={collectForm.component} onChange={(e) => setCollectForm({ ...collectForm, component: e.target.value })}
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }}>
+                        <option value="whole_blood" style={{ background: "#1a1a2e" }}>Whole Blood</option>
+                        <option value="packed_rbc" style={{ background: "#1a1a2e" }}>Packed RBC</option>
+                        <option value="platelets" style={{ background: "#1a1a2e" }}>Platelets</option>
+                        <option value="ffp" style={{ background: "#1a1a2e" }}>FFP</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Units</label>
+                      <input value={collectForm.units} onChange={(e) => setCollectForm({ ...collectForm, units: e.target.value })} placeholder="1"
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <motion.button type="button" onClick={collectDonation} disabled={donorSubmitting || !collectForm.bloodGroup} whileHover={{ y: -1 }}
+                        style={{ padding: "10px 24px", borderRadius: 10, fontSize: 11, fontWeight: 700, color: "#EF4444", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", cursor: "pointer", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                        Collect
+                      </motion.button>
+                      <motion.button type="button" onClick={() => setCollectForm(null)} whileHover={{ y: -1 }}
+                        style={{ padding: "10px 24px", borderRadius: 10, fontSize: 11, fontWeight: 700, color: "#64748B", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer", textTransform: "uppercase" }}>
+                        Cancel
+                      </motion.button>
+                    </div>
+                  </div>
+                </WorkshopBox>
+              )}
+
+              {/* Donor List */}
+              <div style={{ marginTop: 16 }}>
+                {donors.length === 0 ? (
+                  <WorkshopBox title="No Donors Today" icon="🫀">
+                    <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>No Walk-In Donors Registered Yet.</p>
+                  </WorkshopBox>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {donors.map((d, i) => {
+                      const statusColors: Record<string, { bg: string; border: string; text: string }> = {
+                        registered: { bg: "rgba(56,189,248,0.08)", border: "rgba(56,189,248,0.2)", text: "#38BDF8" },
+                        screened: { bg: "rgba(168,85,247,0.08)", border: "rgba(168,85,247,0.2)", text: "#A855F7" },
+                        collected: { bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)", text: "#22C55E" },
+                        deferred: { bg: "rgba(239,68,68,0.08)", border: "rgba(239,68,68,0.2)", text: "#EF4444" },
+                      };
+                      const ss = statusColors[d.donorStatus] || statusColors.registered;
+                      const bgColor = d.bloodGroup ? (BG_COLORS[d.bloodGroup] || COPPER) : "#64748B";
+                      return (
+                        <motion.div key={d.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                          style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: `1px solid ${COPPER}10`, backdropFilter: "blur(12px)" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: bgColor }}>{d.bloodGroup || "?"}</span>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{d.fullName}</span>
+                              <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: COPPER }}>{d.donorToken}</span>
+                              <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", background: ss.bg, border: `1px solid ${ss.border}`, color: ss.text }}>
+                                {d.donorStatus}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: 11, color: "#64748B" }}>{new Date(d.registeredAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
+                          </div>
+
+                          {d.screening && (
+                            <div style={{ display: "flex", gap: 16, marginBottom: 12, fontSize: 11 }}>
+                              {d.screening.weight && <span style={{ color: "#94A3B8" }}>Weight: <strong style={{ color: "white" }}>{d.screening.weight} Kg</strong></span>}
+                              {d.screening.bloodPressure && <span style={{ color: "#94A3B8" }}>BP: <strong style={{ color: "white" }}>{d.screening.bloodPressure}</strong></span>}
+                              {d.screening.hemoglobin && <span style={{ color: "#94A3B8" }}>Hb: <strong style={{ color: (d.screening.hemoglobin >= 12.5 ? "#22C55E" : "#EF4444") }}>{d.screening.hemoglobin} g/dL</strong></span>}
+                              {d.screening.pulse && <span style={{ color: "#94A3B8" }}>Pulse: <strong style={{ color: "white" }}>{d.screening.pulse}</strong></span>}
+                              {d.screening.deferralReason && <span style={{ color: "#EF4444", fontWeight: 700 }}>Deferred: {d.screening.deferralReason}</span>}
+                            </div>
+                          )}
+
+                          {d.collection && (
+                            <div style={{ display: "flex", gap: 16, marginBottom: 12, fontSize: 11 }}>
+                              <span style={{ color: "#94A3B8" }}>Collected: <strong style={{ color: "#22C55E" }}>{d.collection.units} Unit(s) {d.collection.component.replace("_", " ")}</strong></span>
+                              <span style={{ color: "#94A3B8" }}>At: {new Date(d.collection.collectedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
+                            </div>
+                          )}
+
+                          <div style={{ display: "flex", gap: 8 }}>
+                            {d.donorStatus === "registered" && (
+                              <motion.button type="button" whileHover={{ y: -1 }}
+                                onClick={() => setScreeningForm({ recordId: d.id, weight: "", bloodPressure: "", hemoglobin: "", pulse: "", temperature: "" })}
+                                style={{ padding: "8px 20px", borderRadius: 10, fontSize: 11, fontWeight: 700, color: "#A855F7", background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)", cursor: "pointer", textTransform: "uppercase" }}>
+                                Screen Donor
+                              </motion.button>
+                            )}
+                            {d.donorStatus === "screened" && (
+                              <motion.button type="button" whileHover={{ y: -1 }}
+                                onClick={() => setCollectForm({ recordId: d.id, bloodGroup: d.bloodGroup || "", component: "whole_blood", units: "1" })}
+                                style={{ padding: "8px 20px", borderRadius: 10, fontSize: 11, fontWeight: 700, color: "#EF4444", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", cursor: "pointer", textTransform: "uppercase" }}>
+                                Collect Donation
+                              </motion.button>
+                            )}
+                            {d.donorStatus === "collected" && (
+                              <span style={{ fontSize: 10, color: "#22C55E", fontWeight: 700 }}>Donation Complete</span>
+                            )}
+                            {d.donorStatus === "deferred" && (
+                              <span style={{ fontSize: 10, color: "#EF4444", fontWeight: 700 }}>Deferred — Not Eligible</span>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

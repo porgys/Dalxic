@@ -3,13 +3,13 @@ import { logAudit, getClientIP } from "@/lib/audit";
 import { createBillableItem } from "@/lib/billing";
 import { rateLimit } from "@/lib/rate-limit";
 // Blood inventory is stored in hospital-level JSON since we have no dedicated table
-// We use a convention: a PatientRecord with entryPoint "blood_bank_inventory" holds inventory
+// Donation records use PatientRecord with entryPoint "blood_donation"
 
-// GET: Get blood inventory and transfusion requests
+// GET: Get blood inventory, transfusion requests, or donor records
 export async function GET(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
-  const view = searchParams.get("view"); // inventory | requests | history
+  const view = searchParams.get("view"); // inventory | requests | history | donors
 
   if (!hospitalCode) return Response.json({ error: "hospitalCode required" }, { status: 400 });
 
@@ -19,9 +19,24 @@ export async function GET(request: Request) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Return donor records
+  if (view === "donors") {
+    const donorRecords = await db.patientRecord.findMany({
+      where: { hospitalId: hospital.id, entryPoint: "blood_donation" },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    });
+    const donors = donorRecords.map((r) => {
+      const donor = r.patient as Record<string, unknown>;
+      const visit = r.visit as Record<string, unknown>;
+      return { id: r.id, ...donor, ...visit, createdAt: r.createdAt };
+    });
+    return Response.json({ donors });
+  }
+
   // Get all patient records that have transfusion data
   const records = await db.patientRecord.findMany({
-    where: { hospitalId: hospital.id },
+    where: { hospitalId: hospital.id, entryPoint: { not: "blood_donation" } },
     orderBy: { createdAt: "desc" },
     take: 200,
   });
@@ -188,7 +203,7 @@ export async function POST(request: Request) {
     return Response.json({ success: true });
   }
 
-  // Receive / donate blood
+  // Receive / donate blood (external supply, not walk-in donor)
   if (action === "receive") {
     const { bloodGroup, component, units, receivedBy } = body;
     if (!bloodGroup || !component || !units) return Response.json({ error: "bloodGroup, component, units required" }, { status: 400 });
@@ -202,6 +217,139 @@ export async function POST(request: Request) {
     await logAudit({ actorType: "device_operator", actorId: receivedBy || "blood_bank_officer", hospitalId: hospital.id, action: "blood_bank.received", metadata: { bloodGroup, component, units }, ipAddress: getClientIP(request) });
 
     return Response.json({ success: true });
+  }
+
+  // ─── Walk-In Donor Flow ───
+
+  // Step 1: Register walk-in donor
+  if (action === "register_donor") {
+    const { donorName, phone, dateOfBirth, gender, bloodGroup, registeredBy } = body;
+    if (!donorName) return Response.json({ error: "donorName required" }, { status: 400 });
+
+    // Generate donor token: DN-KBH-001
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const donorCount = await db.patientRecord.count({
+      where: { hospitalId: hospital.id, entryPoint: "blood_donation", createdAt: { gte: today } },
+    });
+    const donorToken = `DN-${hospitalCode}-${String(donorCount + 1).padStart(3, "0")}`;
+
+    // Find or create active book
+    const now = new Date();
+    let book = await db.monthlyBook.findUnique({
+      where: { hospitalId_year_month: { hospitalId: hospital.id, year: now.getFullYear(), month: now.getMonth() + 1 } },
+    });
+    if (!book) {
+      book = await db.monthlyBook.create({
+        data: { hospitalId: hospital.id, year: now.getFullYear(), month: now.getMonth() + 1, status: "active" },
+      });
+    }
+
+    const record = await db.patientRecord.create({
+      data: {
+        bookId: book.id,
+        hospitalId: hospital.id,
+        patient: JSON.parse(JSON.stringify({
+          fullName: donorName,
+          phone: phone || null,
+          dateOfBirth: dateOfBirth || null,
+          gender: gender || null,
+          bloodGroup: bloodGroup || null,
+        })),
+        visit: JSON.parse(JSON.stringify({
+          donorToken,
+          donorStatus: "registered", // registered → screened → collected → deferred
+          registeredAt: now.toISOString(),
+          registeredBy: registeredBy || "blood_bank_officer",
+          screening: null,
+          collection: null,
+        })),
+        diagnosis: JSON.parse(JSON.stringify({})),
+        treatment: JSON.parse(JSON.stringify({})),
+        entryPoint: "blood_donation",
+        createdBy: registeredBy || "blood_bank_officer",
+      },
+    });
+
+    await logAudit({ actorType: "device_operator", actorId: registeredBy || "blood_bank_officer", hospitalId: hospital.id, action: "blood_bank.donor_registered", metadata: { donorToken, donorName }, ipAddress: getClientIP(request) });
+
+    return Response.json({ donorToken, recordId: record.id }, { status: 201 });
+  }
+
+  // Step 2: Screen donor (vitals + eligibility)
+  if (action === "screen_donor") {
+    const { recordId, weight, bloodPressure, hemoglobin, pulse, temperature, eligible, deferralReason, screenedBy } = body;
+    if (!recordId) return Response.json({ error: "recordId required" }, { status: 400 });
+
+    const record = await db.patientRecord.findUnique({ where: { id: recordId } });
+    if (!record || record.entryPoint !== "blood_donation") return Response.json({ error: "Donor record not found" }, { status: 404 });
+
+    const visit = record.visit as Record<string, unknown>;
+    const screening = {
+      weight: weight || null,
+      bloodPressure: bloodPressure || null,
+      hemoglobin: hemoglobin || null,
+      pulse: pulse || null,
+      temperature: temperature || null,
+      eligible: eligible !== false, // default true
+      deferralReason: eligible === false ? (deferralReason || "Not eligible") : null,
+      screenedBy: screenedBy || "blood_bank_nurse",
+      screenedAt: new Date().toISOString(),
+    };
+
+    const newStatus = eligible === false ? "deferred" : "screened";
+
+    await db.patientRecord.update({
+      where: { id: recordId },
+      data: { visit: JSON.parse(JSON.stringify({ ...visit, donorStatus: newStatus, screening })) },
+    });
+
+    await logAudit({ actorType: "device_operator", actorId: screenedBy || "blood_bank_nurse", hospitalId: hospital.id, action: `blood_bank.donor_${newStatus}`, metadata: { recordId, eligible, hemoglobin }, ipAddress: getClientIP(request) });
+
+    return Response.json({ success: true, status: newStatus });
+  }
+
+  // Step 3: Collect donation (blood typed, bags collected, inventory updated)
+  if (action === "collect_donation") {
+    const { recordId, bloodGroup, component, units, collectedBy } = body;
+    if (!recordId || !bloodGroup) return Response.json({ error: "recordId and bloodGroup required" }, { status: 400 });
+
+    const record = await db.patientRecord.findUnique({ where: { id: recordId } });
+    if (!record || record.entryPoint !== "blood_donation") return Response.json({ error: "Donor record not found" }, { status: 404 });
+
+    const visit = record.visit as Record<string, unknown>;
+    if (visit.donorStatus !== "screened") return Response.json({ error: "Donor must be screened before collection" }, { status: 409 });
+
+    const comp = component || "whole_blood";
+    const qty = units || 1;
+    const collection = {
+      bloodGroup,
+      component: comp,
+      units: qty,
+      collectedBy: collectedBy || "blood_bank_officer",
+      collectedAt: new Date().toISOString(),
+    };
+
+    // Update donor record
+    const patient = record.patient as Record<string, unknown>;
+    await db.patientRecord.update({
+      where: { id: recordId },
+      data: {
+        patient: JSON.parse(JSON.stringify({ ...patient, bloodGroup })),
+        visit: JSON.parse(JSON.stringify({ ...visit, donorStatus: "collected", collection })),
+      },
+    });
+
+    // Increment inventory
+    await db.bloodInventory.upsert({
+      where: { hospitalId_bloodType_component: { hospitalId: hospital.id, bloodType: bloodGroup, component: comp } },
+      update: { units: { increment: qty } },
+      create: { hospitalId: hospital.id, bloodType: bloodGroup, component: comp, units: qty },
+    });
+
+    await logAudit({ actorType: "device_operator", actorId: collectedBy || "blood_bank_officer", hospitalId: hospital.id, action: "blood_bank.donation_collected", metadata: { recordId, bloodGroup, component: comp, units: qty }, ipAddress: getClientIP(request) });
+
+    return Response.json({ success: true, bloodGroup, component: comp, units: qty });
   }
 
   return Response.json({ error: "Invalid action" }, { status: 400 });

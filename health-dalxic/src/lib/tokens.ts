@@ -1,17 +1,48 @@
 import { db } from "./db";
 
-/** Generate next queue token for a hospital today: #001, #002, etc. */
-export async function generateQueueToken(hospitalId: string, bookId: string): Promise<string> {
-  const count = await db.patientRecord.count({
+/** Department prefix map — matches front desk DEPARTMENTS array */
+export const DEPT_PREFIXES: Record<string, string> = {
+  general: "GR",
+  emergency: "ER",
+  pediatrics: "PD",
+  obstetrics: "OB",
+  surgery: "SG",
+  dental: "DN",
+  eye: "EY",
+  ent: "EN",
+};
+
+/** Generate department-coded queue token: GR-KBH-001, PD-KBH-002 */
+export async function generateQueueToken(
+  hospitalId: string,
+  bookId: string,
+  department?: string,
+  hospitalCode?: string
+): Promise<string> {
+  const dept = (department || "general").toLowerCase();
+  const prefix = DEPT_PREFIXES[dept] || "GR";
+  const code = hospitalCode || "KBH";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Count today's records in the same department for per-department sequencing
+  const allRecords = await db.patientRecord.findMany({
     where: {
       hospitalId,
       bookId,
-      createdAt: {
-        gte: new Date(new Date().setHours(0, 0, 0, 0)),
-      },
+      createdAt: { gte: today },
     },
+    select: { visit: true },
   });
-  return `#${String(count + 1).padStart(3, "0")}`;
+
+  const deptCount = allRecords.filter((r) => {
+    const visit = r.visit as { department?: string } | null;
+    const d = (visit?.department || "general").toLowerCase();
+    return d === dept;
+  }).length;
+
+  return `${prefix}-${code}-${String(deptCount + 1).padStart(3, "0")}`;
 }
 
 /** Generate emergency token: ER-KBH-001 */

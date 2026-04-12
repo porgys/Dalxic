@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   const emergencyFlag = severity >= 8;
   const queueToken = emergencyFlag
     ? await generateERToken(hospitalCode)
-    : await generateQueueToken(hospital.id, book.id);
+    : await generateQueueToken(hospital.id, book.id, department, hospitalCode);
 
   // Generate patient checkout PIN — 4 digits, given to patient on ticket/WhatsApp
   // Patient returns this PIN to front desk to close visit (they don't know it's for security)
