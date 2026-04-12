@@ -40,10 +40,10 @@ function QueueDisplay() {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [voiceUnlocked, setVoiceUnlocked] = useState(() => {
-    if (typeof window !== "undefined") return sessionStorage.getItem("voice_unlocked") === "1";
-    return false;
-  });
+  const [voiceUnlocked, setVoiceUnlocked] = useState(false);
+  useEffect(() => {
+    if (sessionStorage.getItem("voice_unlocked") === "1") setVoiceUnlocked(true);
+  }, []);
   const calloutQueueRef = useRef<CalloutEntry[]>([]);
   const processingRef = useRef(false);
 
