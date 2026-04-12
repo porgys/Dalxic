@@ -336,6 +336,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [doctorSpecialty, setDoctorSpecialty] = useState<string>("general");
+  const [coveredSpecialties, setCoveredSpecialties] = useState<string[]>([]);
   const [showDeptSwitcher, setShowDeptSwitcher] = useState(false);
   const isAdmin = operator.operatorRole === "admin" || operator.operatorRole === "super_admin";
   const ALL_DEPARTMENTS = [
@@ -409,18 +410,27 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         const res = await fetch(`/api/doctors?hospitalCode=${HOSPITAL_CODE}`);
         if (res.ok) {
           const doctors = await res.json();
-          const activeDoctors = doctors.filter((d: { active?: boolean }) => d.active !== false);
+          const normalize = (s: string) => {
+            const r = (s || "general").toLowerCase();
+            return r === "general medicine" ? "general" : r === "ob/gyn" ? "obstetrics" : r === "eye clinic" ? "eye" : r;
+          };
+          // Active doctors = AVAILABLE or IN_CONSULTATION (on duty right now)
+          const onDuty = doctors.filter((d: { status?: string }) => d.status === "AVAILABLE" || d.status === "IN_CONSULTATION" || d.status === "ON_CALL");
+          // Specialties covered by active specialists (excluding GM — GM is the catch-all)
+          const covered = onDuty
+            .map((d: { specialty?: string }) => normalize(d.specialty || "general"))
+            .filter((s: string) => s !== "general");
+          setCoveredSpecialties(Array.from(new Set(covered)));
+
           const match = doctors.find((d: { name: string }) => d.name === operator.operatorName);
           if (match) {
             setDoctorId(match.id);
-            // Solo doctor sees ALL departments — no patients should be invisible
-            if (activeDoctors.length <= 1) {
+            const mySpecialty = normalize(match.specialty);
+            // Solo doctor sees ALL departments
+            if (onDuty.length <= 1) {
               setDoctorSpecialty("all");
             } else {
-              // Normalize specialty — API may store label ("General Medicine") or value ("general")
-              const raw = (match.specialty || "general").toLowerCase();
-              const normalized = raw === "general medicine" ? "general" : raw === "ob/gyn" ? "obstetrics" : raw === "eye clinic" ? "eye" : raw;
-              setDoctorSpecialty(normalized);
+              setDoctorSpecialty(mySpecialty);
             }
           }
         }
@@ -566,7 +576,12 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         const deptMatch = (d: { department?: string }) => {
           if (doctorSpecialty === "all") return true;
           const dept = (d.department || "general").toLowerCase();
-          if (doctorSpecialty === "general") return dept === "general" || dept === "general medicine" || !["emergency","pediatrics","obstetrics","surgery","dental","eye","ent"].includes(dept);
+          if (doctorSpecialty === "general") {
+            // GM catch-all: show general + any department NOT covered by an active specialist
+            if (dept === "general" || dept === "general medicine") return true;
+            return !coveredSpecialties.includes(dept);
+          }
+          // Specialist: only their department
           return dept === doctorSpecialty;
         };
         // Filter: show active, lab_results_ready patients (not closed/paused_for_lab/etc)
@@ -600,7 +615,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         }
       }
     } catch { /* retry */ }
-  }, [doctorSpecialty]);
+  }, [doctorSpecialty, coveredSpecialties]);
 
   const loadReferrals = useCallback(async () => {
     try {
