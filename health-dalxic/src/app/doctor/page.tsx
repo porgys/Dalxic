@@ -409,13 +409,19 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         const res = await fetch(`/api/doctors?hospitalCode=${HOSPITAL_CODE}`);
         if (res.ok) {
           const doctors = await res.json();
+          const activeDoctors = doctors.filter((d: { active?: boolean }) => d.active !== false);
           const match = doctors.find((d: { name: string }) => d.name === operator.operatorName);
           if (match) {
             setDoctorId(match.id);
-            // Normalize specialty — API may store label ("General Medicine") or value ("general")
-            const raw = (match.specialty || "general").toLowerCase();
-            const normalized = raw === "general medicine" ? "general" : raw === "ob/gyn" ? "obstetrics" : raw === "eye clinic" ? "eye" : raw;
-            setDoctorSpecialty(normalized);
+            // Solo doctor sees ALL departments — no patients should be invisible
+            if (activeDoctors.length <= 1) {
+              setDoctorSpecialty("all");
+            } else {
+              // Normalize specialty — API may store label ("General Medicine") or value ("general")
+              const raw = (match.specialty || "general").toLowerCase();
+              const normalized = raw === "general medicine" ? "general" : raw === "ob/gyn" ? "obstetrics" : raw === "eye clinic" ? "eye" : raw;
+              setDoctorSpecialty(normalized);
+            }
           }
         }
       } catch { /* fallback to general */ }
