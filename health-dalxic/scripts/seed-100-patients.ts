@@ -126,8 +126,8 @@ async function main() {
     ...Array(8).fill({ department: "general", severityRange: [4, 7] as [number, number], visitStatus: "paused_for_lab", withLabOrders: true }),
     // 7 Ward patients — admitted
     ...Array(7).fill({ department: "general", severityRange: [6, 8] as [number, number], visitStatus: "admitted", withAdmission: true }),
-    // 5 Admission ordered — waiting for ward nurse
-    ...Array(5).fill({ department: "general", severityRange: [5, 7] as [number, number], visitStatus: "in_consultation", withAdmissionOrder: true }),
+    // 5 Admission ordered — doctor finished consultation, waiting for ward nurse to admit
+    ...Array(5).fill({ department: "general", severityRange: [5, 7] as [number, number], visitStatus: "awaiting_close", withAdmissionOrder: true }),
     // 5 Completed / discharged
     ...Array(5).fill({ department: "general", severityRange: [2, 5] as [number, number], visitStatus: "closed", withPrescriptions: true }),
     // 5 Billing patients — awaiting payment
