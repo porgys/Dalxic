@@ -156,6 +156,7 @@ export async function GET(request: Request) {
     where: {
       hospitalId: hospital.id,
       createdAt: { gte: today },
+      entryPoint: { not: "blood_donation" },
     },
     orderBy: { createdAt: "asc" },
   });

@@ -232,7 +232,7 @@ export async function POST(request: Request) {
     const donorCount = await db.patientRecord.count({
       where: { hospitalId: hospital.id, entryPoint: "blood_donation", createdAt: { gte: today } },
     });
-    const donorToken = `DN-${hospitalCode}-${String(donorCount + 1).padStart(3, "0")}`;
+    const donorToken = `BD-${hospitalCode}-${String(donorCount + 1).padStart(3, "0")}`;
 
     // Find or create active book
     const now = new Date();
