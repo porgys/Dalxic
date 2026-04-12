@@ -1195,7 +1195,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
             {activeSession ? (
               <motion.div key="charting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 {/* Sub-menu pills */}
-                <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+                <div style={{ display: "flex", gap: 8, marginBottom: 20, alignItems: "center" }}>
                   {([
                     { id: "consultation" as const, icon: "🩺", label: "Consultation" },
                     { id: "lab" as const, icon: "🧪", label: "Lab & Referrals", badge: selectedTests.length > 0 ? selectedTests.length : undefined },
@@ -1213,6 +1213,15 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                       {tab.badge && <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 5px", borderRadius: 4, background: "#0EA5E9", color: "#fff", marginLeft: 2 }}>{tab.badge}</span>}
                     </motion.button>
                   ))}
+                  <div style={{ flex: 1 }} />
+                  <motion.button type="button" onClick={endSession} disabled={ending} whileHover={{ y: -1, scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", borderRadius: 10, fontSize: 11, fontWeight: 800, cursor: ending ? "wait" : "pointer",
+                      background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", color: "#EF4444",
+                      textTransform: "uppercase", letterSpacing: "0.04em", opacity: ending ? 0.5 : 1,
+                    }}>
+                    <span>✓</span> End Session
+                  </motion.button>
                 </div>
 
                 {/* ═══════ TAB 1: CONSULTATION ═══════ */}
