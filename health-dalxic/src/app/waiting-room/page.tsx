@@ -134,10 +134,12 @@ function QueueDisplay() {
         }]);
       });
 
-      // Patient called — mark as serving + voice callout
+      // Patient called — mark as serving + voice callout + refresh queue
       queueChannel.bind("patient-called", (data: { queueToken: string; patientName?: string; department?: string; room?: string; calledBy?: string }) => {
         if (dept && data.department && data.department !== dept) return;
         setQueue((prev) => prev.map((item) => item.token === data.queueToken ? { ...item, status: "serving" as const } : item));
+        // Refresh queue from DB to catch visitStatus change
+        loadQueue();
         // Add to voice callout queue
         const entry: CalloutEntry = {
           token: data.queueToken,

@@ -33,8 +33,14 @@ export async function POST(request: Request) {
     if (department) {
       await pusher.trigger(hospitalChannel(hospitalCode, `callout-${department}`), "number-called", calloutEvent);
     }
-    // Also update queue channel so waiting room knows
-    await pusher.trigger(hospitalChannel(hospitalCode, "queue"), "patient-called", { queueToken: token });
+    // Also update queue channel so waiting room knows + has full data for voice callout
+    await pusher.trigger(hospitalChannel(hospitalCode, "queue"), "patient-called", {
+      queueToken: token,
+      patientName: patientName || "Patient",
+      department: department || "",
+      room: room || null,
+      calledBy: calledBy || "Doctor",
+    });
   } catch { /* Pusher not configured */ }
 
   await logAudit({
