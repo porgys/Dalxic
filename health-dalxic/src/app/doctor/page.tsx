@@ -334,7 +334,8 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [doctorStatus, setDoctorStatus] = useState<string>("AVAILABLE");
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [doctorId] = useState<string | null>(null);
+  const [doctorId, setDoctorId] = useState<string | null>(null);
+  const [doctorSpecialty, setDoctorSpecialty] = useState<string>("general");
   // Referral state
   const [showReferralPanel, setShowReferralPanel] = useState(false);
   const [referralSpecialty, setReferralSpecialty] = useState("");
@@ -393,6 +394,23 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [waPhone, setWaPhone] = useState("");
   const [waSending, setWaSending] = useState(false);
   const [waResult, setWaResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  // Load doctor profile by operator name → get specialty + doctorId
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`/api/doctors?hospitalCode=${HOSPITAL_CODE}`);
+        if (res.ok) {
+          const doctors = await res.json();
+          const match = doctors.find((d: { name: string }) => d.name === operator.operatorName);
+          if (match) {
+            setDoctorId(match.id);
+            setDoctorSpecialty(match.specialty || "general");
+          }
+        }
+      } catch { /* fallback to general */ }
+    })();
+  }, [operator.operatorName]);
 
   // Check group membership + load branches
   useEffect(() => {
@@ -530,9 +548,13 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
       if (res.ok) {
         const data = await res.json();
         // Filter: show active, lab_results_ready patients (not closed/paused_for_lab/etc)
-        const visible = data.filter((d: { visitStatus?: string }) => {
+        const visible = data.filter((d: { visitStatus?: string; department?: string }) => {
           const vs = d.visitStatus ?? "active";
-          return vs === "active" || vs === "lab_results_ready";
+          if (vs !== "active" && vs !== "lab_results_ready") return false;
+          // Filter by doctor's specialty — "general" sees general + unmatched departments
+          const dept = (d.department || "general").toLowerCase();
+          if (doctorSpecialty === "general") return dept === "general" || dept === "General Medicine" || !["emergency","pediatrics","obstetrics","surgery","dental","eye","ent"].includes(dept);
+          return dept === doctorSpecialty;
         });
         setQueue(sortQueue(visible.map((d: { id: string; token: string; patientName: string; chiefComplaint: string; department: string; symptomSeverity: number | null; emergencyFlag: boolean; emergencyReason: string | null; visitStatus?: string; priorityReturn?: boolean; createdAt: string }) => ({
           ...d,
@@ -541,7 +563,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         }))));
       }
     } catch { /* retry */ }
-  }, []);
+  }, [doctorSpecialty]);
 
   const loadReferrals = useCallback(async () => {
     try {
@@ -913,6 +935,9 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <OperatorBadge session={operator} onLogout={() => window.location.reload()} />
+          <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, background: `${COPPER}10`, border: `1px solid ${COPPER}20`, color: COPPER, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            {doctorSpecialty === "general" ? "General Medicine" : doctorSpecialty === "obstetrics" ? "OB/GYN" : doctorSpecialty.charAt(0).toUpperCase() + doctorSpecialty.slice(1)}
+          </span>
           <div style={{ width: 1, height: 12, background: "rgba(184,115,51,0.12)" }} />
           <span style={{ fontSize: 11, color: "#64748B" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 12, background: "rgba(184,115,51,0.12)" }} />

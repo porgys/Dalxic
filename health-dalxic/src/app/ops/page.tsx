@@ -9,6 +9,17 @@ import { COPPER, COPPER_LIGHT, BLUE, fontSize, fontWeight, fontFamily, radius, s
 const OPS_KEY = "dalxic_ops_session";
 
 /** Master role list — professional titles, module mapping drives contextual sorting */
+const DOCTOR_SPECIALTIES = [
+  { value: "general", label: "General Medicine", icon: "🩺" },
+  { value: "emergency", label: "Emergency", icon: "🚑" },
+  { value: "pediatrics", label: "Pediatrics", icon: "👶" },
+  { value: "obstetrics", label: "OB/GYN", icon: "🤱" },
+  { value: "surgery", label: "Surgery", icon: "🏥" },
+  { value: "dental", label: "Dental", icon: "🦷" },
+  { value: "eye", label: "Eye Clinic", icon: "👁" },
+  { value: "ent", label: "ENT", icon: "👂" },
+];
+
 const ROLE_OPTIONS = [
   { value: "front_desk", label: "Front Desk / Records", modules: ["front_desk"] },
   { value: "doctor", label: "Doctor", modules: ["doctor", "ward_ipd", "emergency", "icu", "maternity"] },
@@ -316,7 +327,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
   const [groupMsg, setGroupMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // ─── Operator form ───
-  const [newOp, setNewOp] = useState({ name: "", phone: "", pin: "", role: "front_desk" });
+  const [newOp, setNewOp] = useState({ name: "", phone: "", pin: "", role: "front_desk", specialty: "general" });
   const [addingOp, setAddingOp] = useState(false);
   const [opMsg, setOpMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [editOp, setEditOp] = useState<OperatorItem | null>(null);
@@ -378,7 +389,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
 
   // ─── Module Popup (hospital-detail inline config) ───
   const [modulePopup, setModulePopup] = useState<string | null>(null);
-  const [popupOp, setPopupOp] = useState({ name: "", phone: "", pin: "" });
+  const [popupOp, setPopupOp] = useState({ name: "", phone: "", pin: "", specialty: "general" });
   const [popupAdding, setPopupAdding] = useState(false);
   const [popupMsg, setPopupMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -508,7 +519,16 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
     setAddingOp(true); setOpMsg(null);
     try {
       const res = await fetch("/api/operators", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: selectedHospital, action: "create", name: newOp.name, phone: newOp.phone, pin: newOp.pin, role: newOp.role }) });
-      if (res.ok) { setOpMsg({ type: "ok", text: `${newOp.name} added` }); setNewOp({ name: "", phone: "", pin: "", role: "front_desk" }); loadOperators(selectedHospital); }
+      if (res.ok) {
+        // Auto-create Doctor profile when adding a doctor-role operator
+        const isDoctorRole = ["doctor", "specialist", "surgeon"].includes(newOp.role);
+        if (isDoctorRole && configModule === "doctor") {
+          const docRole = newOp.role === "specialist" ? "attending" : newOp.role === "surgeon" ? "attending" : "attending";
+          await fetch("/api/doctors", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: selectedHospital, name: newOp.name, specialty: newOp.specialty || "general", role: docRole }) }).catch(() => {});
+        }
+        setOpMsg({ type: "ok", text: `${newOp.name} added${isDoctorRole && configModule === "doctor" ? ` — ${DOCTOR_SPECIALTIES.find(s => s.value === newOp.specialty)?.label || "General"} specialty` : ""}` });
+        setNewOp({ name: "", phone: "", pin: "", role: "front_desk", specialty: "general" }); loadOperators(selectedHospital);
+      }
       else { const err = await res.json(); setOpMsg({ type: "err", text: err.error || "Failed" }); }
     } catch { setOpMsg({ type: "err", text: "Network error" }); } finally { setAddingOp(false); }
   };
@@ -805,7 +825,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
   const openModulePopup = async (moduleKey: string) => {
     if (!detailHospital) return;
     setModulePopup(moduleKey);
-    setPopupOp({ name: "", phone: "", pin: "" });
+    setPopupOp({ name: "", phone: "", pin: "", specialty: "general" });
     setPopupMsg(null);
     // Load operators for this hospital filtered by module role
     try {
@@ -824,8 +844,13 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
     try {
       const res = await fetch("/api/operators", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, action: "create", name: popupOp.name, phone: popupOp.phone, pin: popupOp.pin, role }) });
       if (res.ok) {
-        setPopupMsg({ type: "ok", text: `${popupOp.name} Added` });
-        setPopupOp({ name: "", phone: "", pin: "" });
+        // Auto-create Doctor profile when adding to Doctor module
+        if (modulePopup === "doctor" && ["doctor", "specialist", "surgeon"].includes(role)) {
+          await fetch("/api/doctors", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: detailHospital.code, name: popupOp.name, specialty: popupOp.specialty || "general", role: "attending" }) }).catch(() => {});
+        }
+        const specLabel = DOCTOR_SPECIALTIES.find(s => s.value === popupOp.specialty)?.label;
+        setPopupMsg({ type: "ok", text: `${popupOp.name} Added${modulePopup === "doctor" ? ` — ${specLabel || "General"}` : ""}` });
+        setPopupOp({ name: "", phone: "", pin: "", specialty: "general" });
         // Refresh operator lists
         const opRes = await fetch(`/api/operators?hospitalCode=${detailHospital.code}&activeOnly=false`);
         if (opRes.ok) { const d = await opRes.json(); setPopupOperators(d.operators || []); setDetailOperators(d.operators || []); }
@@ -1211,7 +1236,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                     <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 18 }}>
                       Add Operator To {configWs.title}
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 100px 1fr auto", gap: 12, alignItems: "end" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: configModule === "doctor" ? "1fr 1fr 100px 1fr 1fr auto" : "1fr 1fr 100px 1fr auto", gap: 12, alignItems: "end" }}>
                       <div>
                         <label style={labelStyle}>Full Name</label>
                         <input placeholder="e.g. Ama Mensah" value={newOp.name} onChange={e => setNewOp(o => ({ ...o, name: e.target.value }))} style={inputStyle} />
@@ -1226,6 +1251,14 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                           onChange={e => { if (/^\d{0,4}$/.test(e.target.value)) setNewOp(o => ({ ...o, pin: e.target.value })); }}
                           style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.3em", fontFamily: fontFamily.mono }} />
                       </div>
+                      {configModule === "doctor" && (
+                        <div>
+                          <label style={labelStyle}>Specialty</label>
+                          <select value={newOp.specialty} onChange={e => setNewOp(o => ({ ...o, specialty: e.target.value }))} style={{ ...inputStyle, appearance: "none" }}>
+                            {DOCTOR_SPECIALTIES.map(s => <option key={s.value} value={s.value} style={{ background: "#0a0a14" }}>{s.icon} {s.label}</option>)}
+                          </select>
+                        </div>
+                      )}
                       <div>
                         <label style={labelStyle}>Role</label>
                         <select value={newOp.role} onChange={e => setNewOp(o => ({ ...o, role: e.target.value }))} style={{ ...inputStyle, appearance: "none" }}>
@@ -1785,6 +1818,14 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                                 <label style={labelStyle}>Phone (Optional)</label>
                                 <input placeholder="0244123456" value={popupOp.phone} onChange={e => setPopupOp(o => ({ ...o, phone: e.target.value }))} style={inputStyle} />
                               </div>
+                              {modulePopup === "doctor" && (
+                                <div>
+                                  <label style={labelStyle}>Specialty</label>
+                                  <select value={popupOp.specialty} onChange={e => setPopupOp(o => ({ ...o, specialty: e.target.value }))} style={{ ...inputStyle, appearance: "none" }}>
+                                    {DOCTOR_SPECIALTIES.map(s => <option key={s.value} value={s.value} style={{ background: "#0a0a14" }}>{s.icon} {s.label}</option>)}
+                                  </select>
+                                </div>
+                              )}
                               <div>
                                 <label style={labelStyle}>PIN</label>
                                 <input placeholder="4 digits" type="password" maxLength={4} value={popupOp.pin}
