@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { calloutNumber } from "@/lib/voice-callout";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
@@ -635,13 +634,10 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
     try {
       await fetch("/api/records", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: next.id, hospitalCode: HOSPITAL_CODE, visitStatus: "in_consultation" }) });
     } catch { /* silent */ }
-    // Trigger voice callout + Pusher broadcast
+    // Trigger Pusher broadcast → waiting room announces the callout
     try {
       await fetch("/api/callout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, token: next.token, patientName: next.patientName, department: next.department, calledBy: "Doctor" }) });
     } catch { /* silent */ }
-    if (voiceEnabled) {
-      try { await calloutNumber({ token: next.token, department: next.department, mode: "speech" }); } catch { /* voice unavailable */ }
-    }
   };
 
   const sendReferral = async () => {
