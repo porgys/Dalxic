@@ -44,13 +44,30 @@ export interface QuickFormData {
 
 const DEPARTMENTS = [
   { value: "general", label: "General Consultation" },
+  { value: "cardiology", label: "Cardiology" },
+  { value: "neurology", label: "Neurology" },
+  { value: "oncology", label: "Oncology" },
+  { value: "gastroenterology", label: "Gastroenterology" },
+  { value: "endocrinology", label: "Endocrinology" },
+  { value: "nephrology", label: "Nephrology" },
+  { value: "pulmonology", label: "Pulmonology" },
+  { value: "hematology", label: "Hematology" },
+  { value: "rheumatology", label: "Rheumatology" },
+  { value: "geriatrics", label: "Geriatrics" },
+  { value: "dermatology", label: "Dermatology" },
   { value: "emergency", label: "Emergency" },
   { value: "pediatrics", label: "Pediatrics" },
   { value: "obstetrics", label: "Obstetrics & Gynaecology" },
-  { value: "surgery", label: "Surgery" },
+  { value: "surgery", label: "General Surgery" },
+  { value: "orthopedics", label: "Orthopedic Surgery" },
+  { value: "neurosurgery", label: "Neurosurgery" },
+  { value: "cardiothoracic", label: "Cardiothoracic Surgery" },
+  { value: "plastic_surgery", label: "Plastic & Reconstructive" },
+  { value: "urology", label: "Urology" },
   { value: "dental", label: "Dental" },
   { value: "eye", label: "Eye Clinic" },
   { value: "ent", label: "ENT" },
+  { value: "psychiatry", label: "Psychiatry" },
 ];
 
 const CHRONIC_CONDITIONS = [

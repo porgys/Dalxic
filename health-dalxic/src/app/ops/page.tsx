@@ -8,16 +8,45 @@ import { COPPER, COPPER_LIGHT, BLUE, fontFamily, getStyles } from "@/hooks/use-s
 /* ─── Constants ─── */
 const OPS_KEY = "dalxic_ops_session";
 
-/** Master role list — professional titles, module mapping drives contextual sorting */
+/** Master specialty list — each maps to a parent department for queue routing */
 const DOCTOR_SPECIALTIES = [
+  // General / Internal Medicine
   { value: "general", label: "General Medicine", icon: "🩺" },
-  { value: "emergency", label: "Emergency", icon: "🚑" },
+  { value: "cardiology", label: "Cardiology", icon: "❤️" },
+  { value: "neurology", label: "Neurology", icon: "🧠" },
+  { value: "oncology", label: "Oncology", icon: "🎗" },
+  { value: "gastroenterology", label: "Gastroenterology", icon: "🩺" },
+  { value: "endocrinology", label: "Endocrinology", icon: "🩺" },
+  { value: "nephrology", label: "Nephrology", icon: "🩺" },
+  { value: "pulmonology", label: "Pulmonology", icon: "🫁" },
+  { value: "hematology", label: "Hematology", icon: "🩸" },
+  { value: "rheumatology", label: "Rheumatology", icon: "🩺" },
+  { value: "geriatrics", label: "Geriatrics", icon: "🩺" },
+  { value: "dermatology", label: "Dermatology", icon: "🩺" },
+  // Emergency
+  { value: "emergency", label: "Emergency Medicine", icon: "🚑" },
+  // Pediatrics
   { value: "pediatrics", label: "Pediatrics", icon: "👶" },
+  // OB/GYN
   { value: "obstetrics", label: "OB/GYN", icon: "🤱" },
-  { value: "surgery", label: "Surgery", icon: "🏥" },
+  // Surgery
+  { value: "surgery", label: "General Surgery", icon: "🏥" },
+  { value: "orthopedics", label: "Orthopedic Surgery", icon: "🦴" },
+  { value: "neurosurgery", label: "Neurosurgery", icon: "🧠" },
+  { value: "cardiothoracic", label: "Cardiothoracic Surgery", icon: "❤️" },
+  { value: "plastic_surgery", label: "Plastic & Reconstructive", icon: "🏥" },
+  { value: "urology", label: "Urology", icon: "🩺" },
+  // Dental
   { value: "dental", label: "Dental", icon: "🦷" },
-  { value: "eye", label: "Eye Clinic", icon: "👁" },
+  // Eye
+  { value: "eye", label: "Ophthalmology", icon: "👁" },
+  // ENT
   { value: "ent", label: "ENT", icon: "👂" },
+  // Specialized
+  { value: "psychiatry", label: "Psychiatry", icon: "🧠" },
+  { value: "radiology", label: "Radiology", icon: "📡" },
+  { value: "anesthesiology", label: "Anesthesiology", icon: "💉" },
+  { value: "pathology", label: "Pathology", icon: "🔬" },
 ];
 
 const ROLE_OPTIONS = [

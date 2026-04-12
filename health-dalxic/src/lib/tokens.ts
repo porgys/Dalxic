@@ -3,13 +3,33 @@ import { db } from "./db";
 /** Department prefix map — matches front desk DEPARTMENTS array */
 export const DEPT_PREFIXES: Record<string, string> = {
   general: "GR",
+  cardiology: "CD",
+  neurology: "NR",
+  oncology: "ON",
+  gastroenterology: "GI",
+  endocrinology: "ED",
+  nephrology: "NP",
+  pulmonology: "PL",
+  hematology: "HM",
+  rheumatology: "RH",
+  geriatrics: "GT",
+  dermatology: "DM",
   emergency: "ER",
   pediatrics: "PD",
   obstetrics: "OB",
   surgery: "SG",
+  orthopedics: "OR",
+  neurosurgery: "NS",
+  cardiothoracic: "CT",
+  plastic_surgery: "PS",
+  urology: "UR",
   dental: "DN",
   eye: "EY",
   ent: "EN",
+  psychiatry: "PY",
+  radiology: "RD",
+  anesthesiology: "AN",
+  pathology: "PT",
 };
 
 /** Generate department-coded queue token: GR-KBH-001, PD-KBH-002 */

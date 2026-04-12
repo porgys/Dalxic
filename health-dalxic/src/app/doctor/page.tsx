@@ -342,13 +342,33 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const ALL_DEPARTMENTS = [
     { value: "all", label: "All Departments" },
     { value: "general", label: "General Medicine" },
+    { value: "cardiology", label: "Cardiology" },
+    { value: "neurology", label: "Neurology" },
+    { value: "oncology", label: "Oncology" },
+    { value: "gastroenterology", label: "Gastroenterology" },
+    { value: "endocrinology", label: "Endocrinology" },
+    { value: "nephrology", label: "Nephrology" },
+    { value: "pulmonology", label: "Pulmonology" },
+    { value: "hematology", label: "Hematology" },
+    { value: "rheumatology", label: "Rheumatology" },
+    { value: "geriatrics", label: "Geriatrics" },
+    { value: "dermatology", label: "Dermatology" },
     { value: "emergency", label: "Emergency" },
     { value: "pediatrics", label: "Pediatrics" },
     { value: "obstetrics", label: "OB/GYN" },
-    { value: "surgery", label: "Surgery" },
+    { value: "surgery", label: "General Surgery" },
+    { value: "orthopedics", label: "Orthopedics" },
+    { value: "neurosurgery", label: "Neurosurgery" },
+    { value: "cardiothoracic", label: "Cardiothoracic" },
+    { value: "plastic_surgery", label: "Plastic Surgery" },
+    { value: "urology", label: "Urology" },
     { value: "dental", label: "Dental" },
-    { value: "eye", label: "Eye Clinic" },
+    { value: "eye", label: "Ophthalmology" },
     { value: "ent", label: "ENT" },
+    { value: "psychiatry", label: "Psychiatry" },
+    { value: "radiology", label: "Radiology" },
+    { value: "anesthesiology", label: "Anesthesiology" },
+    { value: "pathology", label: "Pathology" },
   ];
   // Referral state
   const [showReferralPanel, setShowReferralPanel] = useState(false);
@@ -410,9 +430,15 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         const res = await fetch(`/api/doctors?hospitalCode=${HOSPITAL_CODE}`);
         if (res.ok) {
           const doctors = await res.json();
+          // Normalize label variants to consistent value keys (1:1 — each specialty is its own department)
+          const LABEL_TO_KEY: Record<string, string> = {
+            "general medicine": "general", "emergency medicine": "emergency",
+            "ob/gyn": "obstetrics", "general surgery": "surgery",
+            "eye clinic": "eye", "ophthalmology": "eye",
+          };
           const normalize = (s: string) => {
             const r = (s || "general").toLowerCase();
-            return r === "general medicine" ? "general" : r === "ob/gyn" ? "obstetrics" : r === "eye clinic" ? "eye" : r;
+            return LABEL_TO_KEY[r] || r;
           };
           // Specialties covered by registered specialists (excluding GM — GM is the catch-all)
           const covered = doctors

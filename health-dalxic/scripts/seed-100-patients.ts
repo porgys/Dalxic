@@ -153,7 +153,7 @@ async function main() {
     // Token
     const dept = cfg.department;
     // Token prefix follows department, NOT emergency flag — a severe GM patient is still GM, just flagged
-    const prefix = { general: "GR", emergency: "ER", pediatrics: "PD", obstetrics: "OB", surgery: "SG", dental: "DN", eye: "EY", ent: "EN" }[dept] || "GR";
+    const prefix = { general: "GR", cardiology: "CD", neurology: "NR", oncology: "ON", gastroenterology: "GI", endocrinology: "ED", nephrology: "NP", pulmonology: "PL", hematology: "HM", rheumatology: "RH", geriatrics: "GT", dermatology: "DM", emergency: "ER", pediatrics: "PD", obstetrics: "OB", surgery: "SG", orthopedics: "OR", neurosurgery: "NS", cardiothoracic: "CT", plastic_surgery: "PS", urology: "UR", dental: "DN", eye: "EY", ent: "EN", psychiatry: "PY" }[dept] || "GR";
     const counterKey = prefix;
     deptCounters[counterKey] = (deptCounters[counterKey] || 0) + 1;
     const queueToken = `${prefix}-${HOSPITAL_CODE}-${String(deptCounters[counterKey]).padStart(3, "0")}`;
