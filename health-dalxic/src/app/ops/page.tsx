@@ -327,7 +327,7 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
   const [groupMsg, setGroupMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // ─── Operator form ───
-  const [newOp, setNewOp] = useState({ name: "", phone: "", pin: "", role: "front_desk", specialty: "general", assignedWard: "" });
+  const [newOp, setNewOp] = useState({ name: "", phone: "", pin: "", role: "front_desk", specialty: "general", assignedWards: [] as string[] });
   const [configWards, setConfigWards] = useState<Array<{ id: string; name: string }>>([]);
   const [addingOp, setAddingOp] = useState(false);
   const [opMsg, setOpMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -534,9 +534,9 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
     try {
       // Build meta for ward assignment
       const isWardModule = configModule === "ward_ipd";
-      const wardMeta = isWardModule && newOp.assignedWard ? (() => {
-        const ward = configWards.find(w => w.id === newOp.assignedWard);
-        return ward ? { assignedWardId: ward.id, assignedWardName: ward.name } : undefined;
+      const wardMeta = isWardModule && newOp.assignedWards.length > 0 ? (() => {
+        const selected = newOp.assignedWards.map(wId => configWards.find(w => w.id === wId)).filter(Boolean) as Array<{ id: string; name: string }>;
+        return selected.length > 0 ? { assignedWards: selected.map(w => ({ id: w.id, name: w.name })) } : undefined;
       })() : undefined;
       const res = await fetch("/api/operators", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: selectedHospital, action: "create", name: newOp.name, phone: newOp.phone, pin: newOp.pin, role: newOp.role, meta: wardMeta }) });
       if (res.ok) {
@@ -546,9 +546,9 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
           const docRole = newOp.role === "specialist" ? "attending" : newOp.role === "surgeon" ? "attending" : "attending";
           await fetch("/api/doctors", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hospitalCode: selectedHospital, name: newOp.name, specialty: newOp.specialty || "general", role: docRole }) }).catch(() => {});
         }
-        const wardLabel = wardMeta ? ` — ${wardMeta.assignedWardName}` : "";
+        const wardLabel = wardMeta ? ` — ${wardMeta.assignedWards.map((w: { name: string }) => w.name).join(", ")}` : "";
         setOpMsg({ type: "ok", text: `${newOp.name} added${isDoctorRole && configModule === "doctor" ? ` — ${DOCTOR_SPECIALTIES.find(s => s.value === newOp.specialty)?.label || "General"} specialty` : wardLabel}` });
-        setNewOp({ name: "", phone: "", pin: "", role: "front_desk", specialty: "general", assignedWard: "" }); loadOperators(selectedHospital);
+        setNewOp({ name: "", phone: "", pin: "", role: "front_desk", specialty: "general", assignedWards: [] }); loadOperators(selectedHospital);
       }
       else { const err = await res.json(); setOpMsg({ type: "err", text: err.error || "Failed" }); }
     } catch { setOpMsg({ type: "err", text: "Network error" }); } finally { setAddingOp(false); }
@@ -1281,12 +1281,31 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                         </div>
                       )}
                       {configModule === "ward_ipd" && (
-                        <div>
-                          <label style={labelStyle}>Assigned Ward</label>
-                          <select value={newOp.assignedWard} onChange={e => setNewOp(o => ({ ...o, assignedWard: e.target.value }))} style={{ ...inputStyle, appearance: "none" }}>
-                            <option value="" style={{ background: "#0a0a14" }}>All Wards</option>
-                            {configWards.map(w => <option key={w.id} value={w.id} style={{ background: "#0a0a14" }}>🛏️ {w.name}</option>)}
-                          </select>
+                        <div style={{ gridColumn: "1 / -1" }}>
+                          <label style={labelStyle}>Assigned Wards {newOp.assignedWards.length > 0 && <span style={{ color: COPPER, fontWeight: 700 }}>({newOp.assignedWards.length})</span>}</label>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+                            {configWards.map(w => {
+                              const selected = newOp.assignedWards.includes(w.id);
+                              return (
+                                <button key={w.id} type="button"
+                                  onClick={() => setNewOp(o => ({ ...o, assignedWards: selected ? o.assignedWards.filter(id => id !== w.id) : [...o.assignedWards, w.id] }))}
+                                  style={{
+                                    padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: selected ? 700 : 500,
+                                    background: selected ? `${COPPER}18` : "rgba(255,255,255,0.03)",
+                                    border: `1px solid ${selected ? `${COPPER}40` : "rgba(255,255,255,0.06)"}`,
+                                    color: selected ? COPPER : "#64748B",
+                                    transition: "all 0.2s ease",
+                                  }}
+                                >
+                                  {selected ? "✓ " : ""}{w.name}
+                                </button>
+                              );
+                            })}
+                            {configWards.length === 0 && <span style={{ fontSize: 11, color: "#475569" }}>No Wards Created Yet</span>}
+                          </div>
+                          {newOp.assignedWards.length === 0 && configWards.length > 0 && (
+                            <span style={{ fontSize: 10, color: "#475569", marginTop: 4, display: "block" }}>No Wards Selected — Operator Will See All Wards</span>
+                          )}
                         </div>
                       )}
                       <div>

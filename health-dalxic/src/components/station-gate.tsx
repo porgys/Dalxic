@@ -149,24 +149,27 @@ export function StationGate({ hospitalCode, stationName, stationIcon, allowedRol
  * Drop this into any station header.
  */
 export function OperatorBadge({ session, onLogout }: { session: OperatorSession; onLogout: () => void }) {
+  const roleLabel = session.operatorRole.replace(/_/g, " ");
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <div style={{
-        display: "flex", alignItems: "center", gap: 6,
-        padding: "4px 10px", borderRadius: 8,
+        display: "flex", alignItems: "center", gap: 8,
+        padding: "4px 12px", borderRadius: 8,
         background: "rgba(184,115,51,0.08)",
         border: "1px solid rgba(184,115,51,0.15)",
       }}>
         <div style={{
-          width: 6, height: 6, borderRadius: "50%",
+          width: 7, height: 7, borderRadius: "50%",
           background: "#22C55E", boxShadow: "0 0 6px rgba(34,197,94,0.4)",
         }} />
-        <span style={{ fontSize: 11, fontWeight: 600, color: "#D4956B", letterSpacing: "0.02em" }}>
-          {session.operatorName}
-        </span>
-        <span style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-          {session.operatorRole.replace("_", " ")}
-        </span>
+        <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: "#E2E8F0", letterSpacing: "0.02em" }}>
+            {session.operatorName}
+          </span>
+          <span style={{ fontSize: 8, fontWeight: 600, color: "#B8733380", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+            {roleLabel}
+          </span>
+        </div>
       </div>
       <motion.button
         type="button"

@@ -156,8 +156,16 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
   const theme = useStationTheme();
   // Ward scoping — nurses see only their assigned ward, admin/super_admin see all
   const isAdmin = ["admin", "super_admin"].includes(operator.operatorRole);
-  const assignedWardId = (operator.meta as Record<string, unknown> | null)?.assignedWardId as string | undefined;
-  const assignedWardName = (operator.meta as Record<string, unknown> | null)?.assignedWardName as string | undefined;
+  // Support both old single-ward and new multi-ward meta shapes
+  const operatorMeta = operator.meta as Record<string, unknown> | null;
+  const assignedWards: Array<{ id: string; name: string }> = (() => {
+    if (!operatorMeta) return [];
+    if (Array.isArray(operatorMeta.assignedWards)) return operatorMeta.assignedWards as Array<{ id: string; name: string }>;
+    if (operatorMeta.assignedWardId && operatorMeta.assignedWardName) return [{ id: operatorMeta.assignedWardId as string, name: operatorMeta.assignedWardName as string }];
+    return [];
+  })();
+  const assignedWardIds = assignedWards.map(w => w.id);
+  const assignedWardNames = assignedWards.map(w => w.name);
   const [activeNav, setActiveNav] = useState<"inpatients" | "admit" | "discharged">("inpatients");
   const [inpatients, setInpatients] = useState<Inpatient[]>([]);
   const [counts, setCounts] = useState({ admitted: 0, discharged: 0, total: 0 });
@@ -205,15 +213,15 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
       if (res.ok) {
         const data = await res.json();
         let list: Inpatient[] = data.inpatients || [];
-        // Ward scoping: non-admin operators only see their assigned ward
-        if (!isAdmin && assignedWardName) {
-          list = list.filter(p => p.wardName === assignedWardName);
+        // Ward scoping: non-admin operators only see their assigned wards
+        if (!isAdmin && assignedWardNames.length > 0) {
+          list = list.filter(p => assignedWardNames.includes(p.wardName));
         }
         setInpatients(list);
         setCounts(data.counts || { admitted: 0, discharged: 0, total: 0 });
       }
     } catch { /* retry */ }
-  }, [activeNav, isAdmin, assignedWardName]);
+  }, [activeNav, isAdmin, assignedWardNames]);
 
   const loadWards = useCallback(async () => {
     setLoadingWards(true);
@@ -239,8 +247,8 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
     setLoadingOrders(false);
   }, []);
 
-  // Filter wards for non-admin: only show assigned ward
-  const visibleWards = (!isAdmin && assignedWardId) ? wards.filter(w => w.id === assignedWardId) : wards;
+  // Filter wards for non-admin: only show assigned wards
+  const visibleWards = (!isAdmin && assignedWardIds.length > 0) ? wards.filter(w => assignedWardIds.includes(w.id)) : wards;
 
   useEffect(() => { loadInpatients(); }, [loadInpatients]);
   useEffect(() => { if (activeNav === "admit") { loadWards(); loadPendingOrders(); } }, [activeNav, loadWards, loadPendingOrders]);
@@ -366,10 +374,14 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Ward / IPD</span>
-          {assignedWardName && !isAdmin && (
-            <span style={{ padding: "3px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", color: "#C084FC" }}>
-              {assignedWardName}
-            </span>
+          {assignedWardNames.length > 0 && !isAdmin && (
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {assignedWardNames.map(name => (
+                <span key={name} style={{ padding: "3px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", color: "#C084FC" }}>
+                  {name}
+                </span>
+              ))}
+            </div>
           )}
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
