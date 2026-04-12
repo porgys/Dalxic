@@ -327,6 +327,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [prescriptions, setPrescriptions] = useState([{ medication: "", dosage: "", frequency: "", duration: "" }]);
   const [labReferral, setLabReferral] = useState(false);
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
+  const [customTest, setCustomTest] = useState("");
   const [clinicalNotes, setClinicalNotes] = useState("");
   const [ending, setEnding] = useState(false);
   const [escalating, setEscalating] = useState(false);
@@ -1100,7 +1101,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                     { id: "lab" as const, icon: "🧪", label: "Lab & Referrals", badge: selectedTests.length > 0 ? selectedTests.length : undefined },
                     { id: "actions" as const, icon: "⚡", label: "Actions" },
                   ]).map((tab) => (
-                    <motion.button key={tab.id} type="button" onClick={() => setConsultTab(tab.id)} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
+                    <motion.button key={tab.id} type="button" onClick={() => { setConsultTab(tab.id); if (tab.id === "lab") setLabReferral(true); }} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
                       style={{
                         display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, fontSize: 11, fontWeight: 700, cursor: "pointer",
                         background: consultTab === tab.id ? `${COPPER}12` : "rgba(255,255,255,0.02)",
@@ -1246,9 +1247,23 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                             className="w-full rounded-lg border px-3 py-2 text-[13px] font-body text-white focus:outline-none focus:ring-1 focus:ring-[#0EA5E9]/30 transition-all duration-200 appearance-none"
                             style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(14,165,233,0.15)" }}
                             value="" onChange={(e) => { if (e.target.value && !selectedTests.includes(e.target.value)) setSelectedTests((p) => [...p, e.target.value]); }}>
-                            <option value="" style={{ background: theme.selectOptionBg }}>Add Test...</option>
+                            <option value="" style={{ background: theme.selectOptionBg }}>Select From Common Tests...</option>
                             {LAB_TESTS.map((t) => <option key={t.value} value={t.value} style={{ background: theme.selectOptionBg }}>{t.label}</option>)}
                           </select>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <input
+                              type="text" placeholder="Type Custom Test Name..."
+                              value={customTest} onChange={(e) => setCustomTest(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === "Enter" && customTest.trim() && !selectedTests.includes(customTest.trim())) { setSelectedTests((p) => [...p, customTest.trim()]); setCustomTest(""); } }}
+                              className="flex-1 rounded-lg border px-3 py-2 text-[13px] font-body text-white focus:outline-none focus:ring-1 focus:ring-[#0EA5E9]/30 transition-all duration-200"
+                              style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(14,165,233,0.15)" }}
+                            />
+                            <button type="button" onClick={() => { if (customTest.trim() && !selectedTests.includes(customTest.trim())) { setSelectedTests((p) => [...p, customTest.trim()]); setCustomTest(""); } }}
+                              disabled={!customTest.trim()}
+                              style={{ padding: "0 14px", borderRadius: 8, fontSize: 11, fontWeight: 700, color: "#38BDF8", background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.2)", cursor: customTest.trim() ? "pointer" : "not-allowed", opacity: customTest.trim() ? 1 : 0.4, textTransform: "uppercase" }}>
+                              + Add
+                            </button>
+                          </div>
                           {selectedTests.length > 0 && (
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                               {selectedTests.map((test) => (
