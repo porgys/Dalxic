@@ -40,7 +40,10 @@ function QueueDisplay() {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [voiceUnlocked, setVoiceUnlocked] = useState(false);
+  const [voiceUnlocked, setVoiceUnlocked] = useState(() => {
+    if (typeof window !== "undefined") return sessionStorage.getItem("voice_unlocked") === "1";
+    return false;
+  });
   const calloutQueueRef = useRef<CalloutEntry[]>([]);
   const processingRef = useRef(false);
 
@@ -51,6 +54,7 @@ function QueueDisplay() {
       u.volume = 0;
       window.speechSynthesis.speak(u);
     }
+    sessionStorage.setItem("voice_unlocked", "1");
     setVoiceUnlocked(true);
   };
 
@@ -151,17 +155,20 @@ function QueueDisplay() {
         setQueue((prev) => prev.map((item) => item.token === data.queueToken ? { ...item, status: "serving" as const } : item));
         // Refresh queue from DB to catch visitStatus change
         loadQueue();
-        // Add to voice callout queue
-        const entry: CalloutEntry = {
-          token: data.queueToken,
-          patientName: data.patientName || "",
-          department: data.department || "",
-          room: data.room || null,
-          calledBy: data.calledBy || "",
-          timestamp: new Date().toISOString(),
-        };
-        calloutQueueRef.current.push(entry);
-        processCalloutQueue();
+        // Add to voice callout queue (dedup — React strict mode can double-fire)
+        const alreadyQueued = calloutQueueRef.current.some(e => e.token === data.queueToken);
+        if (!alreadyQueued) {
+          const entry: CalloutEntry = {
+            token: data.queueToken,
+            patientName: data.patientName || "",
+            department: data.department || "",
+            room: data.room || null,
+            calledBy: data.calledBy || "",
+            timestamp: new Date().toISOString(),
+          };
+          calloutQueueRef.current.push(entry);
+          processCalloutQueue();
+        }
       });
 
       // Patient completed — remove from queue
