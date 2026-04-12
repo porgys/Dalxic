@@ -231,6 +231,7 @@ export type OperatorRole =
   | "nurse"
   | "radiologist"
   | "admin"
+  | "super_admin"
   | "billing";
 
 export interface DeviceOperator {

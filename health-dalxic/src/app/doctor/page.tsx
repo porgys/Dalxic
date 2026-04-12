@@ -337,6 +337,19 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [doctorSpecialty, setDoctorSpecialty] = useState<string>("general");
+  const [showDeptSwitcher, setShowDeptSwitcher] = useState(false);
+  const isAdmin = operator.operatorRole === "admin" || operator.operatorRole === "super_admin";
+  const ALL_DEPARTMENTS = [
+    { value: "all", label: "All Departments" },
+    { value: "general", label: "General Medicine" },
+    { value: "emergency", label: "Emergency" },
+    { value: "pediatrics", label: "Pediatrics" },
+    { value: "obstetrics", label: "OB/GYN" },
+    { value: "surgery", label: "Surgery" },
+    { value: "dental", label: "Dental" },
+    { value: "eye", label: "Eye Clinic" },
+    { value: "ent", label: "ENT" },
+  ];
   // Referral state
   const [showReferralPanel, setShowReferralPanel] = useState(false);
   const [referralSpecialty, setReferralSpecialty] = useState("");
@@ -549,6 +562,8 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         const visible = data.filter((d: { visitStatus?: string; department?: string }) => {
           const vs = d.visitStatus ?? "active";
           if (vs !== "active" && vs !== "lab_results_ready") return false;
+          // Admin "all" mode — show every department
+          if (doctorSpecialty === "all") return true;
           // Filter by doctor's specialty — "general" sees general + unmatched departments
           const dept = (d.department || "general").toLowerCase();
           if (doctorSpecialty === "general") return dept === "general" || dept === "General Medicine" || !["emergency","pediatrics","obstetrics","surgery","dental","eye","ent"].includes(dept);
@@ -902,9 +917,30 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <OperatorBadge session={operator} onLogout={() => window.location.reload()} />
-          <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, background: `${COPPER}10`, border: `1px solid ${COPPER}20`, color: COPPER, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            {doctorSpecialty === "general" ? "General Medicine" : doctorSpecialty === "obstetrics" ? "OB/GYN" : doctorSpecialty.charAt(0).toUpperCase() + doctorSpecialty.slice(1)}
-          </span>
+          <div style={{ position: "relative" }}>
+            <span
+              onClick={isAdmin ? () => setShowDeptSwitcher(!showDeptSwitcher) : undefined}
+              style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, background: `${COPPER}10`, border: `1px solid ${COPPER}20`, color: COPPER, textTransform: "uppercase", letterSpacing: "0.06em", cursor: isAdmin ? "pointer" : "default", userSelect: "none" }}
+            >
+              {ALL_DEPARTMENTS.find(d => d.value === doctorSpecialty)?.label || "General Medicine"}
+              {isAdmin && <span style={{ marginLeft: 4, fontSize: 7 }}>▼</span>}
+            </span>
+            {showDeptSwitcher && isAdmin && (
+              <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, background: "rgba(20,20,20,0.95)", border: `1px solid ${COPPER}30`, borderRadius: 8, padding: 4, zIndex: 999, minWidth: 160, backdropFilter: "blur(12px)" }}>
+                {ALL_DEPARTMENTS.map(d => (
+                  <div
+                    key={d.value}
+                    onClick={() => { setDoctorSpecialty(d.value); setShowDeptSwitcher(false); }}
+                    style={{ padding: "6px 12px", fontSize: 11, fontWeight: doctorSpecialty === d.value ? 700 : 500, color: doctorSpecialty === d.value ? COPPER : "#94A3B8", cursor: "pointer", borderRadius: 4, background: doctorSpecialty === d.value ? `${COPPER}10` : "transparent" }}
+                    onMouseEnter={e => { (e.target as HTMLDivElement).style.background = `${COPPER}10`; }}
+                    onMouseLeave={e => { (e.target as HTMLDivElement).style.background = doctorSpecialty === d.value ? `${COPPER}10` : "transparent"; }}
+                  >
+                    {d.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <div style={{ width: 1, height: 12, background: "rgba(184,115,51,0.12)" }} />
           <span style={{ fontSize: 11, color: "#64748B" }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 12, background: "rgba(184,115,51,0.12)" }} />
