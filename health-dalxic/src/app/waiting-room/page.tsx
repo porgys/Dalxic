@@ -52,8 +52,8 @@ function QueueDisplay() {
           .filter((d: { department: string; visitStatus?: string }) => {
             if (dept && d.department !== dept) return false;
             const vs = d.visitStatus ?? "active";
-            // Only show patients still waiting — exclude those already with a doctor, closed, gone, etc.
-            return vs === "active" || vs === "lab_results_ready";
+            // Show waiting + in_consultation patients (exclude closed, pharmacy, admitted, etc.)
+            return vs === "active" || vs === "lab_results_ready" || vs === "in_consultation";
           })
           .map((d: { token: string; patientName: string; department: string; emergencyFlag: boolean; visitStatus?: string }) => ({
             token: d.token,
@@ -61,7 +61,7 @@ function QueueDisplay() {
             department: d.department,
             emergencyFlag: d.emergencyFlag ?? false,
             visitStatus: d.visitStatus ?? "active",
-            status: "waiting" as const,
+            status: (d.visitStatus === "in_consultation" ? "serving" : "waiting") as "waiting" | "serving",
           }));
         setQueue(items);
       }
@@ -191,10 +191,12 @@ function QueueDisplay() {
   }, []);
 
   // Derived state
-  // NOW SERVING only comes from real-time callout events — never from DB status
+  // All patients currently in consultation (multiple doctors = multiple serving)
+  const allServing = queue.filter((q) => q.status === "serving");
+  // Most recently called (via Pusher) gets highlighted, fallback to first from DB
   const serving = currentCallout
-    ? { token: currentCallout.token, patientName: currentCallout.patientName, department: currentCallout.department, emergencyFlag: currentCallout.token.startsWith("ER"), status: "serving" as const }
-    : null;
+    ? allServing.find((q) => q.token === currentCallout.token) || { token: currentCallout.token, patientName: currentCallout.patientName, department: currentCallout.department, emergencyFlag: currentCallout.token.startsWith("ER"), status: "serving" as const }
+    : allServing[0] || null;
   const waiting = queue
     .filter((q) => q.status === "waiting")
     .sort((a, b) => (b.emergencyFlag ? 1 : 0) - (a.emergencyFlag ? 1 : 0));
@@ -249,15 +251,82 @@ function QueueDisplay() {
         </div>
       </motion.header>
 
-      {/* Main content — dual panel */}
-      <main className="relative z-10 flex-1 flex" style={{ padding: "24px 32px", gap: 32 }}>
+      {/* Main content — three-column layout */}
+      <main className="relative z-10 flex-1 flex" style={{ padding: "24px 32px", gap: 24 }}>
 
-        {/* LEFT: Now Serving + Recently Called */}
-        <div style={{ flex: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: "4px", textTransform: "uppercase", color: "#64748B", marginBottom: 16 }}>
-            Now Serving
-          </p>
+        {/* LEFT: In Consultation list */}
+        <div style={{ width: 260, minWidth: 260, display: "flex", flexDirection: "column" }}>
+          <div style={{
+            padding: 16, borderRadius: 16, flex: 1,
+            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(184,115,51,0.08)",
+            backdropFilter: "blur(12px)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#22C55E", fontFamily: "monospace" }}>
+                In Consultation
+              </p>
+              {allServing.length > 0 && (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.15)", color: "#22C55E" }}>
+                  {allServing.length}
+                </span>
+              )}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <AnimatePresence>
+                {allServing.map((s) => (
+                  <motion.div
+                    key={s.token}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    style={{
+                      padding: "10px 12px", borderRadius: 10,
+                      background: s.token === serving?.token ? "rgba(184,115,51,0.08)" : "rgba(255,255,255,0.02)",
+                      border: `1px solid ${s.token === serving?.token ? "rgba(184,115,51,0.15)" : "rgba(255,255,255,0.04)"}`,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 6px rgba(34,197,94,0.4)", flexShrink: 0 }} />
+                      <span style={{ fontSize: 14, fontWeight: 800, fontFamily: "monospace", color: s.token.startsWith("ER") ? "#F87171" : "#B87333" }}>
+                        {s.token}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: "#E2E8F0", marginTop: 4, marginLeft: 14 }}>{s.patientName}</p>
+                    <p style={{ fontSize: 9, fontWeight: 600, color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px", marginTop: 2, marginLeft: 14 }}>{s.department}</p>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              {allServing.length === 0 && (
+                <p style={{ fontSize: 12, color: "#3D4D78", textAlign: "center", padding: 20, opacity: 0.6 }}>No Active Consultations</p>
+              )}
+            </div>
 
+            {/* Recently Called */}
+            {recentCallouts.length > 0 && (
+              <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#475569", marginBottom: 8, fontFamily: "monospace" }}>
+                  Recently Called
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {recentCallouts.slice(0, 4).map((entry, i) => (
+                    <div key={`${entry.token}-${i}`} style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "4px 8px", borderRadius: 6, opacity: 0.7 - i * 0.12,
+                    }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "monospace", color: "#475569" }}>{entry.token}</span>
+                      <span style={{ fontSize: 9, color: "#3D4D78" }}>
+                        {new Date(entry.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* CENTER: Most recently called — big dramatic display */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           <AnimatePresence mode="wait">
             {serving ? (
               <motion.div
@@ -268,8 +337,11 @@ function QueueDisplay() {
                 transition={{ type: "spring", stiffness: 300, damping: 25 }}
                 style={{ textAlign: "center", animation: isSpeaking ? "pulseGlow 2s ease-in-out infinite" : undefined, padding: 40, borderRadius: 24 }}
               >
+                <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "4px", textTransform: "uppercase", color: "#64748B", marginBottom: 24 }}>
+                  Now Serving
+                </p>
                 <div style={{
-                  fontSize: "clamp(80px, 15vw, 180px)", fontWeight: 800, lineHeight: 1,
+                  fontSize: "clamp(72px, 12vw, 160px)", fontWeight: 800, lineHeight: 1,
                   fontFamily: "monospace", letterSpacing: "4px",
                   background: serving.token.startsWith("ER") ? "linear-gradient(135deg, #EF4444, #F87171)" : "linear-gradient(135deg, #B87333, #D4956B, #B87333)",
                   WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
@@ -277,19 +349,19 @@ function QueueDisplay() {
                   {serving.token}
                 </div>
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                  <p style={{ fontSize: 24, fontWeight: 600, marginTop: 16, color: "white" }}>{serving.patientName}</p>
+                  <p style={{ fontSize: 22, fontWeight: 700, marginTop: 16, color: "white" }}>{serving.patientName}</p>
                   {currentCallout?.room && (
-                    <p style={{ fontSize: 18, color: "#D4956B", marginTop: 8, fontWeight: 600 }}>
+                    <p style={{ fontSize: 16, color: "#D4956B", marginTop: 8, fontWeight: 600 }}>
                       Proceed To {currentCallout.room}
                     </p>
                   )}
-                  <p style={{ fontSize: 14, color: "#64748B", marginTop: 8 }}>{serving.department}</p>
+                  <p style={{ fontSize: 13, color: "#64748B", marginTop: 8, textTransform: "uppercase", letterSpacing: "1px" }}>{serving.department}</p>
                 </motion.div>
                 {isSpeaking && (
                   <motion.div
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 16 }}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 20 }}
                   >
                     {[0, 1, 2].map((i) => (
                       <div key={i} style={{
@@ -302,8 +374,11 @@ function QueueDisplay() {
               </motion.div>
             ) : (
               <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center" }}>
+                <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "4px", textTransform: "uppercase", color: "#64748B", marginBottom: 24 }}>
+                  Now Serving
+                </p>
                 <div style={{
-                  fontSize: "clamp(80px, 15vw, 180px)", fontWeight: 800, lineHeight: 1,
+                  fontSize: "clamp(72px, 12vw, 160px)", fontWeight: 800, lineHeight: 1,
                   fontFamily: "monospace", color: "rgba(184,115,51,0.12)",
                 }}>
                   ---
@@ -312,45 +387,25 @@ function QueueDisplay() {
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Recently Called */}
-          {recentCallouts.length > 0 && (
-            <div style={{ marginTop: 40, width: "100%", maxWidth: 400 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#64748B", marginBottom: 12, fontFamily: "monospace" }}>
-                Recently Called
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {recentCallouts.map((entry, i) => (
-                  <div key={`${entry.token}-${i}`} style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "8px 12px", borderRadius: 8,
-                    background: "rgba(255,255,255,0.02)",
-                    opacity: 1 - i * 0.15,
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 16, fontWeight: 700, fontFamily: "monospace", color: "#64748B" }}>{entry.token}</span>
-                      <span style={{ fontSize: 11, color: "#4A5568" }}>{entry.patientName}</span>
-                    </div>
-                    <span style={{ fontSize: 10, color: "#3D4D78" }}>
-                      {new Date(entry.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* RIGHT: Up Next sidebar */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* RIGHT: Up Next queue */}
+        <div style={{ width: 320, minWidth: 320, display: "flex", flexDirection: "column" }}>
           <div style={{
             padding: 20, borderRadius: 16, flex: 1,
             background: "rgba(255,255,255,0.02)", border: "1px solid rgba(184,115,51,0.08)",
             backdropFilter: "blur(12px)",
           }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", marginBottom: 16, fontFamily: "monospace" }}>
-              Up Next
-            </p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: "monospace" }}>
+                Up Next
+              </p>
+              {waiting.length > 0 && (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: "rgba(184,115,51,0.08)", border: "1px solid rgba(184,115,51,0.12)", color: "#B87333" }}>
+                  {waiting.length}
+                </span>
+              )}
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <AnimatePresence>
                 {upNext.map((item, i) => (
@@ -370,12 +425,12 @@ function QueueDisplay() {
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <span style={{
-                        fontSize: 22, fontWeight: 800, fontFamily: "monospace",
+                        fontSize: 20, fontWeight: 800, fontFamily: "monospace",
                         color: item.emergencyFlag ? "#F87171" : "#B87333",
                       }}>
                         {item.token}
                       </span>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: "#94A3B8" }}>
+                      <span style={{ fontSize: 12, fontWeight: 500, color: "#94A3B8" }}>
                         {item.patientName}
                       </span>
                     </div>
