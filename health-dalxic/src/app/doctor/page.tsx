@@ -1651,69 +1651,73 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(8px)" }}
           onClick={() => setShowCreateTemplate(false)}>
-          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+          <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 10 }}
             onClick={(e) => e.stopPropagation()}
-            style={{ background: "rgba(15,15,25,0.98)", border: `1px solid ${COPPER}20`, borderRadius: 24, padding: 28, width: 560, maxHeight: "85vh", overflow: "auto" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#D4956B", marginBottom: 20 }}>Create SOAP Template</div>
+            style={{ background: "rgba(12,12,20,0.98)", border: `1px solid ${COPPER}15`, borderRadius: 20, padding: 24, width: 480, maxHeight: "80vh", overflow: "auto", backdropFilter: "blur(20px)" }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: COPPER, marginBottom: 16 }}>New SOAP Template</div>
 
-            {/* Template name + icon */}
-            <div style={{ display: "grid", gridTemplateColumns: "60px 1fr", gap: 10, marginBottom: 12 }}>
-              <div>
-                <label className="block text-xs font-medium font-body mb-1.5" style={{ color: theme.textLabel }}>Icon</label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                  {["📋", "🩺", "💊", "🧪", "🩹", "🫁", "❤️", "🦟", "🤒", "🤰", "🦴", "👁️"].map(ico => (
-                    <button key={ico} type="button" onClick={() => setNewTemplate(t => ({ ...t, icon: ico }))}
-                      style={{ fontSize: 14, padding: 3, borderRadius: 4, cursor: "pointer", border: newTemplate.icon === ico ? `1px solid ${COPPER}40` : "1px solid transparent", background: newTemplate.icon === ico ? `${COPPER}10` : "transparent" }}>
-                      {ico}
-                    </button>
-                  ))}
-                </div>
+            {/* Template name + icon row */}
+            <div style={{ marginBottom: 14 }}>
+              <DInput label="Template Name *" placeholder="e.g. Sickle Cell Crisis" value={newTemplate.label} onChange={e => setNewTemplate(t => ({ ...t, label: e.target.value }))} required />
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label className="block text-xs font-medium font-body mb-1.5" style={{ color: theme.textLabel, fontSize: 10 }}>Icon</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                {["📋", "🩺", "💊", "🧪", "🩹", "🫁", "❤️", "🦟", "🤒", "🤰", "🦴", "👁️"].map(ico => (
+                  <button key={ico} type="button" onClick={() => setNewTemplate(t => ({ ...t, icon: ico }))}
+                    style={{ fontSize: 16, padding: "4px 6px", borderRadius: 6, cursor: "pointer", border: newTemplate.icon === ico ? `1px solid ${COPPER}50` : "1px solid rgba(255,255,255,0.06)", background: newTemplate.icon === ico ? `${COPPER}15` : "rgba(255,255,255,0.02)", transition: "all 0.15s" }}>
+                    {ico}
+                  </button>
+                ))}
               </div>
-              <DInput label="Template Name" placeholder="e.g. Sickle Cell Crisis" value={newTemplate.label} onChange={e => setNewTemplate(t => ({ ...t, label: e.target.value }))} required />
             </div>
 
-            {/* Diagnosis + Notes */}
-            <div style={{ marginBottom: 12 }}>
-              <DInput label="Diagnosis" placeholder="e.g. Sickle Cell Disease — Vaso-Occlusive Crisis" value={newTemplate.diagnosis} onChange={e => setNewTemplate(t => ({ ...t, diagnosis: e.target.value }))} required />
+            {/* Diagnosis */}
+            <div style={{ marginBottom: 14 }}>
+              <DInput label="Diagnosis *" placeholder="e.g. Sickle Cell Disease — Vaso-Occlusive Crisis" value={newTemplate.diagnosis} onChange={e => setNewTemplate(t => ({ ...t, diagnosis: e.target.value }))} required />
             </div>
-            <div style={{ marginBottom: 12 }}>
+
+            {/* SOAP Notes */}
+            <div style={{ marginBottom: 14 }}>
               <DTextarea label="SOAP Notes" rows={3} placeholder="S: ... O: ... A: ... P: ..." value={newTemplate.notes} onChange={e => setNewTemplate(t => ({ ...t, notes: e.target.value }))} />
             </div>
 
             {/* Prescriptions */}
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <label className="block text-xs font-medium font-body" style={{ color: theme.textLabel }}>Prescriptions</label>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <label className="block font-medium font-body" style={{ color: theme.textLabel, fontSize: 10 }}>Prescriptions</label>
                 <button type="button" onClick={() => setNewTemplate(t => ({ ...t, prescriptions: [...t.prescriptions, { medication: "", dosage: "", frequency: "", duration: "" }] }))}
-                  style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, cursor: "pointer", background: `${COPPER}08`, border: `1px solid ${COPPER}20`, color: "#D4956B" }}>+ Add</button>
+                  style={{ fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 5, cursor: "pointer", background: `${COPPER}10`, border: `1px solid ${COPPER}20`, color: COPPER }}>+ Add</button>
               </div>
               {newTemplate.prescriptions.map((rx, i) => (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 20px", gap: 6, marginBottom: 6 }}>
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8, padding: 10, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
                   <input placeholder="Medication" value={rx.medication} onChange={e => { const p = [...newTemplate.prescriptions]; p[i] = { ...p[i], medication: e.target.value }; setNewTemplate(t => ({ ...t, prescriptions: p })); }}
                     className="rounded-lg border px-2.5 py-2 text-xs font-body focus:outline-none" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }} />
                   <input placeholder="Dosage" value={rx.dosage} onChange={e => { const p = [...newTemplate.prescriptions]; p[i] = { ...p[i], dosage: e.target.value }; setNewTemplate(t => ({ ...t, prescriptions: p })); }}
                     className="rounded-lg border px-2.5 py-2 text-xs font-body focus:outline-none" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }} />
                   <input placeholder="Frequency" value={rx.frequency} onChange={e => { const p = [...newTemplate.prescriptions]; p[i] = { ...p[i], frequency: e.target.value }; setNewTemplate(t => ({ ...t, prescriptions: p })); }}
                     className="rounded-lg border px-2.5 py-2 text-xs font-body focus:outline-none" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }} />
-                  <input placeholder="Duration" value={rx.duration} onChange={e => { const p = [...newTemplate.prescriptions]; p[i] = { ...p[i], duration: e.target.value }; setNewTemplate(t => ({ ...t, prescriptions: p })); }}
-                    className="rounded-lg border px-2.5 py-2 text-xs font-body focus:outline-none" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }} />
-                  {newTemplate.prescriptions.length > 1 && (
-                    <button type="button" onClick={() => setNewTemplate(t => ({ ...t, prescriptions: t.prescriptions.filter((_, j) => j !== i) }))}
-                      style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer", fontSize: 12, fontWeight: 700, alignSelf: "center" }}>x</button>
-                  )}
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input placeholder="Duration" value={rx.duration} onChange={e => { const p = [...newTemplate.prescriptions]; p[i] = { ...p[i], duration: e.target.value }; setNewTemplate(t => ({ ...t, prescriptions: p })); }}
+                      className="rounded-lg border px-2.5 py-2 text-xs font-body focus:outline-none" style={{ flex: 1, background: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }} />
+                    {newTemplate.prescriptions.length > 1 && (
+                      <button type="button" onClick={() => setNewTemplate(t => ({ ...t, prescriptions: t.prescriptions.filter((_, j) => j !== i) }))}
+                        style={{ border: "none", background: "rgba(239,68,68,0.08)", color: "#EF4444", cursor: "pointer", fontSize: 10, fontWeight: 700, borderRadius: 6, padding: "0 8px" }}>✕</button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
 
             {/* Actions */}
-            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <div style={{ display: "flex", gap: 10 }}>
               <motion.button type="button" onClick={saveAsTemplate} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 disabled={!newTemplate.label.trim() || !newTemplate.diagnosis.trim()}
-                style={{ flex: 2, padding: "12px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "#fff", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", textTransform: "uppercase", letterSpacing: "0.06em", opacity: !newTemplate.label.trim() || !newTemplate.diagnosis.trim() ? 0.4 : 1 }}>
+                style={{ flex: 2, padding: "11px 20px", borderRadius: 10, fontSize: 11, fontWeight: 800, color: "#fff", cursor: "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", textTransform: "uppercase", letterSpacing: "0.06em", opacity: !newTemplate.label.trim() || !newTemplate.diagnosis.trim() ? 0.35 : 1 }}>
                 Save Template
               </motion.button>
               <button type="button" onClick={() => setShowCreateTemplate(false)}
-                style={{ flex: 1, padding: "12px 20px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "#94A3B8", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
+                style={{ flex: 1, padding: "11px 20px", borderRadius: 10, fontSize: 11, fontWeight: 600, color: "#64748B", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
                 Cancel
               </button>
             </div>
