@@ -40,8 +40,19 @@ function QueueDisplay() {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceUnlocked, setVoiceUnlocked] = useState(false);
   const calloutQueueRef = useRef<CalloutEntry[]>([]);
   const processingRef = useRef(false);
+
+  // Unlock browser speech API with a user gesture
+  const unlockVoice = () => {
+    if ("speechSynthesis" in window) {
+      const u = new SpeechSynthesisUtterance("");
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    }
+    setVoiceUnlocked(true);
+  };
 
   const loadQueue = useCallback(async () => {
     try {
@@ -158,13 +169,8 @@ function QueueDisplay() {
         setQueue((prev) => prev.filter((item) => item.token !== data.queueToken));
       });
 
-      // Callout channel (from Display Board system)
+      // Callout channel — subscribe but don't duplicate voice (patient-called already handles it)
       const calloutChannel = pusher.subscribe(`hospital-${HOSPITAL_CODE}-callout`);
-      calloutChannel.bind("number-called", (data: CalloutEntry) => {
-        if (dept && data.department !== dept) return;
-        calloutQueueRef.current.push(data);
-        processCalloutQueue();
-      });
 
       // Emergency channel
       const erChannel = pusher.subscribe(`hospital-${HOSPITAL_CODE}-emergency`);
@@ -216,6 +222,20 @@ function QueueDisplay() {
         @keyframes erFlash { 0%,100%{border-color:rgba(220,38,38,0.2);box-shadow:0 0 15px rgba(220,38,38,0.05)} 50%{border-color:rgba(220,38,38,0.5);box-shadow:0 0 30px rgba(220,38,38,0.15)} }
         @keyframes erTokenPulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
       `}</style>
+
+      {/* Voice unlock overlay — browser requires one click before speech works */}
+      {!voiceUnlocked && (
+        <div onClick={unlockVoice} style={{
+          position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(0,0,0,0.85)", backdropFilter: "blur(20px)", cursor: "pointer",
+        }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 64, marginBottom: 16 }}>🔊</div>
+            <p style={{ fontSize: 22, fontWeight: 800, color: "#E2E8F0", letterSpacing: "0.02em" }}>Tap To Enable Voice Callout</p>
+            <p style={{ fontSize: 13, color: "#64748B", marginTop: 8 }}>Patient Names Will Be Announced When Called</p>
+          </div>
+        </div>
+      )}
 
       {/* Ambient glow */}
       <div className="absolute inset-0 pointer-events-none">
