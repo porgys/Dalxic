@@ -46,12 +46,13 @@ export async function POST(request: Request) {
     return Response.json({ error: "Current month book is closed" }, { status: 409 });
   }
 
-  // Auto-flag emergency for severity >= 8
+  // Auto-flag emergency for severity >= 8 — also reroutes to emergency department
   const severity = symptomSeverity ?? 5;
   const emergencyFlag = severity >= 8;
+  const finalDepartment = emergencyFlag ? "emergency" : department;
   const queueToken = emergencyFlag
     ? await generateERToken(hospitalCode)
-    : await generateQueueToken(hospital.id, book.id, department, hospitalCode);
+    : await generateQueueToken(hospital.id, book.id, finalDepartment, hospitalCode);
 
   // Generate patient checkout PIN — 4 digits, given to patient on ticket/WhatsApp
   // Patient returns this PIN to front desk to close visit (they don't know it's for security)
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
       visit: JSON.parse(JSON.stringify({
         date: now.toISOString(),
         chiefComplaint,
-        department,
+        department: finalDepartment,
         assignedDoctor: null,
         queueToken,
         entryPoint: "front_desk",
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
       queueToken,
       patientName: patient.fullName,
       chiefComplaint,
-      department,
+      department: finalDepartment,
       recordId: record.id,
       emergencyFlag,
       symptomSeverity: severity,
