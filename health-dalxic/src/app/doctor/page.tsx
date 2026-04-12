@@ -414,10 +414,8 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
             const r = (s || "general").toLowerCase();
             return r === "general medicine" ? "general" : r === "ob/gyn" ? "obstetrics" : r === "eye clinic" ? "eye" : r;
           };
-          // Active doctors = AVAILABLE or IN_CONSULTATION (on duty right now)
-          const onDuty = doctors.filter((d: { status?: string }) => d.status === "AVAILABLE" || d.status === "IN_CONSULTATION" || d.status === "ON_CALL");
-          // Specialties covered by active specialists (excluding GM — GM is the catch-all)
-          const covered = onDuty
+          // Specialties covered by registered specialists (excluding GM — GM is the catch-all)
+          const covered = doctors
             .map((d: { specialty?: string }) => normalize(d.specialty || "general"))
             .filter((s: string) => s !== "general");
           setCoveredSpecialties(Array.from(new Set(covered)));
@@ -427,7 +425,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
             setDoctorId(match.id);
             const mySpecialty = normalize(match.specialty);
             // Solo doctor sees ALL departments
-            if (onDuty.length <= 1) {
+            if (doctors.length <= 1) {
               setDoctorSpecialty("all");
             } else {
               setDoctorSpecialty(mySpecialty);
