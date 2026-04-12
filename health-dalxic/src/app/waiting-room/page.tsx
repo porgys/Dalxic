@@ -52,7 +52,8 @@ function QueueDisplay() {
           .filter((d: { department: string; visitStatus?: string }) => {
             if (dept && d.department !== dept) return false;
             const vs = d.visitStatus ?? "active";
-            return vs !== "closed" && vs !== "deceased" && vs !== "lwbs";
+            // Only show patients still waiting — exclude those already with a doctor, closed, gone, etc.
+            return vs === "active" || vs === "lab_results_ready";
           })
           .map((d: { token: string; patientName: string; department: string; emergencyFlag: boolean; visitStatus?: string }) => ({
             token: d.token,
@@ -60,7 +61,7 @@ function QueueDisplay() {
             department: d.department,
             emergencyFlag: d.emergencyFlag ?? false,
             visitStatus: d.visitStatus ?? "active",
-            status: (d.visitStatus === "in_consultation" ? "serving" : "waiting") as "waiting" | "serving",
+            status: "waiting" as const,
           }));
         setQueue(items);
       }
@@ -190,9 +191,10 @@ function QueueDisplay() {
   }, []);
 
   // Derived state
+  // NOW SERVING only comes from real-time callout events — never from DB status
   const serving = currentCallout
-    ? queue.find((q) => q.token === currentCallout.token) || { token: currentCallout.token, patientName: currentCallout.patientName, department: currentCallout.department, emergencyFlag: false, status: "serving" as const }
-    : queue.find((q) => q.status === "serving");
+    ? { token: currentCallout.token, patientName: currentCallout.patientName, department: currentCallout.department, emergencyFlag: currentCallout.token.startsWith("ER"), status: "serving" as const }
+    : null;
   const waiting = queue
     .filter((q) => q.status === "waiting")
     .sort((a, b) => (b.emergencyFlag ? 1 : 0) - (a.emergencyFlag ? 1 : 0));
