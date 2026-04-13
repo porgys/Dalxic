@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 
 /* ═══════════════════════════════════════════════════════════════
    DALXICINSTITUTE — Dashboard / Enrollment / Fees / Staff
@@ -11,18 +11,32 @@ const EMERALD_L  = "#34D399"
 const INST_COL   = "#0EA5E9"
 const INST_L     = "#38BDF8"
 const BG         = "#040A0F"
+const ORG_CODE   = "DEMO"
 
 type Screen = "dashboard" | "enrollment" | "fees" | "schedule" | "staff"
+
+interface Group {
+  id: string
+  name: string
+  type: string
+  isActive: boolean
+  _count: { members: number }
+}
 
 interface Member {
   id: string
   name: string
   role: string
   status: "active" | "inactive" | "graduated" | "suspended"
-  joinDate: string
-  group: string
-  contact?: string
-  balance: number
+  phone: string | null
+  email: string | null
+  enrolledAt: string
+  groupId: string | null
+  group: { id: string; name: string } | null
+  guardianName: string | null
+  guardianPhone: string | null
+  dateOfBirth: string | null
+  gender: string | null
 }
 
 interface StaffMember {
@@ -32,32 +46,42 @@ interface StaffMember {
   department: string
   status: "active" | "inactive"
   phone: string
+  email: string | null
+  createdAt: string
 }
 
-/* ── Demo data ── */
-const DEMO_MEMBERS: Member[] = [
-  { id: "m1", name: "Kwame Mensah", role: "Student", status: "active", joinDate: "2025-09-01", group: "Form 3A", balance: 0 },
-  { id: "m2", name: "Ama Serwaa", role: "Student", status: "active", joinDate: "2025-09-01", group: "Form 3A", contact: "0244123456", balance: -150 },
-  { id: "m3", name: "Yaw Boateng", role: "Student", status: "active", joinDate: "2025-09-01", group: "Form 2B", balance: 0 },
-  { id: "m4", name: "Efua Darkwa", role: "Student", status: "active", joinDate: "2024-09-01", group: "Form 4", balance: -300 },
-  { id: "m5", name: "Kofi Adjei", role: "Student", status: "graduated", joinDate: "2022-09-01", group: "Alumni 2025", balance: 0 },
-  { id: "m6", name: "Abena Ofori", role: "Member", status: "active", joinDate: "2026-01-15", group: "Youth Group", balance: -50 },
-  { id: "m7", name: "Nana Akufo", role: "Trainee", status: "active", joinDate: "2026-02-01", group: "Batch 12", contact: "0551987654", balance: -200 },
-  { id: "m8", name: "Seli Tetteh", role: "Student", status: "suspended", joinDate: "2025-09-01", group: "Form 3B", balance: -450 },
-]
+interface FeeRecord {
+  id: string
+  memberId: string
+  description: string
+  amount: number
+  paid: number
+  balance: number
+  status: "UNPAID" | "PARTIAL" | "PAID"
+  dueDate: string | null
+  member: { id: string; name: string; group: { name: string } | null }
+}
 
-const DEMO_STAFF: StaffMember[] = [
-  { id: "s1", name: "Dr. Emmanuel Asante", role: "Director", department: "Administration", status: "active", phone: "0244555111" },
-  { id: "s2", name: "Grace Osei", role: "Teacher", department: "Mathematics", status: "active", phone: "0244555222" },
-  { id: "s3", name: "James Appiah", role: "Teacher", department: "English", status: "active", phone: "0244555333" },
-  { id: "s4", name: "Mercy Boateng", role: "Accountant", department: "Finance", status: "active", phone: "0244555444" },
-  { id: "s5", name: "Samuel Owusu", role: "Security", department: "Operations", status: "active", phone: "0244555555" },
-  { id: "s6", name: "Florence Mensah", role: "Teacher", department: "Science", status: "active", phone: "0244555666" },
-  { id: "s7", name: "Daniel Tetteh", role: "Teacher", department: "ICT", status: "active", phone: "0244555777" },
-  { id: "s8", name: "Lydia Asare", role: "Librarian", department: "Library", status: "active", phone: "0244555888" },
-  { id: "s9", name: "Patrick Kwarteng", role: "Counsellor", department: "Student Affairs", status: "active", phone: "0244555999" },
-  { id: "s10", name: "Hannah Adu", role: "Nurse", department: "Sick Bay", status: "inactive", phone: "0244555000" },
-]
+interface FeeSummary {
+  totalBilled: number
+  totalCollected: number
+  totalOutstanding: number
+  collectionRate: number
+  byStatus: { UNPAID: number; PARTIAL: number; PAID: number }
+}
+
+interface ScheduleEntry {
+  id: string
+  subject: string
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+  room: string
+  groupId: string
+  group: { id: string; name: string }
+  staffId: string
+  staff: { id: string; name: string }
+}
 
 /* ── Styles ── */
 const glass = {
@@ -107,6 +131,39 @@ const btnPrimary: React.CSSProperties = {
   boxShadow: `0 4px 16px ${INST_COL}25`,
 }
 
+const feedbackStyle: React.CSSProperties = {
+  position: "fixed",
+  top: 20,
+  right: 28,
+  zIndex: 100,
+  padding: "12px 22px",
+  borderRadius: 12,
+  fontSize: 13,
+  fontWeight: 600,
+  fontFamily: "'DM Sans', sans-serif",
+  backdropFilter: "blur(16px)",
+  animation: "fadeUp 0.3s ease",
+}
+
+/* ── Subject color helper ── */
+const SUBJECT_COLORS: Record<string, string> = {
+  Mathematics: "#0EA5E9",
+  English: "#8B5CF6",
+  Science: "#10B981",
+  "Social Studies": "#F59E0B",
+  ICT: "#EC4899",
+  French: "#6366F1",
+  "Physical Education": "#EF4444",
+  "Religious & Moral Ed.": "#D97706",
+  "Creative Arts": "#EC4899",
+  "Ghanaian Language (Twi)": "#F59E0B",
+  "Assembly / Club": "#6B9B8A",
+}
+
+function subjectColor(subject: string): string {
+  return SUBJECT_COLORS[subject] || INST_COL
+}
+
 /* ── Header ── */
 function Header({ screen, setScreen, orgName }: { screen: Screen; setScreen: (s: Screen) => void; orgName: string }) {
   const tabs: { key: Screen; label: string; icon: string }[] = [
@@ -148,16 +205,29 @@ function Header({ screen, setScreen, orgName }: { screen: Screen; setScreen: (s:
   )
 }
 
+/* ── Feedback toast ── */
+function FeedbackToast({ message, type }: { message: string; type: "success" | "error" }) {
+  return (
+    <div style={{
+      ...feedbackStyle,
+      background: type === "success" ? `${EMERALD}20` : "rgba(239,68,68,0.15)",
+      border: `1px solid ${type === "success" ? EMERALD : "#EF4444"}30`,
+      color: type === "success" ? EMERALD_L : "#FCA5A5",
+    }}>
+      {message}
+    </div>
+  )
+}
+
 /* ── Dashboard ── */
-function DashboardScreen({ members, staff, setScreen }: { members: Member[]; staff: StaffMember[]; setScreen: (s: Screen) => void }) {
+function DashboardScreen({ members, staff, groups, feeSummary, setScreen }: { members: Member[]; staff: StaffMember[]; groups: Group[]; feeSummary: FeeSummary | null; setScreen: (s: Screen) => void }) {
   const active = members.filter(m => m.status === "active")
-  const totalOwed = members.reduce((a, m) => a + Math.abs(Math.min(0, m.balance)), 0)
-  const groups = [...new Set(members.map(m => m.group))]
+  const totalOutstanding = feeSummary ? (feeSummary.totalOutstanding / 100) : 0
 
   const stats = [
     { label: "Total Members", value: members.length.toString(), color: INST_COL },
     { label: "Active", value: active.length.toString(), color: EMERALD },
-    { label: "Outstanding Fees", value: `GHS ${totalOwed.toLocaleString()}`, color: "#EF4444" },
+    { label: "Outstanding Fees", value: `GHS ${totalOutstanding.toLocaleString()}`, color: "#EF4444" },
     { label: "Staff", value: staff.length.toString(), color: INST_L },
   ]
 
@@ -202,15 +272,15 @@ function DashboardScreen({ members, staff, setScreen }: { members: Member[]; sta
         {/* Groups overview */}
         <div style={{ ...glass, padding: "24px 22px" }}>
           <div style={{ ...labelStyle, marginBottom: 16 }}>Groups / Classes</div>
-          {groups.map(g => {
-            const count = members.filter(m => m.group === g && m.status === "active").length
-            return (
-              <div key={g} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${INST_COL}06` }}>
-                <span style={{ fontSize: 13, color: "#ECF5F0", fontFamily: "'DM Sans', sans-serif" }}>{g}</span>
-                <span style={{ fontSize: 12, color: INST_L, fontWeight: 700, fontFamily: "'DM Mono', monospace", padding: "2px 8px", background: `${INST_COL}10`, borderRadius: 6 }}>{count}</span>
-              </div>
-            )
-          })}
+          {groups.map(g => (
+            <div key={g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${INST_COL}06` }}>
+              <span style={{ fontSize: 13, color: "#ECF5F0", fontFamily: "'DM Sans', sans-serif" }}>{g.name}</span>
+              <span style={{ fontSize: 12, color: INST_L, fontWeight: 700, fontFamily: "'DM Mono', monospace", padding: "2px 8px", background: `${INST_COL}10`, borderRadius: 6 }}>{g._count.members}</span>
+            </div>
+          ))}
+          {groups.length === 0 && (
+            <div style={{ fontSize: 12, color: "#3A6B5A", padding: "10px 0" }}>No groups yet</div>
+          )}
         </div>
       </div>
     </div>
@@ -218,27 +288,35 @@ function DashboardScreen({ members, staff, setScreen }: { members: Member[]; sta
 }
 
 /* ── Enrollment Screen ── */
-function EnrollmentScreen({ members, setMembers }: { members: Member[]; setMembers: (m: Member[]) => void }) {
+function EnrollmentScreen({ members, groups, onAddMember, onAddGroup, feedback }: { members: Member[]; groups: Group[]; onAddMember: (data: { name: string; role: string; groupId: string; phone: string }) => Promise<void>; onAddGroup: (data: { name: string; type: string }) => Promise<Group | null>; feedback: { message: string; type: "success" | "error" } | null }) {
   const [search, setSearch] = useState("")
   const [showAdd, setShowAdd] = useState(false)
-  const [form, setForm] = useState({ name: "", role: "Student", group: "", contact: "" })
+  const [form, setForm] = useState({ name: "", role: "Student", groupId: "", phone: "" })
   const [filter, setFilter] = useState("all")
+  const [submitting, setSubmitting] = useState(false)
+  const [showNewGroup, setShowNewGroup] = useState(false)
+  const [newGroupName, setNewGroupName] = useState("")
+  const [newGroupSubmitting, setNewGroupSubmitting] = useState(false)
 
-  const addMember = () => {
-    if (!form.name || !form.group) return
-    const m: Member = {
-      id: `m${Date.now()}`,
-      name: form.name,
-      role: form.role,
-      status: "active",
-      joinDate: new Date().toISOString().slice(0, 10),
-      group: form.group,
-      contact: form.contact || undefined,
-      balance: 0,
-    }
-    setMembers([m, ...members])
-    setForm({ name: "", role: "Student", group: "", contact: "" })
+  const addMember = async () => {
+    if (!form.name || !form.groupId) return
+    setSubmitting(true)
+    await onAddMember({ name: form.name, role: form.role, groupId: form.groupId, phone: form.phone })
+    setSubmitting(false)
+    setForm({ name: "", role: "Student", groupId: "", phone: "" })
     setShowAdd(false)
+  }
+
+  const createGroup = async () => {
+    if (!newGroupName) return
+    setNewGroupSubmitting(true)
+    const created = await onAddGroup({ name: newGroupName, type: "class" })
+    setNewGroupSubmitting(false)
+    if (created) {
+      setForm(f => ({ ...f, groupId: created.id }))
+      setNewGroupName("")
+      setShowNewGroup(false)
+    }
   }
 
   const filtered = members.filter(m => {
@@ -251,6 +329,7 @@ function EnrollmentScreen({ members, setMembers }: { members: Member[]; setMembe
 
   return (
     <div style={{ padding: "28px 28px 60px" }}>
+      {feedback && <FeedbackToast message={feedback.message} type={feedback.type} />}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: -1 }}>Enrollment</h1>
@@ -287,13 +366,25 @@ function EnrollmentScreen({ members, setMembers }: { members: Member[]; setMembe
             </div>
             <div>
               <label style={labelStyle}>Group / Class *</label>
-              <input style={inputStyle} placeholder="e.g. Form 3A" value={form.group} onChange={e => setForm(f => ({ ...f, group: e.target.value }))} />
+              <div style={{ display: "flex", gap: 6 }}>
+                <select style={{ ...inputStyle, appearance: "auto", flex: 1 }} value={form.groupId} onChange={e => setForm(f => ({ ...f, groupId: e.target.value }))}>
+                  <option value="">Select Group</option>
+                  {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+                <button onClick={() => setShowNewGroup(!showNewGroup)} style={{ padding: "8px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", border: `1px solid ${INST_COL}20`, background: `${INST_COL}08`, color: INST_L, fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" }}>+ New</button>
+              </div>
+              {showNewGroup && (
+                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                  <input style={{ ...inputStyle, flex: 1 }} placeholder="e.g. Form 3A" value={newGroupName} onChange={e => setNewGroupName(e.target.value)} />
+                  <button onClick={createGroup} disabled={newGroupSubmitting} style={{ padding: "8px 12px", borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: "pointer", border: "none", background: INST_COL, color: "#fff", fontFamily: "'DM Sans', sans-serif", opacity: newGroupSubmitting ? 0.6 : 1 }}>{newGroupSubmitting ? "..." : "Create"}</button>
+                </div>
+              )}
             </div>
             <div>
-              <label style={labelStyle}>Contact</label>
-              <input style={inputStyle} placeholder="0244123456" value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} />
+              <label style={labelStyle}>Phone</label>
+              <input style={inputStyle} placeholder="0244123456" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
             </div>
-            <button onClick={addMember} style={btnPrimary}>Enroll</button>
+            <button onClick={addMember} disabled={submitting} style={{ ...btnPrimary, opacity: submitting ? 0.6 : 1 }}>{submitting ? "..." : "Enroll"}</button>
           </div>
         </div>
       )}
@@ -303,7 +394,7 @@ function EnrollmentScreen({ members, setMembers }: { members: Member[]; setMembe
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${INST_COL}10` }}>
-              {["Name", "Role", "Group", "Joined", "Contact", "Balance", "Status", ""].map((h, i) => (
+              {["Name", "Role", "Group", "Enrolled", "Phone", "Status", ""].map((h, i) => (
                 <th key={i} style={{ padding: "12px 14px", textAlign: "left", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3A6B7A" }}>{h}</th>
               ))}
             </tr>
@@ -315,12 +406,9 @@ function EnrollmentScreen({ members, setMembers }: { members: Member[]; setMembe
                 onMouseLeave={e => { e.currentTarget.style.background = "transparent" }}>
                 <td style={{ padding: "10px 14px", fontWeight: 600, color: "#ECF5F0" }}>{m.name}</td>
                 <td style={{ padding: "10px 14px", color: "#6B9B8A" }}>{m.role}</td>
-                <td style={{ padding: "10px 14px", fontFamily: "'DM Mono', monospace", fontSize: 11, color: INST_L }}>{m.group}</td>
-                <td style={{ padding: "10px 14px", fontSize: 11, color: "#6B9B8A", fontFamily: "'DM Mono', monospace" }}>{m.joinDate}</td>
-                <td style={{ padding: "10px 14px", fontSize: 11, color: "#6B9B8A", fontFamily: "'DM Mono', monospace" }}>{m.contact || "—"}</td>
-                <td style={{ padding: "10px 14px", fontWeight: 700, fontFamily: "'Space Grotesk', sans-serif", color: m.balance < 0 ? "#EF4444" : EMERALD }}>
-                  {m.balance < 0 ? `GHS ${Math.abs(m.balance)}` : "Paid"}
-                </td>
+                <td style={{ padding: "10px 14px", fontFamily: "'DM Mono', monospace", fontSize: 11, color: INST_L }}>{m.group?.name || "—"}</td>
+                <td style={{ padding: "10px 14px", fontSize: 11, color: "#6B9B8A", fontFamily: "'DM Mono', monospace" }}>{m.enrolledAt ? m.enrolledAt.slice(0, 10) : "—"}</td>
+                <td style={{ padding: "10px 14px", fontSize: 11, color: "#6B9B8A", fontFamily: "'DM Mono', monospace" }}>{m.phone || "—"}</td>
                 <td style={{ padding: "10px 14px" }}>
                   <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", background: `${statusColor(m.status)}12`, color: statusColor(m.status) }}>
                     {m.status}
@@ -339,28 +427,49 @@ function EnrollmentScreen({ members, setMembers }: { members: Member[]; setMembe
 }
 
 /* ── Fees Screen ── */
-function FeesScreen({ members }: { members: Member[] }) {
-  const owing = members.filter(m => m.balance < 0)
-  const totalOwed = owing.reduce((a, m) => a + Math.abs(m.balance), 0)
+function FeesScreen({ fees, feeSummary, onRecordPayment, feedback }: { fees: FeeRecord[]; feeSummary: FeeSummary | null; onRecordPayment: (feeRecordId: string, amount: number, method: string) => Promise<void>; feedback: { message: string; type: "success" | "error" } | null }) {
+  const [payingId, setPayingId] = useState<string | null>(null)
+  const [payAmount, setPayAmount] = useState("")
+  const [payMethod, setPayMethod] = useState("CASH")
+  const [submitting, setSubmitting] = useState(false)
+
+  const totalOutstanding = feeSummary ? feeSummary.totalOutstanding / 100 : 0
+
+  const unpaidCount = feeSummary ? (feeSummary.byStatus.UNPAID + feeSummary.byStatus.PARTIAL) : 0
+  const paidCount = feeSummary ? feeSummary.byStatus.PAID : 0
+
+  const handlePay = async (feeRecordId: string) => {
+    const amountGhs = parseFloat(payAmount)
+    if (!amountGhs || amountGhs <= 0) return
+    setSubmitting(true)
+    await onRecordPayment(feeRecordId, Math.round(amountGhs * 100), payMethod)
+    setSubmitting(false)
+    setPayingId(null)
+    setPayAmount("")
+    setPayMethod("CASH")
+  }
+
+  const statusColor = (s: string) => s === "PAID" ? EMERALD : s === "PARTIAL" ? "#F59E0B" : "#EF4444"
 
   return (
     <div style={{ padding: "28px 28px 60px" }}>
+      {feedback && <FeedbackToast message={feedback.message} type={feedback.type} />}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: -1 }}>Fee Management</h1>
-        <p style={{ fontSize: 13, color: "#6B9B8A", marginTop: 4, fontFamily: "'DM Sans', sans-serif" }}>{owing.length} members with outstanding balances</p>
+        <p style={{ fontSize: 13, color: "#6B9B8A", marginTop: 4, fontFamily: "'DM Sans', sans-serif" }}>{unpaidCount} records with outstanding balances</p>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 28 }}>
         <div style={{ ...glass, padding: "22px 20px" }}>
-          <div style={{ fontSize: 26, fontWeight: 800, color: "#EF4444", fontFamily: "'Space Grotesk', sans-serif" }}>GHS {totalOwed.toLocaleString()}</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: "#EF4444", fontFamily: "'Space Grotesk', sans-serif" }}>GHS {totalOutstanding.toLocaleString()}</div>
           <div style={{ fontSize: 11, color: "#6B9B8A", marginTop: 4, fontFamily: "'DM Sans', sans-serif" }}>Total Outstanding</div>
         </div>
         <div style={{ ...glass, padding: "22px 20px" }}>
-          <div style={{ fontSize: 26, fontWeight: 800, color: "#F59E0B", fontFamily: "'Space Grotesk', sans-serif" }}>{owing.length}</div>
-          <div style={{ fontSize: 11, color: "#6B9B8A", marginTop: 4, fontFamily: "'DM Sans', sans-serif" }}>Owing Members</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: "#F59E0B", fontFamily: "'Space Grotesk', sans-serif" }}>{unpaidCount}</div>
+          <div style={{ fontSize: 11, color: "#6B9B8A", marginTop: 4, fontFamily: "'DM Sans', sans-serif" }}>Owing Records</div>
         </div>
         <div style={{ ...glass, padding: "22px 20px" }}>
-          <div style={{ fontSize: 26, fontWeight: 800, color: EMERALD, fontFamily: "'Space Grotesk', sans-serif" }}>{members.filter(m => m.balance >= 0).length}</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: EMERALD, fontFamily: "'Space Grotesk', sans-serif" }}>{paidCount}</div>
           <div style={{ fontSize: 11, color: "#6B9B8A", marginTop: 4, fontFamily: "'DM Sans', sans-serif" }}>Fully Paid</div>
         </div>
       </div>
@@ -369,25 +478,48 @@ function FeesScreen({ members }: { members: Member[] }) {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${INST_COL}10` }}>
-              {["Member", "Group", "Amount Owed", "Status", "Action"].map((h, i) => (
+              {["Member", "Group", "Description", "Amount", "Paid", "Balance", "Status", "Action"].map((h, i) => (
                 <th key={i} style={{ padding: "12px 14px", textAlign: "left", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3A6B7A" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {owing.map(m => (
-              <tr key={m.id} style={{ borderBottom: `1px solid ${INST_COL}06` }}>
-                <td style={{ padding: "10px 14px", fontWeight: 600, color: "#ECF5F0" }}>{m.name}</td>
-                <td style={{ padding: "10px 14px", color: INST_L, fontFamily: "'DM Mono', monospace", fontSize: 11 }}>{m.group}</td>
-                <td style={{ padding: "10px 14px", fontWeight: 700, color: "#EF4444", fontFamily: "'Space Grotesk', sans-serif" }}>GHS {Math.abs(m.balance)}</td>
+            {fees.map(f => (
+              <tr key={f.id} style={{ borderBottom: `1px solid ${INST_COL}06` }}>
+                <td style={{ padding: "10px 14px", fontWeight: 600, color: "#ECF5F0" }}>{f.member.name}</td>
+                <td style={{ padding: "10px 14px", color: INST_L, fontFamily: "'DM Mono', monospace", fontSize: 11 }}>{f.member.group?.name || "—"}</td>
+                <td style={{ padding: "10px 14px", color: "#6B9B8A", fontSize: 12 }}>{f.description}</td>
+                <td style={{ padding: "10px 14px", fontWeight: 700, color: INST_L, fontFamily: "'Space Grotesk', sans-serif" }}>GHS {(f.amount / 100).toLocaleString()}</td>
+                <td style={{ padding: "10px 14px", fontWeight: 600, color: EMERALD, fontFamily: "'Space Grotesk', sans-serif" }}>GHS {(f.paid / 100).toLocaleString()}</td>
+                <td style={{ padding: "10px 14px", fontWeight: 700, color: f.balance > 0 ? "#EF4444" : EMERALD, fontFamily: "'Space Grotesk', sans-serif" }}>GHS {(f.balance / 100).toLocaleString()}</td>
                 <td style={{ padding: "10px 14px" }}>
-                  <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: "uppercase", background: "rgba(239,68,68,0.1)", color: "#EF4444" }}>Owing</span>
+                  <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: "uppercase", background: `${statusColor(f.status)}15`, color: statusColor(f.status) }}>{f.status}</span>
                 </td>
                 <td style={{ padding: "10px 14px" }}>
-                  <button style={{ padding: "6px 14px", borderRadius: 8, fontSize: 11, fontWeight: 600, background: `${EMERALD}15`, border: `1px solid ${EMERALD}25`, color: EMERALD_L, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Record Payment</button>
+                  {f.status !== "PAID" ? (
+                    payingId === f.id ? (
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        <input style={{ ...inputStyle, width: 80, padding: "6px 8px", fontSize: 11 }} placeholder="GHS" value={payAmount} onChange={e => setPayAmount(e.target.value)} type="number" min="0" step="0.01" />
+                        <select style={{ ...inputStyle, width: 80, padding: "6px 8px", fontSize: 10, appearance: "auto" }} value={payMethod} onChange={e => setPayMethod(e.target.value)}>
+                          {["CASH", "MOMO", "BANK", "CHEQUE"].map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                        <button onClick={() => handlePay(f.id)} disabled={submitting} style={{ padding: "6px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: EMERALD, border: "none", color: "#fff", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", opacity: submitting ? 0.6 : 1 }}>{submitting ? "..." : "Pay"}</button>
+                        <button onClick={() => { setPayingId(null); setPayAmount(""); }} style={{ padding: "6px 8px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "transparent", border: `1px solid ${INST_COL}15`, color: "#6B9B8A", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>X</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setPayingId(f.id)} style={{ padding: "6px 14px", borderRadius: 8, fontSize: 11, fontWeight: 600, background: `${EMERALD}15`, border: `1px solid ${EMERALD}25`, color: EMERALD_L, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Record Payment</button>
+                    )
+                  ) : (
+                    <span style={{ fontSize: 10, color: "#3A6B5A" }}>Settled</span>
+                  )}
                 </td>
               </tr>
             ))}
+            {fees.length === 0 && (
+              <tr>
+                <td colSpan={8} style={{ padding: "28px 14px", textAlign: "center", color: "#3A6B5A", fontSize: 13 }}>No fee records found</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -396,25 +528,20 @@ function FeesScreen({ members }: { members: Member[] }) {
 }
 
 /* ── Staff Screen ── */
-function StaffScreen({ staff, setStaff }: { staff: StaffMember[]; setStaff: (s: StaffMember[]) => void }) {
+function StaffScreen({ staff, onAddStaff, feedback }: { staff: StaffMember[]; onAddStaff: (data: { name: string; role: string; department: string; phone: string }) => Promise<void>; feedback: { message: string; type: "success" | "error" } | null }) {
   const [search, setSearch] = useState("")
   const [showAdd, setShowAdd] = useState(false)
   const [filterDept, setFilterDept] = useState("All")
   const [form, setForm] = useState({ name: "", role: "", department: "", phone: "" })
+  const [submitting, setSubmitting] = useState(false)
 
   const departments = ["All", ...new Set(staff.map(s => s.department))]
 
-  const addStaff = () => {
+  const addStaff = async () => {
     if (!form.name || !form.role || !form.department) return
-    const s: StaffMember = {
-      id: `s${Date.now()}`,
-      name: form.name,
-      role: form.role,
-      department: form.department,
-      status: "active",
-      phone: form.phone || "—",
-    }
-    setStaff([s, ...staff])
+    setSubmitting(true)
+    await onAddStaff({ name: form.name, role: form.role, department: form.department, phone: form.phone })
+    setSubmitting(false)
     setForm({ name: "", role: "", department: "", phone: "" })
     setShowAdd(false)
   }
@@ -429,6 +556,7 @@ function StaffScreen({ staff, setStaff }: { staff: StaffMember[]; setStaff: (s: 
 
   return (
     <div style={{ padding: "28px 28px 60px" }}>
+      {feedback && <FeedbackToast message={feedback.message} type={feedback.type} />}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: -1 }}>Staff</h1>
@@ -469,7 +597,7 @@ function StaffScreen({ staff, setStaff }: { staff: StaffMember[]; setStaff: (s: 
               <label style={labelStyle}>Phone</label>
               <input style={inputStyle} placeholder="0244555666" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
             </div>
-            <button onClick={addStaff} style={btnPrimary}>Add</button>
+            <button onClick={addStaff} disabled={submitting} style={{ ...btnPrimary, opacity: submitting ? 0.6 : 1 }}>{submitting ? "..." : "Add"}</button>
           </div>
         </div>
       )}
@@ -525,18 +653,7 @@ function StaffScreen({ staff, setStaff }: { staff: StaffMember[]; setStaff: (s: 
   )
 }
 
-/* ── Schedule Data ── */
-interface ScheduleSlot {
-  id: string
-  day: number // 0=Mon, 4=Fri
-  period: number // 0-7
-  subject: string
-  teacher: string
-  room: string
-  group: string
-  color: string
-}
-
+/* ── Schedule Screen ── */
 const PERIODS = [
   { label: "Period 1", time: "7:30 - 8:15" },
   { label: "Period 2", time: "8:15 - 9:00" },
@@ -549,55 +666,38 @@ const PERIODS = [
   { label: "Period 7", time: "1:15 - 2:00" },
 ]
 
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-
-const DEMO_SCHEDULE: ScheduleSlot[] = [
-  // Monday
-  { id: "sc1", day: 0, period: 0, subject: "Mathematics", teacher: "Grace Osei", room: "Room 1A", group: "Form 3A", color: "#0EA5E9" },
-  { id: "sc2", day: 0, period: 1, subject: "English", teacher: "James Appiah", room: "Room 1A", group: "Form 3A", color: "#8B5CF6" },
-  { id: "sc3", day: 0, period: 3, subject: "Science", teacher: "Grace Osei", room: "Lab 1", group: "Form 3A", color: "#10B981" },
-  { id: "sc4", day: 0, period: 4, subject: "Social Studies", teacher: "James Appiah", room: "Room 1A", group: "Form 3A", color: "#F59E0B" },
-  { id: "sc5", day: 0, period: 5, subject: "ICT", teacher: "Grace Osei", room: "Computer Lab", group: "Form 3A", color: "#EC4899" },
-  { id: "sc6", day: 0, period: 7, subject: "French", teacher: "James Appiah", room: "Room 2B", group: "Form 3A", color: "#6366F1" },
-  { id: "sc7", day: 0, period: 8, subject: "Physical Education", teacher: "Samuel Owusu", room: "Field", group: "Form 3A", color: "#EF4444" },
-  // Tuesday
-  { id: "sc8", day: 1, period: 0, subject: "English", teacher: "James Appiah", room: "Room 1A", group: "Form 3A", color: "#8B5CF6" },
-  { id: "sc9", day: 1, period: 1, subject: "Mathematics", teacher: "Grace Osei", room: "Room 1A", group: "Form 3A", color: "#0EA5E9" },
-  { id: "sc10", day: 1, period: 3, subject: "Religious & Moral Ed.", teacher: "James Appiah", room: "Room 1A", group: "Form 3A", color: "#D97706" },
-  { id: "sc11", day: 1, period: 4, subject: "Creative Arts", teacher: "Grace Osei", room: "Art Room", group: "Form 3A", color: "#EC4899" },
-  { id: "sc12", day: 1, period: 5, subject: "Science", teacher: "Grace Osei", room: "Lab 1", group: "Form 3A", color: "#10B981" },
-  { id: "sc13", day: 1, period: 7, subject: "Ghanaian Language (Twi)", teacher: "James Appiah", room: "Room 1A", group: "Form 3A", color: "#F59E0B" },
-  { id: "sc14", day: 1, period: 8, subject: "Mathematics", teacher: "Grace Osei", room: "Room 1A", group: "Form 3A", color: "#0EA5E9" },
-  // Wednesday
-  { id: "sc15", day: 2, period: 0, subject: "Science", teacher: "Grace Osei", room: "Lab 1", group: "Form 3A", color: "#10B981" },
-  { id: "sc16", day: 2, period: 1, subject: "Social Studies", teacher: "James Appiah", room: "Room 1A", group: "Form 3A", color: "#F59E0B" },
-  { id: "sc17", day: 2, period: 3, subject: "Mathematics", teacher: "Grace Osei", room: "Room 1A", group: "Form 3A", color: "#0EA5E9" },
-  { id: "sc18", day: 2, period: 4, subject: "English", teacher: "James Appiah", room: "Room 1A", group: "Form 3A", color: "#8B5CF6" },
-  { id: "sc19", day: 2, period: 5, subject: "ICT", teacher: "Grace Osei", room: "Computer Lab", group: "Form 3A", color: "#EC4899" },
-  { id: "sc20", day: 2, period: 7, subject: "Physical Education", teacher: "Samuel Owusu", room: "Field", group: "Form 3A", color: "#EF4444" },
-  // Thursday
-  { id: "sc21", day: 3, period: 0, subject: "English", teacher: "James Appiah", room: "Room 1A", group: "Form 3A", color: "#8B5CF6" },
-  { id: "sc22", day: 3, period: 1, subject: "French", teacher: "James Appiah", room: "Room 2B", group: "Form 3A", color: "#6366F1" },
-  { id: "sc23", day: 3, period: 3, subject: "Mathematics", teacher: "Grace Osei", room: "Room 1A", group: "Form 3A", color: "#0EA5E9" },
-  { id: "sc24", day: 3, period: 4, subject: "Science", teacher: "Grace Osei", room: "Lab 1", group: "Form 3A", color: "#10B981" },
-  { id: "sc25", day: 3, period: 5, subject: "Creative Arts", teacher: "Grace Osei", room: "Art Room", group: "Form 3A", color: "#EC4899" },
-  { id: "sc26", day: 3, period: 7, subject: "Social Studies", teacher: "James Appiah", room: "Room 1A", group: "Form 3A", color: "#F59E0B" },
-  { id: "sc27", day: 3, period: 8, subject: "Religious & Moral Ed.", teacher: "James Appiah", room: "Room 1A", group: "Form 3A", color: "#D97706" },
-  // Friday
-  { id: "sc28", day: 4, period: 0, subject: "Mathematics", teacher: "Grace Osei", room: "Room 1A", group: "Form 3A", color: "#0EA5E9" },
-  { id: "sc29", day: 4, period: 1, subject: "English", teacher: "James Appiah", room: "Room 1A", group: "Form 3A", color: "#8B5CF6" },
-  { id: "sc30", day: 4, period: 3, subject: "Ghanaian Language (Twi)", teacher: "James Appiah", room: "Room 1A", group: "Form 3A", color: "#F59E0B" },
-  { id: "sc31", day: 4, period: 4, subject: "Science", teacher: "Grace Osei", room: "Lab 1", group: "Form 3A", color: "#10B981" },
-  { id: "sc32", day: 4, period: 5, subject: "Assembly / Club", teacher: "Dr. Emmanuel Asante", room: "Hall", group: "Form 3A", color: "#6B9B8A" },
+const PERIOD_TIMES = [
+  { start: "07:30", end: "08:15" },
+  { start: "08:15", end: "09:00" },
+  { start: "09:00", end: "09:30" }, // Break
+  { start: "09:30", end: "10:15" },
+  { start: "10:15", end: "11:00" },
+  { start: "11:00", end: "11:45" },
+  { start: "11:45", end: "12:30" }, // Lunch
+  { start: "12:30", end: "13:15" },
+  { start: "13:15", end: "14:00" },
 ]
 
-/* ── Schedule Screen ── */
-function ScheduleScreen() {
-  const [selectedGroup, setSelectedGroup] = useState("Form 3A")
-  const groups = [...new Set(DEMO_SCHEDULE.map(s => s.group))]
-  const filtered = DEMO_SCHEDULE.filter(s => s.group === selectedGroup)
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
-  const getSlot = (day: number, period: number) => filtered.find(s => s.day === day && s.period === period)
+function mapScheduleToSlot(entry: ScheduleEntry): { day: number; period: number } | null {
+  const day = entry.dayOfWeek
+  const periodIndex = PERIOD_TIMES.findIndex(p => p.start === entry.startTime)
+  if (periodIndex === -1 || day < 0 || day > 4) return null
+  return { day, period: periodIndex }
+}
+
+function ScheduleScreen({ schedule }: { schedule: ScheduleEntry[] }) {
+  const allGroups = [...new Set(schedule.map(s => s.group.name))]
+  const [selectedGroup, setSelectedGroup] = useState(allGroups[0] || "")
+  const filtered = schedule.filter(s => s.group.name === selectedGroup)
+
+  const getSlot = (day: number, period: number) => {
+    return filtered.find(s => {
+      const mapped = mapScheduleToSlot(s)
+      return mapped && mapped.day === day && mapped.period === period
+    })
+  }
 
   // Count stats
   const totalLessons = filtered.length
@@ -614,7 +714,7 @@ function ScheduleScreen() {
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3A6B7A" }}>Class:</span>
           <div style={{ display: "flex", gap: 4 }}>
-            {groups.map(g => (
+            {allGroups.map(g => (
               <button key={g} onClick={() => setSelectedGroup(g)}
                 style={{ padding: "6px 14px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "none", fontFamily: "'DM Sans', sans-serif",
                   background: selectedGroup === g ? `${INST_COL}20` : "rgba(255,255,255,0.03)", color: selectedGroup === g ? INST_L : "#6B9B8A" }}>
@@ -631,7 +731,7 @@ function ScheduleScreen() {
           { label: "Lessons / Week", value: totalLessons.toString(), color: INST_COL },
           { label: "Subjects", value: subjects.length.toString(), color: EMERALD },
           { label: "Rooms Used", value: rooms.length.toString(), color: "#8B5CF6" },
-          { label: "Teachers", value: [...new Set(filtered.map(s => s.teacher))].length.toString(), color: INST_L },
+          { label: "Teachers", value: [...new Set(filtered.map(s => s.staff.name))].length.toString(), color: INST_L },
         ].map(s => (
           <div key={s.label} style={{ ...glass, padding: "18px 16px" }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: s.color, fontFamily: "'Space Grotesk', sans-serif" }}>{s.value}</div>
@@ -665,12 +765,13 @@ function ScheduleScreen() {
                       return <td key={di} style={{ padding: "8px 14px", textAlign: "center", color: "#3A6B5A", fontSize: 10, fontStyle: "italic" }}>{p.label}</td>
                     }
                     const slot = getSlot(di, pi)
+                    const color = slot ? subjectColor(slot.subject) : INST_COL
                     return (
                       <td key={di} style={{ padding: "4px 6px", verticalAlign: "top" }}>
                         {slot ? (
-                          <div style={{ padding: "8px 10px", borderRadius: 8, background: `${slot.color}10`, border: `1px solid ${slot.color}18`, transition: "all 0.2s" }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: slot.color, marginBottom: 3 }}>{slot.subject}</div>
-                            <div style={{ fontSize: 9, color: "#6B9B8A", fontFamily: "'DM Mono', monospace" }}>{slot.teacher}</div>
+                          <div style={{ padding: "8px 10px", borderRadius: 8, background: `${color}10`, border: `1px solid ${color}18`, transition: "all 0.2s" }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: color, marginBottom: 3 }}>{slot.subject}</div>
+                            <div style={{ fontSize: 9, color: "#6B9B8A", fontFamily: "'DM Mono', monospace" }}>{slot.staff.name}</div>
                             <div style={{ fontSize: 9, color: "#3A6B5A", fontFamily: "'DM Mono', monospace", marginTop: 1 }}>{slot.room}</div>
                           </div>
                         ) : (
@@ -695,8 +796,175 @@ function ScheduleScreen() {
 
 export default function InstitutePage() {
   const [screen, setScreen] = useState<Screen>("dashboard")
-  const [members, setMembers] = useState<Member[]>(DEMO_MEMBERS)
-  const [staff, setStaff] = useState<StaffMember[]>(DEMO_STAFF)
+  const [members, setMembers] = useState<Member[]>([])
+  const [staff, setStaff] = useState<StaffMember[]>([])
+  const [groups, setGroups] = useState<Group[]>([])
+  const [schedule, setSchedule] = useState<ScheduleEntry[]>([])
+  const [fees, setFees] = useState<FeeRecord[]>([])
+  const [feeSummary, setFeeSummary] = useState<FeeSummary | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [feedback, setFeedback] = useState<{ message: string; type: "success" | "error" } | null>(null)
+
+  const showFeedback = useCallback((message: string, type: "success" | "error") => {
+    setFeedback({ message, type })
+    setTimeout(() => setFeedback(null), 3000)
+  }, [])
+
+  const fetchMembers = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/institute/members?orgCode=${ORG_CODE}`)
+      if (!res.ok) throw new Error("Failed to fetch members")
+      const data = await res.json()
+      setMembers(data)
+    } catch { showFeedback("Failed to load members", "error") }
+  }, [showFeedback])
+
+  const fetchStaff = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/institute/staff?orgCode=${ORG_CODE}`)
+      if (!res.ok) throw new Error("Failed to fetch staff")
+      const data = await res.json()
+      setStaff(data)
+    } catch { showFeedback("Failed to load staff", "error") }
+  }, [showFeedback])
+
+  const fetchGroups = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/institute/groups?orgCode=${ORG_CODE}`)
+      if (!res.ok) throw new Error("Failed to fetch groups")
+      const data = await res.json()
+      setGroups(data)
+    } catch { showFeedback("Failed to load groups", "error") }
+  }, [showFeedback])
+
+  const fetchSchedule = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/institute/schedule?orgCode=${ORG_CODE}`)
+      if (!res.ok) throw new Error("Failed to fetch schedule")
+      const data = await res.json()
+      setSchedule(data)
+    } catch { showFeedback("Failed to load schedule", "error") }
+  }, [showFeedback])
+
+  const fetchFees = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/institute/fees?orgCode=${ORG_CODE}`)
+      if (!res.ok) throw new Error("Failed to fetch fees")
+      const data = await res.json()
+      setFees(data)
+    } catch { showFeedback("Failed to load fees", "error") }
+  }, [showFeedback])
+
+  const fetchFeeSummary = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/institute/fees/summary?orgCode=${ORG_CODE}`)
+      if (!res.ok) throw new Error("Failed to fetch fee summary")
+      const data = await res.json()
+      setFeeSummary(data)
+    } catch { showFeedback("Failed to load fee summary", "error") }
+  }, [showFeedback])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadAll() {
+      setLoading(true)
+      await Promise.all([
+        fetchMembers(),
+        fetchStaff(),
+        fetchGroups(),
+        fetchSchedule(),
+        fetchFees(),
+        fetchFeeSummary(),
+      ])
+      if (!cancelled) setLoading(false)
+    }
+    loadAll()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleAddMember = useCallback(async (data: { name: string; role: string; groupId: string; phone: string }) => {
+    try {
+      const res = await fetch("/api/institute/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgCode: ORG_CODE, name: data.name, role: data.role, groupId: data.groupId, phone: data.phone || undefined }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "Failed to enroll member")
+      }
+      showFeedback("Member enrolled successfully", "success")
+      await Promise.all([fetchMembers(), fetchGroups()])
+    } catch (e) {
+      showFeedback(e instanceof Error ? e.message : "Failed to enroll member", "error")
+    }
+  }, [showFeedback, fetchMembers, fetchGroups])
+
+  const handleAddGroup = useCallback(async (data: { name: string; type: string }): Promise<Group | null> => {
+    try {
+      const res = await fetch("/api/institute/groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgCode: ORG_CODE, name: data.name, type: data.type }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "Failed to create group")
+      }
+      const created = await res.json()
+      showFeedback(`Group "${data.name}" created`, "success")
+      await fetchGroups()
+      return created
+    } catch (e) {
+      showFeedback(e instanceof Error ? e.message : "Failed to create group", "error")
+      return null
+    }
+  }, [showFeedback, fetchGroups])
+
+  const handleAddStaff = useCallback(async (data: { name: string; role: string; department: string; phone: string }) => {
+    try {
+      const res = await fetch("/api/institute/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgCode: ORG_CODE, name: data.name, role: data.role, department: data.department, phone: data.phone || undefined }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "Failed to add staff")
+      }
+      showFeedback("Staff member added successfully", "success")
+      await fetchStaff()
+    } catch (e) {
+      showFeedback(e instanceof Error ? e.message : "Failed to add staff", "error")
+    }
+  }, [showFeedback, fetchStaff])
+
+  const handleRecordPayment = useCallback(async (feeRecordId: string, amount: number, paymentMethod: string) => {
+    try {
+      const res = await fetch("/api/institute/fees/pay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgCode: ORG_CODE, feeRecordId, amount, paymentMethod, receivedBy: "system" }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "Failed to record payment")
+      }
+      showFeedback("Payment recorded successfully", "success")
+      await Promise.all([fetchFees(), fetchFeeSummary()])
+    } catch (e) {
+      showFeedback(e instanceof Error ? e.message : "Failed to record payment", "error")
+    }
+  }, [showFeedback, fetchFees, fetchFeeSummary])
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", background: BG, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontSize: 16, fontWeight: 600, color: "#6B9B8A", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.06em" }}>Loading...</div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: BG, fontFamily: "'DM Sans', sans-serif", color: "#ECF5F0" }}>
@@ -706,11 +974,11 @@ export default function InstitutePage() {
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
       `}</style>
       <Header screen={screen} setScreen={setScreen} orgName="Demo School" />
-      {screen === "dashboard" && <DashboardScreen members={members} staff={staff} setScreen={setScreen} />}
-      {screen === "enrollment" && <EnrollmentScreen members={members} setMembers={setMembers} />}
-      {screen === "fees" && <FeesScreen members={members} />}
-      {screen === "schedule" && <ScheduleScreen />}
-      {screen === "staff" && <StaffScreen staff={staff} setStaff={setStaff} />}
+      {screen === "dashboard" && <DashboardScreen members={members} staff={staff} groups={groups} feeSummary={feeSummary} setScreen={setScreen} />}
+      {screen === "enrollment" && <EnrollmentScreen members={members} groups={groups} onAddMember={handleAddMember} onAddGroup={handleAddGroup} feedback={feedback} />}
+      {screen === "fees" && <FeesScreen fees={fees} feeSummary={feeSummary} onRecordPayment={handleRecordPayment} feedback={feedback} />}
+      {screen === "schedule" && <ScheduleScreen schedule={schedule} />}
+      {screen === "staff" && <StaffScreen staff={staff} onAddStaff={handleAddStaff} feedback={feedback} />}
     </div>
   )
 }

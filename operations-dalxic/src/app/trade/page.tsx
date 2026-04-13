@@ -1,14 +1,16 @@
 "use client"
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 
 /* ═══════════════════════════════════════════════════════════════
    DALXICTRADE — Dashboard / POS / Inventory
    Flexible retail platform with photo-based catalogue.
    ═══════════════════════════════════════════════════════════════ */
 
+const ORG_CODE = "DEMO"
+
 const EMERALD    = "#10B981"
 const EMERALD_L  = "#34D399"
-const EMERALD_GL = "#6EE7B7"
+// const EMERALD_GL = "#6EE7B7"
 const TRADE_COL  = "#F59E0B"
 const BG         = "#040A0F"
 
@@ -20,6 +22,7 @@ interface Product {
   price: number
   stock: number
   category: string
+  categoryId?: string
   photo?: string
   sku?: string
   expiresAt?: string
@@ -32,21 +35,119 @@ interface CartItem {
   qty: number
 }
 
-/* ── Demo products ── */
-const DEMO_PRODUCTS: Product[] = [
-  { id: "p1", name: "Rice (50kg Bag)", price: 450, stock: 24, category: "Groceries", unit: "bag", sku: "GR-001" },
-  { id: "p2", name: "Cooking Oil (5L)", price: 85, stock: 36, category: "Groceries", unit: "bottle", expiresAt: "2027-03-15", batchNo: "B-2026-441" },
-  { id: "p3", name: "Mens T-Shirt (Black)", price: 65, stock: 120, category: "Clothing", unit: "piece" },
-  { id: "p4", name: "Ladies Ankara Dress", price: 180, stock: 45, category: "Clothing", unit: "piece" },
-  { id: "p5", name: "Samsung Galaxy A15", price: 1200, stock: 8, category: "Electronics", unit: "piece", sku: "EL-015" },
-  { id: "p6", name: "Phone Charger (USB-C)", price: 35, stock: 200, category: "Electronics", unit: "piece" },
-  { id: "p7", name: "School Exercise Book (Set)", price: 12, stock: 500, category: "Stationery", unit: "set" },
-  { id: "p8", name: "Cement (Dangote 50kg)", price: 72, stock: 60, category: "Building", unit: "bag", batchNo: "DG-2026-88" },
-  { id: "p9", name: "Paracetamol (Pack)", price: 8, stock: 300, category: "Pharmacy", unit: "pack", expiresAt: "2027-08-01" },
-  { id: "p10", name: "Fresh Tilapia (1kg)", price: 55, stock: 15, category: "Fresh", unit: "kg", expiresAt: "2026-04-14" },
-  { id: "p11", name: "Plastic Chairs (Nesta)", price: 95, stock: 40, category: "Household", unit: "piece" },
-  { id: "p12", name: "Hair Extensions (Bundle)", price: 250, stock: 30, category: "Beauty", unit: "bundle" },
-]
+interface Category {
+  id: string
+  name: string
+  sortOrder: number
+  isActive: boolean
+}
+
+interface Order {
+  id: string
+  receiptCode: string
+  date: string
+  items: { name: string; qty: number; price: number }[]
+  total: number
+  method: string
+  status: string
+  customer?: string
+}
+
+interface AnalyticsData {
+  summary: { totalRevenue: number; totalOrders: number; avgOrderValue: number; productsInStock: number }
+  topSellers: { name: string; sold: number; revenue: number }[]
+  categoryBreakdown: { name: string; percentage: number; color: string }[]
+  dailyRevenue: { day: string; revenue: number; orders: number }[]
+}
+
+/* ── API helpers ── */
+interface ApiProduct {
+  id: string
+  name: string
+  sku: string | null
+  unit: string
+  stock: number
+  minStock: number
+  batchNo: string | null
+  expiresAt: string | null
+  photoUrl: string | null
+  isActive: boolean
+  sellingPrice: number
+  costPrice: number
+  categoryId: string
+  category: { id: string; name: string }
+}
+
+interface ApiSale {
+  id: string
+  receiptCode: string
+  customerName: string | null
+  customerPhone: string | null
+  subtotal: number
+  discount: number
+  total: number
+  paymentMethod: string
+  paymentStatus: string
+  soldBy: string
+  soldByName: string
+  createdAt: string
+  items: { productName: string; unitPrice: number; quantity: number; total: number }[]
+}
+
+interface ApiAnalytics {
+  summary: { totalRevenue: number; totalOrders: number; avgOrderValue: number; productsInStock: number }
+  topSellers: { name: string; sold: number; revenue: number }[]
+  categoryBreakdown: { name: string; percentage: number; color: string }[]
+  dailyRevenue: { day: string; revenue: number; orders: number }[]
+}
+
+function mapApiProduct(p: ApiProduct): Product {
+  return {
+    id: p.id,
+    name: p.name,
+    price: p.sellingPrice / 100,
+    stock: p.stock,
+    category: p.category?.name ?? "General",
+    categoryId: p.categoryId,
+    photo: p.photoUrl ?? undefined,
+    sku: p.sku ?? undefined,
+    expiresAt: p.expiresAt ? p.expiresAt.split("T")[0] : undefined,
+    batchNo: p.batchNo ?? undefined,
+    unit: p.unit,
+  }
+}
+
+function mapApiSale(s: ApiSale): Order {
+  return {
+    id: s.id,
+    receiptCode: s.receiptCode,
+    date: new Date(s.createdAt).toLocaleString("en-GB", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }),
+    items: s.items.map(it => ({ name: it.productName, qty: it.quantity, price: it.unitPrice / 100 })),
+    total: s.total / 100,
+    method: s.paymentMethod === "MOBILE_MONEY" ? "Mobile Money" : s.paymentMethod === "CASH" ? "Cash" : s.paymentMethod === "CARD" ? "Card" : s.paymentMethod === "CREDIT" ? "Credit" : s.paymentMethod,
+    status: s.paymentStatus === "PAID" ? "completed" : s.paymentStatus === "REFUNDED" ? "refunded" : "pending",
+    customer: s.customerName ?? undefined,
+  }
+}
+
+function mapApiAnalytics(a: ApiAnalytics): AnalyticsData {
+  const defaultColors = [EMERALD, "#0EA5E9", TRADE_COL, "#8B5CF6", "#EC4899", "#6B9B8A"]
+  return {
+    summary: {
+      totalRevenue: a.summary.totalRevenue / 100,
+      totalOrders: a.summary.totalOrders,
+      avgOrderValue: a.summary.avgOrderValue / 100,
+      productsInStock: a.summary.productsInStock,
+    },
+    topSellers: a.topSellers.map(t => ({ name: t.name, sold: t.sold, revenue: t.revenue / 100 })),
+    categoryBreakdown: a.categoryBreakdown.map((c, i) => ({
+      name: c.name,
+      percentage: c.percentage,
+      color: c.color || defaultColors[i % defaultColors.length],
+    })),
+    dailyRevenue: a.dailyRevenue.map(d => ({ day: d.day, revenue: d.revenue / 100, orders: d.orders })),
+  }
+}
 
 /* ── Styles ── */
 const glass = {
@@ -143,7 +244,8 @@ function DashboardScreen({ products, setScreen }: { products: Product[]; setScre
   const totalValue = products.reduce((a, p) => a + p.stock * p.price, 0)
   const categories = [...new Set(products.map(p => p.category))]
   const lowStock = products.filter(p => p.stock < 10)
-  const expiring = products.filter(p => p.expiresAt && new Date(p.expiresAt) < new Date(Date.now() + 30 * 86400000))
+  const [thirtyDaysFromNow] = useState(() => new Date(Date.now() + 30 * 86400000))
+  const expiring = products.filter(p => p.expiresAt && new Date(p.expiresAt) < thirtyDaysFromNow)
 
   const stats = [
     { label: "Total Products", value: products.length.toString(), color: EMERALD },
@@ -219,10 +321,12 @@ function DashboardScreen({ products, setScreen }: { products: Product[]; setScre
 }
 
 /* ── POS Screen ── */
-function POSScreen({ products }: { products: Product[] }) {
+function POSScreen({ products, onSaleComplete }: { products: Product[]; onSaleComplete: () => void }) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [search, setSearch] = useState("")
   const [selectedCat, setSelectedCat] = useState("All")
+  const [charging, setCharging] = useState(false)
+  const [saleResult, setSaleResult] = useState<string | null>(null)
 
   const categories = ["All", ...new Set(products.map(p => p.category))]
   const filtered = products.filter(p => {
@@ -245,6 +349,39 @@ function POSScreen({ products }: { products: Product[] }) {
 
   const total = cart.reduce((a, c) => a + c.product.price * c.qty, 0)
   const itemCount = cart.reduce((a, c) => a + c.qty, 0)
+
+  const handleCharge = async () => {
+    if (cart.length === 0 || charging) return
+    setCharging(true)
+    setSaleResult(null)
+    try {
+      const res = await fetch("/api/trade/sales", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgCode: ORG_CODE,
+          items: cart.map(c => ({ productId: c.product.id, quantity: c.qty })),
+          paymentMethod: "CASH",
+          soldBy: "system",
+          soldByName: "POS",
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Sale failed" }))
+        throw new Error(err.error || "Sale failed")
+      }
+      const sale = await res.json() as ApiSale
+      setCart([])
+      setSaleResult(`Sale complete — Receipt: ${sale.receiptCode}`)
+      onSaleComplete()
+      setTimeout(() => setSaleResult(null), 5000)
+    } catch (err) {
+      setSaleResult(`Error: ${err instanceof Error ? err.message : "Sale failed"}`)
+      setTimeout(() => setSaleResult(null), 4000)
+    } finally {
+      setCharging(false)
+    }
+  }
 
   return (
     <div style={{ display: "flex", height: "calc(100vh - 56px)" }}>
@@ -315,12 +452,22 @@ function POSScreen({ products }: { products: Product[] }) {
           ))}
         </div>
         <div style={{ padding: "16px 20px", borderTop: `1px solid ${EMERALD}10` }}>
+          {saleResult && (
+            <div style={{
+              padding: "10px 14px", borderRadius: 10, marginBottom: 12, fontSize: 12, fontWeight: 600, fontFamily: "'DM Sans', sans-serif",
+              background: saleResult.startsWith("Error") ? "rgba(239,68,68,0.1)" : "rgba(16,185,129,0.1)",
+              border: `1px solid ${saleResult.startsWith("Error") ? "rgba(239,68,68,0.25)" : "rgba(16,185,129,0.25)"}`,
+              color: saleResult.startsWith("Error") ? "#EF4444" : EMERALD_L,
+            }}>
+              {saleResult}
+            </div>
+          )}
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: "#ECF5F0", fontFamily: "'Space Grotesk', sans-serif" }}>Total</span>
             <span style={{ fontSize: 22, fontWeight: 800, color: TRADE_COL, fontFamily: "'Space Grotesk', sans-serif" }}>GHS {total.toLocaleString()}</span>
           </div>
-          <button style={{ ...btnPrimary, width: "100%", padding: "14px 0", fontSize: 13, textAlign: "center" }} disabled={cart.length === 0}>
-            Charge Customer
+          <button onClick={handleCharge} style={{ ...btnPrimary, width: "100%", padding: "14px 0", fontSize: 13, textAlign: "center", opacity: cart.length === 0 || charging ? 0.5 : 1 }} disabled={cart.length === 0 || charging}>
+            {charging ? "Processing..." : "Charge Customer"}
           </button>
         </div>
       </div>
@@ -329,15 +476,25 @@ function POSScreen({ products }: { products: Product[] }) {
 }
 
 /* ── Inventory Screen ── */
-function InventoryScreen({ products, setProducts, categories, onAddCategory }: { products: Product[]; setProducts: (p: Product[]) => void; categories: string[]; onAddCategory: (c: string) => void }) {
+function InventoryScreen({ products, onProductAdded, categories, onCategoryAdded, feedback, setFeedback }: {
+  products: Product[]
+  onProductAdded: () => void
+  categories: Category[]
+  onCategoryAdded: () => void
+  feedback: string | null
+  setFeedback: (msg: string | null) => void
+}) {
   const [showAdd, setShowAdd] = useState(false)
   const [search, setSearch] = useState("")
   const [filterCat, setFilterCat] = useState("All")
-  const [newProduct, setNewProduct] = useState({ name: "", price: "", stock: "", category: "", unit: "piece", expiresAt: "", batchNo: "" })
+  const [newProduct, setNewProduct] = useState({ name: "", price: "", stock: "", categoryId: "", unit: "piece", expiresAt: "", batchNo: "", sku: "" })
   const fileRef = useRef<HTMLInputElement>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [showNewCat, setShowNewCat] = useState(false)
   const [newCatName, setNewCatName] = useState("")
+  const [saving, setSaving] = useState(false)
+
+  const categoryNames = categories.map(c => c.name)
 
   const handlePhoto = useCallback(() => {
     fileRef.current?.click()
@@ -351,31 +508,65 @@ function InventoryScreen({ products, setProducts, categories, onAddCategory }: {
     reader.readAsDataURL(file)
   }
 
-  const addCategory = () => {
+  const addCategory = async () => {
     if (!newCatName.trim()) return
-    onAddCategory(newCatName.trim())
-    setNewProduct(p => ({ ...p, category: newCatName.trim() }))
-    setNewCatName("")
-    setShowNewCat(false)
+    try {
+      const res = await fetch("/api/trade/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgCode: ORG_CODE, name: newCatName.trim() }),
+      })
+      if (!res.ok) throw new Error("Failed to create category")
+      const created = await res.json() as Category
+      onCategoryAdded()
+      setNewProduct(p => ({ ...p, categoryId: created.id }))
+      setNewCatName("")
+      setShowNewCat(false)
+      setFeedback("Category created")
+      setTimeout(() => setFeedback(null), 3000)
+    } catch {
+      setFeedback("Error: Failed to create category")
+      setTimeout(() => setFeedback(null), 3000)
+    }
   }
 
-  const addProduct = () => {
-    if (!newProduct.name || !newProduct.price || !newProduct.stock) return
-    const p: Product = {
-      id: `p${Date.now()}`,
-      name: newProduct.name,
-      price: parseFloat(newProduct.price),
-      stock: parseInt(newProduct.stock),
-      category: newProduct.category || "General",
-      unit: newProduct.unit || "piece",
-      photo: photoPreview || undefined,
-      expiresAt: newProduct.expiresAt || undefined,
-      batchNo: newProduct.batchNo || undefined,
+  const addProduct = async () => {
+    if (!newProduct.name || !newProduct.price || !newProduct.stock || saving) return
+    setSaving(true)
+    try {
+      const body: Record<string, unknown> = {
+        orgCode: ORG_CODE,
+        name: newProduct.name,
+        sellingPrice: Math.round(parseFloat(newProduct.price) * 100),
+        stock: parseInt(newProduct.stock),
+        unit: newProduct.unit || "piece",
+      }
+      if (newProduct.categoryId) body.categoryId = newProduct.categoryId
+      if (newProduct.sku) body.sku = newProduct.sku
+      if (newProduct.batchNo) body.batchNo = newProduct.batchNo
+      if (newProduct.expiresAt) body.expiresAt = newProduct.expiresAt
+
+      const res = await fetch("/api/trade/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Failed" }))
+        throw new Error(err.error || "Failed to create product")
+      }
+      onProductAdded()
+      setNewProduct({ name: "", price: "", stock: "", categoryId: "", unit: "piece", expiresAt: "", batchNo: "", sku: "" })
+      setPhotoPreview(null)
+      setShowAdd(false)
+      setFeedback("Product added successfully")
+      setTimeout(() => setFeedback(null), 3000)
+    } catch (err) {
+      setFeedback(`Error: ${err instanceof Error ? err.message : "Failed to create product"}`)
+      setTimeout(() => setFeedback(null), 3000)
+    } finally {
+      setSaving(false)
     }
-    setProducts([p, ...products])
-    setNewProduct({ name: "", price: "", stock: "", category: "", unit: "piece", expiresAt: "", batchNo: "" })
-    setPhotoPreview(null)
-    setShowAdd(false)
   }
 
   const filtered = products.filter(p => {
@@ -399,9 +590,21 @@ function InventoryScreen({ products, setProducts, categories, onAddCategory }: {
         </div>
       </div>
 
+      {/* Feedback banner */}
+      {feedback && (
+        <div style={{
+          padding: "10px 16px", borderRadius: 10, marginBottom: 16, fontSize: 12, fontWeight: 600, fontFamily: "'DM Sans', sans-serif",
+          background: feedback.startsWith("Error") ? "rgba(239,68,68,0.1)" : "rgba(16,185,129,0.1)",
+          border: `1px solid ${feedback.startsWith("Error") ? "rgba(239,68,68,0.25)" : "rgba(16,185,129,0.25)"}`,
+          color: feedback.startsWith("Error") ? "#EF4444" : EMERALD_L,
+        }}>
+          {feedback}
+        </div>
+      )}
+
       {/* Category filter pills */}
       <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
-        {["All", ...categories].map(c => (
+        {["All", ...categoryNames].map(c => (
           <button key={c} onClick={() => setFilterCat(c)}
             style={{ padding: "6px 14px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "none", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s",
               background: filterCat === c ? `${EMERALD}20` : "rgba(255,255,255,0.03)", color: filterCat === c ? EMERALD_L : "#6B9B8A" }}>
@@ -446,9 +649,9 @@ function InventoryScreen({ products, setProducts, categories, onAddCategory }: {
                   </div>
                 ) : (
                   <div style={{ display: "flex", gap: 6 }}>
-                    <select style={{ ...inputStyle, flex: 1, appearance: "auto" }} value={newProduct.category} onChange={e => setNewProduct(p => ({ ...p, category: e.target.value }))}>
+                    <select style={{ ...inputStyle, flex: 1, appearance: "auto" }} value={newProduct.categoryId} onChange={e => setNewProduct(p => ({ ...p, categoryId: e.target.value }))}>
                       <option value="">Select Category</option>
-                      {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                     <button onClick={() => setShowNewCat(true)} style={{ padding: "8px 12px", borderRadius: 8, fontSize: 10, fontWeight: 700, background: `${EMERALD}12`, color: EMERALD_L, border: `1px solid ${EMERALD}20`, cursor: "pointer", whiteSpace: "nowrap" }}>+ New</button>
                   </div>
@@ -477,7 +680,9 @@ function InventoryScreen({ products, setProducts, categories, onAddCategory }: {
                 <input style={inputStyle} placeholder="e.g. B-2026-441" value={newProduct.batchNo} onChange={e => setNewProduct(p => ({ ...p, batchNo: e.target.value }))} />
               </div>
               <div style={{ display: "flex", alignItems: "flex-end" }}>
-                <button onClick={addProduct} style={btnPrimary}>Add Product</button>
+                <button onClick={addProduct} style={{ ...btnPrimary, opacity: saving ? 0.5 : 1 }} disabled={saving}>
+                  {saving ? "Saving..." : "Add Product"}
+                </button>
               </div>
             </div>
           </div>
@@ -527,44 +732,21 @@ function InventoryScreen({ products, setProducts, categories, onAddCategory }: {
   )
 }
 
-/* ── Demo Orders ── */
-interface Order {
-  id: string
-  date: string
-  items: { name: string; qty: number; price: number }[]
-  total: number
-  method: "Cash" | "Mobile Money" | "Card" | "Credit"
-  status: "completed" | "refunded" | "pending"
-  customer?: string
-}
-
-const DEMO_ORDERS: Order[] = [
-  { id: "ORD-001", date: "2026-04-13 09:14", items: [{ name: "Rice (50kg Bag)", qty: 2, price: 450 }, { name: "Cooking Oil (5L)", qty: 3, price: 85 }], total: 1155, method: "Mobile Money", status: "completed", customer: "Kwame Asante" },
-  { id: "ORD-002", date: "2026-04-13 10:32", items: [{ name: "Samsung Galaxy A15", qty: 1, price: 1200 }, { name: "Phone Charger (USB-C)", qty: 2, price: 35 }], total: 1270, method: "Card", status: "completed" },
-  { id: "ORD-003", date: "2026-04-13 11:05", items: [{ name: "Cement (Dangote 50kg)", qty: 10, price: 72 }], total: 720, method: "Cash", status: "completed", customer: "Yaw Boateng Construction" },
-  { id: "ORD-004", date: "2026-04-13 12:18", items: [{ name: "Ladies Ankara Dress", qty: 3, price: 180 }, { name: "Hair Extensions (Bundle)", qty: 1, price: 250 }], total: 790, method: "Mobile Money", status: "completed", customer: "Ama Serwaa" },
-  { id: "ORD-005", date: "2026-04-12 08:45", items: [{ name: "School Exercise Book (Set)", qty: 20, price: 12 }], total: 240, method: "Cash", status: "completed", customer: "St. Mary's Academy" },
-  { id: "ORD-006", date: "2026-04-12 14:22", items: [{ name: "Plastic Chairs (Nesta)", qty: 8, price: 95 }], total: 760, method: "Credit", status: "pending", customer: "Grace Events" },
-  { id: "ORD-007", date: "2026-04-12 16:01", items: [{ name: "Fresh Tilapia (1kg)", qty: 5, price: 55 }, { name: "Cooking Oil (5L)", qty: 1, price: 85 }], total: 360, method: "Cash", status: "completed" },
-  { id: "ORD-008", date: "2026-04-11 09:30", items: [{ name: "Mens T-Shirt (Black)", qty: 5, price: 65 }], total: 325, method: "Mobile Money", status: "refunded" },
-  { id: "ORD-009", date: "2026-04-11 13:15", items: [{ name: "Paracetamol (Pack)", qty: 10, price: 8 }, { name: "Rice (50kg Bag)", qty: 1, price: 450 }], total: 530, method: "Cash", status: "completed", customer: "Nana Akufo" },
-  { id: "ORD-010", date: "2026-04-10 11:40", items: [{ name: "Samsung Galaxy A15", qty: 2, price: 1200 }], total: 2400, method: "Card", status: "completed", customer: "TechHub Accra" },
-]
-
 /* ── Orders Screen ── */
-function OrdersScreen() {
+function OrdersScreen({ orders }: { orders: Order[] }) {
   const [search, setSearch] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
 
-  const filtered = DEMO_ORDERS.filter(o => {
-    const matchSearch = !search || o.id.toLowerCase().includes(search.toLowerCase()) || (o.customer || "").toLowerCase().includes(search.toLowerCase())
+  const filtered = orders.filter(o => {
+    const matchSearch = !search || o.receiptCode.toLowerCase().includes(search.toLowerCase()) || (o.customer || "").toLowerCase().includes(search.toLowerCase())
     const matchStatus = filterStatus === "all" || o.status === filterStatus
     return matchSearch && matchStatus
   })
 
-  const todayTotal = DEMO_ORDERS.filter(o => o.date.startsWith("2026-04-13") && o.status === "completed").reduce((a, o) => a + o.total, 0)
-  const todayOrders = DEMO_ORDERS.filter(o => o.date.startsWith("2026-04-13")).length
-  const pendingCount = DEMO_ORDERS.filter(o => o.status === "pending").length
+  const today = new Date().toISOString().split("T")[0]
+  const todayTotal = orders.filter(o => o.date.includes(today.split("-").reverse().join("/")) && o.status === "completed").reduce((a, o) => a + o.total, 0)
+  const todayOrders = orders.filter(o => o.date.includes(today.split("-").reverse().join("/"))).length
+  const pendingCount = orders.filter(o => o.status === "pending").length
 
   const methodColor = (m: string) => m === "Cash" ? EMERALD : m === "Mobile Money" ? "#8B5CF6" : m === "Card" ? "#0EA5E9" : TRADE_COL
   const statusColor = (s: string) => s === "completed" ? EMERALD : s === "refunded" ? "#EF4444" : TRADE_COL
@@ -574,7 +756,7 @@ function OrdersScreen() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: -1 }}>Order History</h1>
-          <p style={{ fontSize: 13, color: "#6B9B8A", marginTop: 4, fontFamily: "'DM Sans', sans-serif" }}>{DEMO_ORDERS.length} total transactions</p>
+          <p style={{ fontSize: 13, color: "#6B9B8A", marginTop: 4, fontFamily: "'DM Sans', sans-serif" }}>{orders.length} total transactions</p>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <input placeholder="Search order or customer..." value={search} onChange={e => setSearch(e.target.value)} style={{ ...inputStyle, width: 240 }} />
@@ -611,7 +793,7 @@ function OrdersScreen() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${EMERALD}10` }}>
-              {["Order ID", "Date", "Customer", "Items", "Total", "Payment", "Status"].map((h, i) => (
+              {["Receipt", "Date", "Customer", "Items", "Total", "Payment", "Status"].map((h, i) => (
                 <th key={i} style={{ padding: "12px 14px", textAlign: "left", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3A6B5A" }}>{h}</th>
               ))}
             </tr>
@@ -621,7 +803,7 @@ function OrdersScreen() {
               <tr key={o.id} style={{ borderBottom: `1px solid ${EMERALD}06`, transition: "background 0.15s" }}
                 onMouseEnter={e => { e.currentTarget.style.background = `${EMERALD}04` }}
                 onMouseLeave={e => { e.currentTarget.style.background = "transparent" }}>
-                <td style={{ padding: "10px 14px", fontWeight: 700, color: EMERALD_L, fontFamily: "'DM Mono', monospace", fontSize: 11 }}>{o.id}</td>
+                <td style={{ padding: "10px 14px", fontWeight: 700, color: EMERALD_L, fontFamily: "'DM Mono', monospace", fontSize: 11 }}>{o.receiptCode}</td>
                 <td style={{ padding: "10px 14px", fontSize: 11, color: "#6B9B8A", fontFamily: "'DM Mono', monospace" }}>{o.date}</td>
                 <td style={{ padding: "10px 14px", fontWeight: 600, color: "#ECF5F0" }}>{o.customer || "Walk-In"}</td>
                 <td style={{ padding: "10px 14px", color: "#6B9B8A", fontSize: 12 }}>
@@ -636,6 +818,11 @@ function OrdersScreen() {
                 </td>
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={7} style={{ padding: "40px 0", textAlign: "center", color: "#3A6B5A", fontSize: 13 }}>No orders found</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -644,38 +831,15 @@ function OrdersScreen() {
 }
 
 /* ── Analytics Screen ── */
-function AnalyticsScreen({ products }: { products: Product[] }) {
-  const dailySales = [
-    { day: "Mon", revenue: 3200, orders: 14 },
-    { day: "Tue", revenue: 4100, orders: 18 },
-    { day: "Wed", revenue: 2800, orders: 11 },
-    { day: "Thu", revenue: 5600, orders: 24 },
-    { day: "Fri", revenue: 6900, orders: 31 },
-    { day: "Sat", revenue: 8200, orders: 42 },
-    { day: "Sun", revenue: 3100, orders: 13 },
-  ]
+function AnalyticsScreen({ products, analytics }: { products: Product[]; analytics: AnalyticsData | null }) {
+  const dailySales = analytics?.dailyRevenue ?? []
+  const topSellers = analytics?.topSellers ?? []
+  const categoryBreakdown = analytics?.categoryBreakdown ?? []
 
-  const topSellers = [
-    { name: "Rice (50kg Bag)", sold: 48, revenue: 21600 },
-    { name: "Samsung Galaxy A15", sold: 12, revenue: 14400 },
-    { name: "Cement (Dangote 50kg)", sold: 85, revenue: 6120 },
-    { name: "Ladies Ankara Dress", sold: 34, revenue: 6120 },
-    { name: "Cooking Oil (5L)", sold: 67, revenue: 5695 },
-  ]
-
-  const categoryBreakdown = [
-    { name: "Groceries", percentage: 32, color: EMERALD },
-    { name: "Electronics", percentage: 24, color: "#0EA5E9" },
-    { name: "Building", percentage: 18, color: TRADE_COL },
-    { name: "Clothing", percentage: 14, color: "#8B5CF6" },
-    { name: "Household", percentage: 7, color: "#EC4899" },
-    { name: "Other", percentage: 5, color: "#6B9B8A" },
-  ]
-
-  const maxRevenue = Math.max(...dailySales.map(d => d.revenue))
-  const weekTotal = dailySales.reduce((a, d) => a + d.revenue, 0)
-  const weekOrders = dailySales.reduce((a, d) => a + d.orders, 0)
-  const avgOrder = Math.round(weekTotal / weekOrders)
+  const maxRevenue = dailySales.length > 0 ? Math.max(...dailySales.map(d => d.revenue)) : 1
+  const weekTotal = analytics?.summary.totalRevenue ?? 0
+  const weekOrders = analytics?.summary.totalOrders ?? 0
+  const avgOrder = analytics?.summary.avgOrderValue ?? 0
 
   return (
     <div style={{ padding: "28px 28px 60px" }}>
@@ -690,7 +854,7 @@ function AnalyticsScreen({ products }: { products: Product[] }) {
           { label: "Week Revenue", value: `GHS ${weekTotal.toLocaleString()}`, color: TRADE_COL },
           { label: "Total Orders", value: weekOrders.toString(), color: EMERALD },
           { label: "Avg Order Value", value: `GHS ${avgOrder}`, color: "#0EA5E9" },
-          { label: "Products In Stock", value: products.length.toString(), color: EMERALD_L },
+          { label: "Products In Stock", value: (analytics?.summary.productsInStock ?? products.length).toString(), color: EMERALD_L },
         ].map(s => (
           <div key={s.label} style={{ ...glass, padding: "22px 20px" }}>
             <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: -1 }}>{s.value}</div>
@@ -703,56 +867,68 @@ function AnalyticsScreen({ products }: { products: Product[] }) {
         {/* Daily revenue chart */}
         <div style={{ ...glass, padding: "24px 22px" }}>
           <div style={{ ...labelStyle, marginBottom: 20 }}>Daily Revenue</div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 180 }}>
-            {dailySales.map(d => (
-              <div key={d.day} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: TRADE_COL, fontFamily: "'DM Mono', monospace" }}>GHS {(d.revenue / 1000).toFixed(1)}k</div>
-                <div style={{
-                  width: "100%", borderRadius: 6,
-                  height: `${(d.revenue / maxRevenue) * 140}px`,
-                  background: `linear-gradient(180deg, ${TRADE_COL}, ${EMERALD})`,
-                  opacity: 0.8,
-                  transition: "height 0.5s ease",
-                  animation: "barGrow 0.8s ease",
-                }} />
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#6B9B8A", fontFamily: "'DM Sans', sans-serif" }}>{d.day}</div>
-              </div>
-            ))}
-          </div>
+          {dailySales.length > 0 ? (
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 180 }}>
+              {dailySales.map(d => (
+                <div key={d.day} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: TRADE_COL, fontFamily: "'DM Mono', monospace" }}>GHS {(d.revenue / 1000).toFixed(1)}k</div>
+                  <div style={{
+                    width: "100%", borderRadius: 6,
+                    height: `${(d.revenue / maxRevenue) * 140}px`,
+                    background: `linear-gradient(180deg, ${TRADE_COL}, ${EMERALD})`,
+                    opacity: 0.8,
+                    transition: "height 0.5s ease",
+                    animation: "barGrow 0.8s ease",
+                  }} />
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#6B9B8A", fontFamily: "'DM Sans', sans-serif" }}>{d.day}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", color: "#3A6B5A", fontSize: 13 }}>No revenue data yet</div>
+          )}
         </div>
 
         {/* Category breakdown */}
         <div style={{ ...glass, padding: "24px 22px" }}>
           <div style={{ ...labelStyle, marginBottom: 16 }}>Sales By Category</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {categoryBreakdown.map(c => (
-              <div key={c.name}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "#ECF5F0", fontFamily: "'DM Sans', sans-serif" }}>{c.name}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: c.color, fontFamily: "'DM Mono', monospace" }}>{c.percentage}%</span>
+          {categoryBreakdown.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {categoryBreakdown.map(c => (
+                <div key={c.name}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#ECF5F0", fontFamily: "'DM Sans', sans-serif" }}>{c.name}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: c.color, fontFamily: "'DM Mono', monospace" }}>{c.percentage}%</span>
+                  </div>
+                  <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.04)" }}>
+                    <div style={{ height: "100%", borderRadius: 3, width: `${c.percentage}%`, background: c.color, animation: "barGrow 0.8s ease", opacity: 0.85 }} />
+                  </div>
                 </div>
-                <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.04)" }}>
-                  <div style={{ height: "100%", borderRadius: 3, width: `${c.percentage}%`, background: c.color, animation: "barGrow 0.8s ease", opacity: 0.85 }} />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ padding: "30px 0", textAlign: "center", color: "#3A6B5A", fontSize: 13 }}>No category data yet</div>
+          )}
         </div>
       </div>
 
       {/* Top sellers */}
       <div style={{ ...glass, padding: "24px 22px" }}>
         <div style={{ ...labelStyle, marginBottom: 16 }}>Top Sellers This Week</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14 }}>
-          {topSellers.map((t, i) => (
-            <div key={t.name} style={{ padding: "18px 16px", borderRadius: 12, background: `${EMERALD}04`, border: `1px solid ${EMERALD}08` }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: i === 0 ? TRADE_COL : `${EMERALD}40`, fontFamily: "'Space Grotesk', sans-serif", marginBottom: 8 }}>#{i + 1}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#ECF5F0", fontFamily: "'DM Sans', sans-serif", marginBottom: 8, lineHeight: 1.3 }}>{t.name}</div>
-              <div style={{ fontSize: 10, color: "#6B9B8A", fontFamily: "'DM Mono', monospace", marginBottom: 4 }}>{t.sold} units sold</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: TRADE_COL, fontFamily: "'Space Grotesk', sans-serif" }}>GHS {t.revenue.toLocaleString()}</div>
-            </div>
-          ))}
-        </div>
+        {topSellers.length > 0 ? (
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(topSellers.length, 5)}, 1fr)`, gap: 14 }}>
+            {topSellers.slice(0, 5).map((t, i) => (
+              <div key={t.name} style={{ padding: "18px 16px", borderRadius: 12, background: `${EMERALD}04`, border: `1px solid ${EMERALD}08` }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: i === 0 ? TRADE_COL : `${EMERALD}40`, fontFamily: "'Space Grotesk', sans-serif", marginBottom: 8 }}>#{i + 1}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#ECF5F0", fontFamily: "'DM Sans', sans-serif", marginBottom: 8, lineHeight: 1.3 }}>{t.name}</div>
+                <div style={{ fontSize: 10, color: "#6B9B8A", fontFamily: "'DM Mono', monospace", marginBottom: 4 }}>{t.sold} units sold</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: TRADE_COL, fontFamily: "'Space Grotesk', sans-serif" }}>GHS {t.revenue.toLocaleString()}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ padding: "30px 0", textAlign: "center", color: "#3A6B5A", fontSize: 13 }}>No sales data yet</div>
+        )}
       </div>
     </div>
   )
@@ -762,15 +938,77 @@ function AnalyticsScreen({ products }: { products: Product[] }) {
    TRADE APP
    ═══════════════════════════════════════════════════════════════ */
 
-const DEFAULT_CATEGORIES = ["Groceries", "Clothing", "Electronics", "Stationery", "Building", "Pharmacy", "Fresh", "Household", "Beauty"]
-
 export default function TradePage() {
   const [screen, setScreen] = useState<Screen>("dashboard")
-  const [products, setProducts] = useState<Product[]>(DEMO_PRODUCTS)
-  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES)
+  const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [feedback, setFeedback] = useState<string | null>(null)
 
-  const addCategory = (name: string) => {
-    if (!categories.includes(name)) setCategories(prev => [...prev, name])
+  const fetchProducts = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/trade/products?orgCode=${ORG_CODE}`)
+      if (!res.ok) return
+      const data = await res.json() as ApiProduct[]
+      setProducts(data.map(mapApiProduct))
+    } catch { /* silent */ }
+  }, [])
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/trade/categories?orgCode=${ORG_CODE}`)
+      if (!res.ok) return
+      const data = await res.json() as Category[]
+      setCategories(data)
+    } catch { /* silent */ }
+  }, [])
+
+  const fetchOrders = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/trade/sales?orgCode=${ORG_CODE}`)
+      if (!res.ok) return
+      const data = await res.json() as ApiSale[]
+      setOrders(data.map(mapApiSale))
+    } catch { /* silent */ }
+  }, [])
+
+  const fetchAnalytics = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/trade/analytics?orgCode=${ORG_CODE}&period=week`)
+      if (!res.ok) return
+      const data = await res.json() as ApiAnalytics
+      setAnalytics(mapApiAnalytics(data))
+    } catch { /* silent */ }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      setLoading(true)
+      await Promise.all([fetchProducts(), fetchCategories(), fetchOrders(), fetchAnalytics()])
+      if (!cancelled) setLoading(false)
+    }
+    load()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleSaleComplete = useCallback(() => {
+    fetchProducts()
+    fetchOrders()
+    fetchAnalytics()
+  }, [fetchProducts, fetchOrders, fetchAnalytics])
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", background: BG, fontFamily: "'DM Sans', sans-serif", color: "#ECF5F0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: EMERALD_L, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "0.06em" }}>Loading...</div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -782,10 +1020,10 @@ export default function TradePage() {
       `}</style>
       <Header screen={screen} setScreen={setScreen} storeName="Demo Store" />
       {screen === "dashboard" && <DashboardScreen products={products} setScreen={setScreen} />}
-      {screen === "pos" && <POSScreen products={products} />}
-      {screen === "inventory" && <InventoryScreen products={products} setProducts={setProducts} categories={categories} onAddCategory={addCategory} />}
-      {screen === "orders" && <OrdersScreen />}
-      {screen === "analytics" && <AnalyticsScreen products={products} />}
+      {screen === "pos" && <POSScreen products={products} onSaleComplete={handleSaleComplete} />}
+      {screen === "inventory" && <InventoryScreen products={products} onProductAdded={fetchProducts} categories={categories} onCategoryAdded={fetchCategories} feedback={feedback} setFeedback={setFeedback} />}
+      {screen === "orders" && <OrdersScreen orders={orders} />}
+      {screen === "analytics" && <AnalyticsScreen products={products} analytics={analytics} />}
     </div>
   )
 }
