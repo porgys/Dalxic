@@ -301,6 +301,7 @@ export function useStationTheme(): StationTheme {
 }
 
 /* ─── Toggle Button Component (disabled — day mode not yet ready) ─── */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function ThemeToggle({ isDayMode, onToggle }: { isDayMode: boolean; onToggle: () => void }) {
   return null;
 }
