@@ -94,13 +94,6 @@ interface ApiSale {
   items: { productName: string; unitPrice: number; quantity: number; total: number }[]
 }
 
-interface ApiAnalytics {
-  summary: { totalRevenue: number; totalOrders: number; avgOrderValue: number; productsInStock: number }
-  topSellers: { name: string; sold: number; revenue: number }[]
-  categoryBreakdown: { name: string; percentage: number; color: string }[]
-  dailyRevenue: { day: string; revenue: number; orders: number }[]
-}
-
 function mapApiProduct(p: ApiProduct): Product {
   return {
     id: p.id,
@@ -127,25 +120,6 @@ function mapApiSale(s: ApiSale): Order {
     method: s.paymentMethod === "MOBILE_MONEY" ? "Mobile Money" : s.paymentMethod === "CASH" ? "Cash" : s.paymentMethod === "CARD" ? "Card" : s.paymentMethod === "CREDIT" ? "Credit" : s.paymentMethod,
     status: s.paymentStatus === "PAID" ? "completed" : s.paymentStatus === "REFUNDED" ? "refunded" : "pending",
     customer: s.customerName ?? undefined,
-  }
-}
-
-function mapApiAnalytics(a: ApiAnalytics): AnalyticsData {
-  const defaultColors = [EMERALD, "#0EA5E9", TRADE_COL, "#8B5CF6", "#EC4899", "#6B9B8A"]
-  return {
-    summary: {
-      totalRevenue: a.summary.totalRevenue / 100,
-      totalOrders: a.summary.totalOrders,
-      avgOrderValue: a.summary.avgOrderValue / 100,
-      productsInStock: a.summary.productsInStock,
-    },
-    topSellers: a.topSellers.map(t => ({ name: t.name, sold: t.sold, revenue: t.revenue / 100 })),
-    categoryBreakdown: a.categoryBreakdown.map((c, i) => ({
-      name: c.name,
-      percentage: c.percentage,
-      color: c.color || defaultColors[i % defaultColors.length],
-    })),
-    dailyRevenue: a.dailyRevenue.map(d => ({ day: d.day, revenue: d.revenue / 100, orders: d.orders })),
   }
 }
 
@@ -951,8 +925,8 @@ export default function TradePage() {
     try {
       const res = await fetch(`/api/trade/products?orgCode=${ORG_CODE}`)
       if (!res.ok) return
-      const data = await res.json() as ApiProduct[]
-      setProducts(data.map(mapApiProduct))
+      const data = await res.json()
+      setProducts((data.products ?? data).map(mapApiProduct))
     } catch { /* silent */ }
   }, [])
 
@@ -969,19 +943,52 @@ export default function TradePage() {
     try {
       const res = await fetch(`/api/trade/sales?orgCode=${ORG_CODE}`)
       if (!res.ok) return
-      const data = await res.json() as ApiSale[]
-      setOrders(data.map(mapApiSale))
+      const data = await res.json()
+      setOrders((data.sales ?? data).map(mapApiSale))
     } catch { /* silent */ }
   }, [])
 
   const fetchAnalytics = useCallback(async () => {
     try {
-      const res = await fetch(`/api/trade/analytics?orgCode=${ORG_CODE}&period=week`)
-      if (!res.ok) return
-      const data = await res.json() as ApiAnalytics
-      setAnalytics(mapApiAnalytics(data))
+      const base = `/api/trade/analytics?orgCode=${ORG_CODE}&period=week`
+      const [summaryRes, topRes, catRes, dailyRes] = await Promise.all([
+        fetch(base),
+        fetch(`${base}&view=top_sellers`),
+        fetch(`${base}&view=category_breakdown`),
+        fetch(`${base}&view=daily_revenue`),
+      ])
+      const summary = summaryRes.ok ? await summaryRes.json() : {}
+      const top = topRes.ok ? await topRes.json() : {}
+      const cat = catRes.ok ? await catRes.json() : {}
+      const daily = dailyRes.ok ? await dailyRes.json() : {}
+
+      const totalRevenue = (summary.totalRevenue ?? 0) / 100
+      const totalOrders = summary.salesCount ?? 0
+      const avgOrderValue = (summary.averageOrder ?? 0) / 100
+      const topSellers = (top.topSellers ?? []).map((t: { name: string; quantity: number; revenue: number }) => ({
+        name: t.name, sold: t.quantity, revenue: t.revenue / 100,
+      }))
+      const totalCatRevenue = (cat.categories ?? []).reduce((a: number, c: { revenue: number }) => a + c.revenue, 0) || 1
+      const categoryBreakdown = (cat.categories ?? []).map((c: { name: string; revenue: number }, i: number) => ({
+        name: c.name,
+        percentage: Math.round((c.revenue / totalCatRevenue) * 100),
+        color: [EMERALD, "#0EA5E9", TRADE_COL, "#8B5CF6", "#EC4899", "#6B9B8A"][i % 6],
+      }))
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+      const dailyRevenue = (daily.dailyRevenue ?? []).map((d: { date: string; revenue: number }) => ({
+        day: dayNames[new Date(d.date).getDay()],
+        revenue: d.revenue / 100,
+        orders: 0,
+      }))
+
+      setAnalytics({
+        summary: { totalRevenue, totalOrders, avgOrderValue, productsInStock: products.length },
+        topSellers,
+        categoryBreakdown,
+        dailyRevenue,
+      })
     } catch { /* silent */ }
-  }, [])
+  }, [products.length])
 
   useEffect(() => {
     let cancelled = false

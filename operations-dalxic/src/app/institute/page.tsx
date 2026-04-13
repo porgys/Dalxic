@@ -815,7 +815,7 @@ export default function InstitutePage() {
       const res = await fetch(`/api/institute/members?orgCode=${ORG_CODE}`)
       if (!res.ok) throw new Error("Failed to fetch members")
       const data = await res.json()
-      setMembers(data)
+      setMembers(data.members ?? data)
     } catch { showFeedback("Failed to load members", "error") }
   }, [showFeedback])
 
@@ -824,7 +824,7 @@ export default function InstitutePage() {
       const res = await fetch(`/api/institute/staff?orgCode=${ORG_CODE}`)
       if (!res.ok) throw new Error("Failed to fetch staff")
       const data = await res.json()
-      setStaff(data)
+      setStaff(data.staff ?? data)
     } catch { showFeedback("Failed to load staff", "error") }
   }, [showFeedback])
 
@@ -851,7 +851,7 @@ export default function InstitutePage() {
       const res = await fetch(`/api/institute/fees?orgCode=${ORG_CODE}`)
       if (!res.ok) throw new Error("Failed to fetch fees")
       const data = await res.json()
-      setFees(data)
+      setFees(data.records ?? data)
     } catch { showFeedback("Failed to load fees", "error") }
   }, [showFeedback])
 
