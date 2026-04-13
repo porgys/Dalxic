@@ -2,18 +2,22 @@ import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
 import { getTierDefaults } from "@/lib/tier-defaults";
+import { authenticateRequest, requireRole } from "@/lib/auth";
 
 /**
  * Organization CRUD — multi-tenant core.
  *
  * GET:   List all orgs or fetch by code
- * POST:  Create a new organization
+ * POST:  Create a new organization (admin/super_admin only)
  * PATCH: Update organization details
  */
 
 export async function GET(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
+
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
 
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
@@ -34,6 +38,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
+
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
+  const roleCheck = requireRole(auth, ["admin", "super_admin"]);
+  if (roleCheck) return roleCheck;
 
   try {
     const body = await request.json();
@@ -72,8 +82,8 @@ export async function POST(request: Request) {
     });
 
     await logAudit({
-      actorType: "system",
-      actorId: "api",
+      actorType: "operator",
+      actorId: auth.operatorId,
       orgId: org.id,
       action: "organization.created",
       metadata: { code: org.code, type: org.type, tier: org.tier },
@@ -82,15 +92,17 @@ export async function POST(request: Request) {
 
     return Response.json(org, { status: 201 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[organizations] POST error:", message);
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }
 
 export async function PATCH(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
+
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
 
   try {
     const body = await request.json();
@@ -124,8 +136,8 @@ export async function PATCH(request: Request) {
     });
 
     await logAudit({
-      actorType: "system",
-      actorId: "api",
+      actorType: "operator",
+      actorId: auth.operatorId,
       orgId: org.id,
       action: "organization.updated",
       metadata: { changes: Object.keys(updates) },
@@ -134,8 +146,7 @@ export async function PATCH(request: Request) {
 
     return Response.json(updated);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[organizations] PATCH error:", message);
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }

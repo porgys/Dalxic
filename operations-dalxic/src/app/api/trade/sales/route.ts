@@ -2,33 +2,33 @@ import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
 import { generateReceiptCode } from "@/lib/receipt";
+import { authenticateRequest } from "@/lib/auth";
 
 /**
  * Trade Sales — atomic sale creation with stock decrement.
  *
  * GET:  List sales for an org (paginated, date-filtered)
- * POST: Create a sale (cart → stock decrement → receipt — all atomic)
+ * POST: Create a sale (cart -> stock decrement -> receipt — all atomic)
  */
+
+const VALID_PAYMENT_METHODS = ["CASH", "MOBILE_MONEY", "CARD", "CREDIT"];
 
 export async function GET(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   const { searchParams } = new URL(request.url);
-  const orgCode = searchParams.get("orgCode");
   const status = searchParams.get("status");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
   const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 200);
   const offset = parseInt(searchParams.get("offset") || "0");
 
-  if (!orgCode) return Response.json({ error: "orgCode required" }, { status: 400 });
-
-  const org = await db.organization.findUnique({ where: { code: orgCode } });
-  if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = { orgId: org.id };
+  const where: any = { orgId: auth.orgId };
   if (status) where.paymentStatus = status;
   if (from || to) {
     where.createdAt = {};
@@ -54,21 +54,36 @@ export async function POST(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   try {
     const body = await request.json();
-    const { orgCode, items, customerName, customerPhone, discount, paymentMethod, paymentRef, paymentStatus, soldBy, soldByName } = body;
+    const { items, customerName, customerPhone, discount, paymentMethod, paymentRef, paymentStatus, soldBy, soldByName } = body;
 
-    if (!orgCode || !items?.length || !soldBy || !soldByName) {
-      return Response.json({ error: "orgCode, items, soldBy, and soldByName required" }, { status: 400 });
+    if (!items?.length || !soldBy || !soldByName) {
+      return Response.json({ error: "items, soldBy, and soldByName required" }, { status: 400 });
     }
 
-    const org = await db.organization.findUnique({ where: { code: orgCode } });
-    if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
+    // Validate items
+    for (const item of items) {
+      if (!item.productId || !item.quantity) {
+        return Response.json({ error: "Each item needs productId and quantity" }, { status: 400 });
+      }
+      if (typeof item.quantity !== "number" || item.quantity <= 0 || item.quantity > 10000 || !Number.isInteger(item.quantity)) {
+        return Response.json({ error: "Quantity must be a positive integer (max 10000)" }, { status: 400 });
+      }
+    }
+
+    // Validate payment method if provided
+    if (paymentMethod && !VALID_PAYMENT_METHODS.includes(paymentMethod)) {
+      return Response.json({ error: `paymentMethod must be one of: ${VALID_PAYMENT_METHODS.join(", ")}` }, { status: 400 });
+    }
 
     // Validate all products exist and have enough stock
     const productIds = items.map((i: { productId: string }) => i.productId);
     const products = await db.product.findMany({
-      where: { id: { in: productIds }, orgId: org.id },
+      where: { id: { in: productIds }, orgId: auth.orgId },
     });
 
     if (products.length !== productIds.length) {
@@ -102,22 +117,28 @@ export async function POST(request: Request) {
     });
 
     const discountAmount = discount || 0;
+
+    // Validate discount
+    if (typeof discountAmount !== "number" || discountAmount < 0 || discountAmount > subtotal) {
+      return Response.json({ error: "Discount must be non-negative and cannot exceed subtotal" }, { status: 400 });
+    }
+
     const total = subtotal - discountAmount;
 
     // Generate receipt code: count today's sales + 1
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todaySalesCount = await db.sale.count({
-      where: { orgId: org.id, createdAt: { gte: todayStart } },
+      where: { orgId: auth.orgId, createdAt: { gte: todayStart } },
     });
-    const receiptCode = generateReceiptCode(org.code, todaySalesCount + 1);
+    const receiptCode = generateReceiptCode(auth.orgCode, todaySalesCount + 1);
 
     // Atomic transaction: create sale + items + decrement stock + log movements
     const sale = await db.$transaction(async (tx) => {
       // Create sale
       const newSale = await tx.sale.create({
         data: {
-          orgId: org.id,
+          orgId: auth.orgId,
           receiptCode,
           customerName: customerName?.trim() || null,
           customerPhone: customerPhone?.trim() || null,
@@ -146,7 +167,7 @@ export async function POST(request: Request) {
 
         await tx.stockMovement.create({
           data: {
-            orgId: org.id,
+            orgId: auth.orgId,
             productId: item.productId,
             type: "SOLD",
             quantity: item.quantity,
@@ -163,8 +184,8 @@ export async function POST(request: Request) {
 
     await logAudit({
       actorType: "operator",
-      actorId: soldBy,
-      orgId: org.id,
+      actorId: auth.operatorId,
+      orgId: auth.orgId,
       action: "sale.created",
       metadata: { saleId: sale.id, receiptCode, total, itemCount: saleItems.length },
       ipAddress: getClientIP(request),
@@ -172,8 +193,7 @@ export async function POST(request: Request) {
 
     return Response.json(sale, { status: 201 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[sales] POST error:", message);
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }

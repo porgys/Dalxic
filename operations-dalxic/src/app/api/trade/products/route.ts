@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
+import { authenticateRequest } from "@/lib/auth";
 
 /**
  * Trade Products — CRUD with search, category filter, low stock alerts.
@@ -10,12 +11,19 @@ import { rateLimit } from "@/lib/rate-limit";
  * PATCH: Update product details
  */
 
+/** Strip HTML tags from a string */
+function stripHtml(str: string): string {
+  return str.replace(/<[^>]*>/g, "");
+}
+
 export async function GET(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   const { searchParams } = new URL(request.url);
-  const orgCode = searchParams.get("orgCode");
   const categoryId = searchParams.get("categoryId");
   const search = searchParams.get("search");
   const lowStock = searchParams.get("lowStock") === "true";
@@ -23,13 +31,8 @@ export async function GET(request: Request) {
   const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 500);
   const offset = parseInt(searchParams.get("offset") || "0");
 
-  if (!orgCode) return Response.json({ error: "orgCode required" }, { status: 400 });
-
-  const org = await db.organization.findUnique({ where: { code: orgCode } });
-  if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = { orgId: org.id };
+  const where: any = { orgId: auth.orgId };
   if (activeOnly) where.isActive = true;
   if (categoryId) where.categoryId = categoryId;
   if (search) where.name = { contains: search, mode: "insensitive" };
@@ -66,22 +69,34 @@ export async function POST(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   try {
     const body = await request.json();
-    const { orgCode, categoryId, name, sku, unit, costPrice, sellingPrice, stock, minStock, photoUrl, batchNo, expiresAt } = body;
+    const { categoryId, name, sku, unit, costPrice, sellingPrice, stock, minStock, photoUrl, batchNo, expiresAt } = body;
 
-    if (!orgCode || !categoryId || !name?.trim() || sellingPrice === undefined) {
-      return Response.json({ error: "orgCode, categoryId, name, and sellingPrice required" }, { status: 400 });
+    if (!categoryId || !name?.trim() || sellingPrice === undefined) {
+      return Response.json({ error: "categoryId, name, and sellingPrice required" }, { status: 400 });
     }
 
-    const org = await db.organization.findUnique({ where: { code: orgCode } });
-    if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
+    // Input validation
+    const sanitizedName = stripHtml(name.trim());
+    if (!sanitizedName || sanitizedName.length > 200) {
+      return Response.json({ error: "Name must be 1-200 characters" }, { status: 400 });
+    }
+    if (typeof sellingPrice !== "number" || sellingPrice <= 0 || !Number.isInteger(sellingPrice)) {
+      return Response.json({ error: "sellingPrice must be a positive integer" }, { status: 400 });
+    }
+    if (stock !== undefined && (typeof stock !== "number" || stock < 0 || !Number.isInteger(stock))) {
+      return Response.json({ error: "stock must be a non-negative integer" }, { status: 400 });
+    }
 
     const product = await db.product.create({
       data: {
-        orgId: org.id,
+        orgId: auth.orgId,
         categoryId,
-        name: name.trim(),
+        name: sanitizedName,
         sku: sku?.trim() || null,
         unit: unit || "piece",
         costPrice: costPrice || 0,
@@ -98,22 +113,22 @@ export async function POST(request: Request) {
     if (stock && stock > 0) {
       await db.stockMovement.create({
         data: {
-          orgId: org.id,
+          orgId: auth.orgId,
           productId: product.id,
           type: "RECEIVED",
           quantity: stock,
           balanceBefore: 0,
           balanceAfter: stock,
           reference: "initial_stock",
-          performedBy: body.operatorId || "system",
+          performedBy: auth.operatorId,
         },
       });
     }
 
     await logAudit({
       actorType: "operator",
-      actorId: body.operatorId || "system",
-      orgId: org.id,
+      actorId: auth.operatorId,
+      orgId: auth.orgId,
       action: "product.created",
       metadata: { productId: product.id, name: product.name, sellingPrice },
       ipAddress: getClientIP(request),
@@ -121,8 +136,8 @@ export async function POST(request: Request) {
 
     return Response.json(product, { status: 201 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }
 
@@ -130,14 +145,28 @@ export async function PATCH(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   try {
     const body = await request.json();
     const { id, name, categoryId, sku, unit, costPrice, sellingPrice, minStock, photoUrl, batchNo, expiresAt, isActive } = body;
 
     if (!id) return Response.json({ error: "id required" }, { status: 400 });
 
+    // Validate if provided
+    if (name !== undefined) {
+      const sanitized = stripHtml(name.trim());
+      if (!sanitized || sanitized.length > 200) {
+        return Response.json({ error: "Name must be 1-200 characters" }, { status: 400 });
+      }
+    }
+    if (sellingPrice !== undefined && (typeof sellingPrice !== "number" || sellingPrice <= 0 || !Number.isInteger(sellingPrice))) {
+      return Response.json({ error: "sellingPrice must be a positive integer" }, { status: 400 });
+    }
+
     const updates: Record<string, unknown> = {};
-    if (name?.trim()) updates.name = name.trim();
+    if (name?.trim()) updates.name = stripHtml(name.trim());
     if (categoryId) updates.categoryId = categoryId;
     if (sku !== undefined) updates.sku = sku?.trim() || null;
     if (unit) updates.unit = unit;
@@ -156,7 +185,7 @@ export async function PATCH(request: Request) {
 
     return Response.json(updated);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }

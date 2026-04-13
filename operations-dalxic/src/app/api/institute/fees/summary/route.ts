@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
+import { authenticateRequest } from "@/lib/auth";
 
 /**
  * Fee Summary — org-wide fee dashboard.
@@ -11,18 +12,15 @@ export async function GET(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   const { searchParams } = new URL(request.url);
-  const orgCode = searchParams.get("orgCode");
   const groupId = searchParams.get("groupId");
-
-  if (!orgCode) return Response.json({ error: "orgCode required" }, { status: 400 });
-
-  const org = await db.organization.findUnique({ where: { code: orgCode } });
-  if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
 
   // Build where clause — optionally filter by group via member
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = { orgId: org.id };
+  const where: any = { orgId: auth.orgId };
   if (groupId) {
     where.member = { groupId };
   }

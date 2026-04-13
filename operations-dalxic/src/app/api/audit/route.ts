@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
+import { authenticateRequest, requireRole } from "@/lib/auth";
 
 /**
  * Audit log viewer — read-only, append-only trail.
@@ -11,19 +12,19 @@ export async function GET(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
+  const roleCheck = requireRole(auth, ["admin", "manager"]);
+  if (roleCheck) return roleCheck;
+
   const { searchParams } = new URL(request.url);
-  const orgCode = searchParams.get("orgCode");
   const action = searchParams.get("action");
   const actorId = searchParams.get("actorId");
   const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 200);
   const offset = parseInt(searchParams.get("offset") || "0");
 
-  if (!orgCode) return Response.json({ error: "orgCode required" }, { status: 400 });
-
-  const org = await db.organization.findUnique({ where: { code: orgCode } });
-  if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
-
-  const where: Record<string, unknown> = { orgId: org.id };
+  const where: Record<string, unknown> = { orgId: auth.orgId };
   if (action) where.action = { contains: action };
   if (actorId) where.actorId = actorId;
 

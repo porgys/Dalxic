@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
+import { authenticateRequest } from "@/lib/auth";
 
 /**
  * Institute Members — students, trainees, participants.
@@ -14,21 +15,18 @@ export async function GET(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   const { searchParams } = new URL(request.url);
-  const orgCode = searchParams.get("orgCode");
   const groupId = searchParams.get("groupId");
   const status = searchParams.get("status");
   const search = searchParams.get("search");
   const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 500);
   const offset = parseInt(searchParams.get("offset") || "0");
 
-  if (!orgCode) return Response.json({ error: "orgCode required" }, { status: 400 });
-
-  const org = await db.organization.findUnique({ where: { code: orgCode } });
-  if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = { orgId: org.id };
+  const where: any = { orgId: auth.orgId };
   if (groupId) where.groupId = groupId;
   if (status) where.status = status;
   if (search) where.name = { contains: search, mode: "insensitive" };
@@ -51,28 +49,28 @@ export async function POST(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   try {
     const body = await request.json();
-    const { orgCode, name, role, groupId, phone, email, dateOfBirth, gender, guardianName, guardianPhone, meta } = body;
+    const { name, role, groupId, phone, email, dateOfBirth, gender, guardianName, guardianPhone, meta } = body;
 
-    if (!orgCode || !name?.trim()) {
-      return Response.json({ error: "orgCode and name required" }, { status: 400 });
+    if (!name?.trim()) {
+      return Response.json({ error: "name required" }, { status: 400 });
     }
-
-    const org = await db.organization.findUnique({ where: { code: orgCode } });
-    if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
 
     // Validate group if provided
     if (groupId) {
       const group = await db.group.findUnique({ where: { id: groupId } });
-      if (!group || group.orgId !== org.id) {
+      if (!group || group.orgId !== auth.orgId) {
         return Response.json({ error: "Group not found" }, { status: 404 });
       }
     }
 
     const member = await db.member.create({
       data: {
-        orgId: org.id,
+        orgId: auth.orgId,
         name: name.trim(),
         role: role || "student",
         groupId: groupId || null,
@@ -88,8 +86,8 @@ export async function POST(request: Request) {
 
     await logAudit({
       actorType: "operator",
-      actorId: body.operatorId || "system",
-      orgId: org.id,
+      actorId: auth.operatorId,
+      orgId: auth.orgId,
       action: "member.enrolled",
       metadata: { memberId: member.id, name: member.name, groupId },
       ipAddress: getClientIP(request),
@@ -97,14 +95,17 @@ export async function POST(request: Request) {
 
     return Response.json(member, { status: 201 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }
 
 export async function PATCH(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
+
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
 
   try {
     const body = await request.json();
@@ -128,7 +129,7 @@ export async function PATCH(request: Request) {
     const updated = await db.member.update({ where: { id }, data: updates });
     return Response.json(updated);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }

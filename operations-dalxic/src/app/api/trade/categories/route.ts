@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
+import { authenticateRequest } from "@/lib/auth";
 
 /**
  * Trade Categories — org-scoped, persistent.
@@ -14,16 +15,13 @@ export async function GET(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   const { searchParams } = new URL(request.url);
-  const orgCode = searchParams.get("orgCode");
   const includeInactive = searchParams.get("includeInactive") === "true";
 
-  if (!orgCode) return Response.json({ error: "orgCode required" }, { status: 400 });
-
-  const org = await db.organization.findUnique({ where: { code: orgCode } });
-  if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
-
-  const where: Record<string, unknown> = { orgId: org.id };
+  const where: Record<string, unknown> = { orgId: auth.orgId };
   if (!includeInactive) where.isActive = true;
 
   const categories = await db.category.findMany({
@@ -38,20 +36,20 @@ export async function POST(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   try {
     const body = await request.json();
-    const { orgCode, name, sortOrder } = body;
+    const { name, sortOrder } = body;
 
-    if (!orgCode || !name?.trim()) {
-      return Response.json({ error: "orgCode and name required" }, { status: 400 });
+    if (!name?.trim()) {
+      return Response.json({ error: "name required" }, { status: 400 });
     }
-
-    const org = await db.organization.findUnique({ where: { code: orgCode } });
-    if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
 
     // Check uniqueness
     const existing = await db.category.findUnique({
-      where: { orgId_name: { orgId: org.id, name: name.trim() } },
+      where: { orgId_name: { orgId: auth.orgId, name: name.trim() } },
     });
     if (existing) {
       return Response.json({ error: "Category already exists" }, { status: 409 });
@@ -59,7 +57,7 @@ export async function POST(request: Request) {
 
     const category = await db.category.create({
       data: {
-        orgId: org.id,
+        orgId: auth.orgId,
         name: name.trim(),
         sortOrder: sortOrder ?? 0,
       },
@@ -67,8 +65,8 @@ export async function POST(request: Request) {
 
     await logAudit({
       actorType: "operator",
-      actorId: body.operatorId || "system",
-      orgId: org.id,
+      actorId: auth.operatorId,
+      orgId: auth.orgId,
       action: "category.created",
       metadata: { categoryId: category.id, name: category.name },
       ipAddress: getClientIP(request),
@@ -76,14 +74,17 @@ export async function POST(request: Request) {
 
     return Response.json(category, { status: 201 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }
 
 export async function PATCH(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
+
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
 
   try {
     const body = await request.json();
@@ -103,7 +104,7 @@ export async function PATCH(request: Request) {
 
     return Response.json(updated);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }

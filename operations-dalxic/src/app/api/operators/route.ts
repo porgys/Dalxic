@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
-import { rateLimit, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
+import { rateLimit, AUTH_RATE_LIMIT, checkPinLockout, recordPinFailure, clearPinFailures } from "@/lib/rate-limit";
+import { authenticateRequest } from "@/lib/auth";
 
 /**
  * Operator management — PIN-based authentication.
@@ -14,17 +15,14 @@ export async function GET(request: Request) {
   const blocked = rateLimit(request, AUTH_RATE_LIMIT);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   const { searchParams } = new URL(request.url);
-  const orgCode = searchParams.get("orgCode");
   const role = searchParams.get("role");
   const activeOnly = searchParams.get("activeOnly") !== "false";
 
-  if (!orgCode) return Response.json({ error: "orgCode required" }, { status: 400 });
-
-  const org = await db.organization.findUnique({ where: { code: orgCode } });
-  if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
-
-  const where: Record<string, unknown> = { orgId: org.id };
+  const where: Record<string, unknown> = { orgId: auth.orgId };
   if (activeOnly) where.isActive = true;
   if (role) where.role = role;
 
@@ -49,7 +47,7 @@ export async function GET(request: Request) {
     (o) => o.lastLoginAt && new Date(o.lastLoginAt) >= onlineThreshold
   ).length;
 
-  return Response.json({ operators, orgId: org.id, onlineCount });
+  return Response.json({ operators, orgId: auth.orgId, onlineCount });
 }
 
 export async function POST(request: Request) {
@@ -64,71 +62,20 @@ export async function POST(request: Request) {
       return Response.json({ error: "orgCode and action required" }, { status: 400 });
     }
 
-    const org = await db.organization.findUnique({ where: { code: orgCode } });
-    if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
-
-    // ─── CREATE ───
-    if (action === "create") {
-      const { name, phone, pin, role, meta } = body;
-
-      if (!name?.trim() || !pin || !role) {
-        return Response.json({ error: "name, pin, and role required" }, { status: 400 });
-      }
-
-      if (!/^\d{4}$/.test(pin)) {
-        return Response.json({ error: "PIN must be exactly 4 digits" }, { status: 400 });
-      }
-
-      // Check operator limit
-      const count = await db.operator.count({ where: { orgId: org.id, isActive: true } });
-      if (count >= org.maxOperators) {
-        return Response.json({ error: `Operator limit reached (${org.maxOperators}). Upgrade your tier.` }, { status: 403 });
-      }
-
-      // Check PIN uniqueness within org
-      const existingPin = await db.operator.findUnique({
-        where: { orgId_pin: { orgId: org.id, pin } },
-      });
-      if (existingPin) {
-        return Response.json({ error: "This PIN is already in use. Choose a different PIN." }, { status: 409 });
-      }
-
-      const operator = await db.operator.create({
-        data: {
-          orgId: org.id,
-          name: name.trim(),
-          phone: phone?.trim() || null,
-          pin,
-          role,
-          meta: meta ? JSON.parse(JSON.stringify(meta)) : undefined,
-          isActive: true,
-        },
-      });
-
-      await logAudit({
-        actorType: "operator",
-        actorId: "admin",
-        orgId: org.id,
-        action: "operator.created",
-        metadata: { operatorId: operator.id, name: operator.name, role },
-        ipAddress: getClientIP(request),
-      });
-
-      return Response.json({
-        id: operator.id,
-        name: operator.name,
-        phone: operator.phone,
-        role: operator.role,
-      }, { status: 201 });
-    }
-
-    // ─── LOGIN ───
+    // ─── LOGIN — exempt from auth (this IS the auth endpoint) ───
     if (action === "login") {
       const { pin } = body;
 
       if (!pin || !/^\d{4}$/.test(pin)) {
         return Response.json({ error: "4-digit PIN required" }, { status: 400 });
       }
+
+      // Check PIN lockout before attempting login
+      const lockout = checkPinLockout(orgCode);
+      if (lockout) return lockout;
+
+      const org = await db.organization.findUnique({ where: { code: orgCode } });
+      if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
 
       const operator = await db.operator.findUnique({
         where: { orgId_pin: { orgId: org.id, pin } },
@@ -142,6 +89,8 @@ export async function POST(request: Request) {
           const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(pin));
           const pinHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
           if (pinHash === masterConfig.value) {
+            clearPinFailures(orgCode);
+
             await logAudit({
               actorType: "system",
               actorId: "master_pin",
@@ -162,6 +111,9 @@ export async function POST(request: Request) {
             });
           }
         }
+
+        // Record failed attempt
+        recordPinFailure(orgCode);
 
         await logAudit({
           actorType: "operator",
@@ -187,6 +139,9 @@ export async function POST(request: Request) {
 
         return Response.json({ error: "This operator account is deactivated. Contact admin." }, { status: 403 });
       }
+
+      // Success — clear any pin failures
+      clearPinFailures(orgCode);
 
       await db.operator.update({
         where: { id: operator.id },
@@ -216,6 +171,68 @@ export async function POST(request: Request) {
       });
     }
 
+    // ─── All other actions require auth ───
+    const auth = await authenticateRequest(request);
+    if (auth instanceof Response) return auth;
+
+    // ─── CREATE ───
+    if (action === "create") {
+      const { name, phone, pin, role, meta } = body;
+
+      if (!name?.trim() || !pin || !role) {
+        return Response.json({ error: "name, pin, and role required" }, { status: 400 });
+      }
+
+      if (!/^\d{4}$/.test(pin)) {
+        return Response.json({ error: "PIN must be exactly 4 digits" }, { status: 400 });
+      }
+
+      // Check operator limit
+      const org = await db.organization.findUnique({ where: { id: auth.orgId } });
+      if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
+
+      const count = await db.operator.count({ where: { orgId: auth.orgId, isActive: true } });
+      if (count >= org.maxOperators) {
+        return Response.json({ error: `Operator limit reached (${org.maxOperators}). Upgrade your tier.` }, { status: 403 });
+      }
+
+      // Check PIN uniqueness within org
+      const existingPin = await db.operator.findUnique({
+        where: { orgId_pin: { orgId: auth.orgId, pin } },
+      });
+      if (existingPin) {
+        return Response.json({ error: "This PIN is already in use. Choose a different PIN." }, { status: 409 });
+      }
+
+      const operator = await db.operator.create({
+        data: {
+          orgId: auth.orgId,
+          name: name.trim(),
+          phone: phone?.trim() || null,
+          pin,
+          role,
+          meta: meta ? JSON.parse(JSON.stringify(meta)) : undefined,
+          isActive: true,
+        },
+      });
+
+      await logAudit({
+        actorType: "operator",
+        actorId: auth.operatorId,
+        orgId: auth.orgId,
+        action: "operator.created",
+        metadata: { operatorId: operator.id, name: operator.name, role },
+        ipAddress: getClientIP(request),
+      });
+
+      return Response.json({
+        id: operator.id,
+        name: operator.name,
+        phone: operator.phone,
+        role: operator.role,
+      }, { status: 201 });
+    }
+
     // ─── HEARTBEAT ───
     if (action === "heartbeat") {
       const { operatorId } = body;
@@ -229,25 +246,21 @@ export async function POST(request: Request) {
 
     // ─── LOGOUT ───
     if (action === "logout") {
-      const { operatorId } = body;
-      if (operatorId) {
-        await logAudit({
-          actorType: "operator",
-          actorId: operatorId,
-          orgId: org.id,
-          action: "operator.logout",
-          metadata: {},
-          ipAddress: getClientIP(request),
-        });
-      }
+      await logAudit({
+        actorType: "operator",
+        actorId: auth.operatorId,
+        orgId: auth.orgId,
+        action: "operator.logout",
+        metadata: {},
+        ipAddress: getClientIP(request),
+      });
       return Response.json({ success: true });
     }
 
     return Response.json({ error: "Invalid action. Use: create, login, logout, heartbeat" }, { status: 400 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown server error";
-    console.error("[operators] POST error:", message);
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }
 
@@ -255,19 +268,19 @@ export async function PATCH(request: Request) {
   const blocked = rateLimit(request, AUTH_RATE_LIMIT);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   try {
     const body = await request.json();
-    const { orgCode, operatorId, name, phone, role, isActive, newPin, meta } = body;
+    const { operatorId, name, phone, role, isActive, newPin, meta } = body;
 
-    if (!orgCode || !operatorId) {
-      return Response.json({ error: "orgCode and operatorId required" }, { status: 400 });
+    if (!operatorId) {
+      return Response.json({ error: "operatorId required" }, { status: 400 });
     }
 
-    const org = await db.organization.findUnique({ where: { code: orgCode } });
-    if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
-
     const operator = await db.operator.findUnique({ where: { id: operatorId } });
-    if (!operator || operator.orgId !== org.id) {
+    if (!operator || operator.orgId !== auth.orgId) {
       return Response.json({ error: "Operator not found" }, { status: 404 });
     }
 
@@ -283,7 +296,7 @@ export async function PATCH(request: Request) {
         return Response.json({ error: "PIN must be exactly 4 digits" }, { status: 400 });
       }
       const existingPin = await db.operator.findUnique({
-        where: { orgId_pin: { orgId: org.id, pin: newPin } },
+        where: { orgId_pin: { orgId: auth.orgId, pin: newPin } },
       });
       if (existingPin && existingPin.id !== operatorId) {
         return Response.json({ error: "This PIN is already in use" }, { status: 409 });
@@ -299,8 +312,8 @@ export async function PATCH(request: Request) {
 
     await logAudit({
       actorType: "operator",
-      actorId: "admin",
-      orgId: org.id,
+      actorId: auth.operatorId,
+      orgId: auth.orgId,
       action: "operator.updated",
       metadata: { operatorId, changes: Object.keys(updates) },
       ipAddress: getClientIP(request),
@@ -308,8 +321,7 @@ export async function PATCH(request: Request) {
 
     return Response.json(updated);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[operators] PATCH error:", message);
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }

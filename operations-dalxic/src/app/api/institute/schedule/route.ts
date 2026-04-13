@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
+import { authenticateRequest } from "@/lib/auth";
 
 /**
  * Institute Schedule — timetable management.
@@ -15,19 +16,16 @@ export async function GET(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   const { searchParams } = new URL(request.url);
-  const orgCode = searchParams.get("orgCode");
   const groupId = searchParams.get("groupId");
   const staffId = searchParams.get("staffId");
   const dayOfWeek = searchParams.get("dayOfWeek");
 
-  if (!orgCode) return Response.json({ error: "orgCode required" }, { status: 400 });
-
-  const org = await db.organization.findUnique({ where: { code: orgCode } });
-  if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = { orgId: org.id };
+  const where: any = { orgId: auth.orgId };
   if (groupId) where.groupId = groupId;
   if (staffId) where.staffId = staffId;
   if (dayOfWeek !== null && dayOfWeek !== undefined) where.dayOfWeek = parseInt(dayOfWeek);
@@ -48,33 +46,33 @@ export async function POST(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   try {
     const body = await request.json();
-    const { orgCode, groupId, staffId, subject, dayOfWeek, startTime, endTime, room } = body;
+    const { groupId, staffId, subject, dayOfWeek, startTime, endTime, room } = body;
 
-    if (!orgCode || !groupId || !subject?.trim() || dayOfWeek === undefined || !startTime || !endTime) {
-      return Response.json({ error: "orgCode, groupId, subject, dayOfWeek, startTime, and endTime required" }, { status: 400 });
+    if (!groupId || !subject?.trim() || dayOfWeek === undefined || !startTime || !endTime) {
+      return Response.json({ error: "groupId, subject, dayOfWeek, startTime, and endTime required" }, { status: 400 });
     }
 
-    const org = await db.organization.findUnique({ where: { code: orgCode } });
-    if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
-
     const group = await db.group.findUnique({ where: { id: groupId } });
-    if (!group || group.orgId !== org.id) {
+    if (!group || group.orgId !== auth.orgId) {
       return Response.json({ error: "Group not found" }, { status: 404 });
     }
 
     // Validate staff if provided
     if (staffId) {
       const staff = await db.staff.findUnique({ where: { id: staffId } });
-      if (!staff || staff.orgId !== org.id) {
+      if (!staff || staff.orgId !== auth.orgId) {
         return Response.json({ error: "Staff member not found" }, { status: 404 });
       }
     }
 
     const slot = await db.scheduleSlot.create({
       data: {
-        orgId: org.id,
+        orgId: auth.orgId,
         groupId,
         staffId: staffId || null,
         subject: subject.trim(),
@@ -87,8 +85,8 @@ export async function POST(request: Request) {
 
     await logAudit({
       actorType: "operator",
-      actorId: body.operatorId || "system",
-      orgId: org.id,
+      actorId: auth.operatorId,
+      orgId: auth.orgId,
       action: "schedule.created",
       metadata: { slotId: slot.id, subject, dayOfWeek, groupId },
       ipAddress: getClientIP(request),
@@ -96,14 +94,17 @@ export async function POST(request: Request) {
 
     return Response.json(slot, { status: 201 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }
 
 export async function PATCH(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
+
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
 
   try {
     const body = await request.json();
@@ -122,14 +123,17 @@ export async function PATCH(request: Request) {
     const updated = await db.scheduleSlot.update({ where: { id }, data: updates });
     return Response.json(updated);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }
 
 export async function DELETE(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
+
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -140,12 +144,17 @@ export async function DELETE(request: Request) {
     const slot = await db.scheduleSlot.findUnique({ where: { id } });
     if (!slot) return Response.json({ error: "Schedule slot not found" }, { status: 404 });
 
+    // Ensure slot belongs to authenticated org
+    if (slot.orgId !== auth.orgId) {
+      return Response.json({ error: "Access denied" }, { status: 403 });
+    }
+
     await db.scheduleSlot.delete({ where: { id } });
 
     await logAudit({
       actorType: "operator",
-      actorId: "system",
-      orgId: slot.orgId,
+      actorId: auth.operatorId,
+      orgId: auth.orgId,
       action: "schedule.deleted",
       metadata: { slotId: id, subject: slot.subject },
       ipAddress: getClientIP(request),
@@ -153,7 +162,7 @@ export async function DELETE(request: Request) {
 
     return Response.json({ success: true });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }

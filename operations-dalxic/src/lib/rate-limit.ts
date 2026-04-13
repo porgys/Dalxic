@@ -32,6 +32,9 @@ const DEFAULT_CONFIG: RateLimitConfig = { limit: 30, windowSeconds: 60 };
 /** Stricter config for auth endpoints */
 export const AUTH_RATE_LIMIT: RateLimitConfig = { limit: 10, windowSeconds: 60 };
 
+/** Very strict config for sensitive endpoints */
+export const STRICT_RATE_LIMIT: RateLimitConfig = { limit: 5, windowSeconds: 60 };
+
 /**
  * Check rate limit for a given key.
  * Returns { allowed, remaining } or a 429 Response if blocked.
@@ -71,10 +74,18 @@ export function checkRateLimit(
   return { allowed: true, remaining: config.limit - entry.count };
 }
 
-/** Extract client IP from request headers */
+/** Extract client IP from request headers — spoof-resistant */
 export function getRateLimitKey(request: Request): string {
+  // On Vercel, x-real-ip is set by the platform and cannot be spoofed
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) return realIp;
+  // Fallback: use x-forwarded-for but take the LAST entry (closest proxy)
   const forwarded = request.headers.get("x-forwarded-for");
-  return forwarded?.split(",")[0]?.trim() ?? "unknown";
+  if (forwarded) {
+    const parts = forwarded.split(",").map(s => s.trim());
+    return parts[parts.length - 1] || "unknown";
+  }
+  return "unknown";
 }
 
 /**
@@ -89,4 +100,45 @@ export function rateLimit(request: Request, config?: RateLimitConfig): Response 
   const key = getRateLimitKey(request);
   const result = checkRateLimit(key, config);
   return result.allowed ? null : result.response;
+}
+
+// ── PIN brute-force protection ──
+
+const pinFailStore = new Map<string, { count: number; lockedUntil: number }>();
+
+// Clean up expired lockouts every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  pinFailStore.forEach((entry, key) => {
+    if (now >= entry.lockedUntil && entry.lockedUntil > 0) pinFailStore.delete(key);
+  });
+}, 300_000);
+
+export function checkPinLockout(orgCode: string): Response | null {
+  const entry = pinFailStore.get(orgCode);
+  if (!entry) return null;
+  if (Date.now() < entry.lockedUntil) {
+    const retryAfter = Math.ceil((entry.lockedUntil - Date.now()) / 1000);
+    return Response.json(
+      { error: "Too many failed attempts. Account locked." },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
+  }
+  if (Date.now() >= entry.lockedUntil) pinFailStore.delete(orgCode);
+  return null;
+}
+
+export function recordPinFailure(orgCode: string): void {
+  const entry = pinFailStore.get(orgCode) || { count: 0, lockedUntil: 0 };
+  entry.count++;
+  if (entry.count >= 5) {
+    // Lock for 5 minutes, doubling each time
+    const lockMinutes = Math.min(5 * Math.pow(2, Math.floor(entry.count / 5) - 1), 60);
+    entry.lockedUntil = Date.now() + lockMinutes * 60 * 1000;
+  }
+  pinFailStore.set(orgCode, entry);
+}
+
+export function clearPinFailures(orgCode: string): void {
+  pinFailStore.delete(orgCode);
 }

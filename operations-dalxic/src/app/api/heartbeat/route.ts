@@ -1,11 +1,16 @@
 import { db } from "@/lib/db";
+import { rateLimit } from "@/lib/rate-limit";
 
 // Lightweight ping to keep Neon compute warm — called by Vercel Cron every 5 minutes
-export async function GET() {
+export async function GET(request: Request) {
+  const blocked = rateLimit(request);
+  if (blocked) return blocked;
+
   try {
-    await db.$queryRawUnsafe("SELECT 1");
+    await db.$queryRaw`SELECT 1`;
     return Response.json({ ok: true, ts: new Date().toISOString() });
-  } catch (e) {
-    return Response.json({ ok: false, error: String(e) }, { status: 500 });
+  } catch {
+    console.error("Heartbeat failed");
+    return Response.json({ ok: false, error: "An error occurred" }, { status: 500 });
   }
 }

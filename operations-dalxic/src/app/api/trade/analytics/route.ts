@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
+import { authenticateRequest } from "@/lib/auth";
 
 /**
  * Trade Analytics — revenue, top sellers, trends.
@@ -11,15 +12,12 @@ export async function GET(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   const { searchParams } = new URL(request.url);
-  const orgCode = searchParams.get("orgCode");
   const period = searchParams.get("period") || "today"; // today | week | month
   const view = searchParams.get("view"); // "top_sellers" | "category_breakdown" | "daily_revenue"
-
-  if (!orgCode) return Response.json({ error: "orgCode required" }, { status: 400 });
-
-  const org = await db.organization.findUnique({ where: { code: orgCode } });
-  if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
 
   // Calculate date range
   const now = new Date();
@@ -40,7 +38,7 @@ export async function GET(request: Request) {
     const saleItems = await db.saleItem.findMany({
       where: {
         sale: {
-          orgId: org.id,
+          orgId: auth.orgId,
           createdAt: { gte: startDate },
           paymentStatus: { not: "REFUNDED" },
         },
@@ -69,7 +67,7 @@ export async function GET(request: Request) {
     const saleItems = await db.saleItem.findMany({
       where: {
         sale: {
-          orgId: org.id,
+          orgId: auth.orgId,
           createdAt: { gte: startDate },
           paymentStatus: { not: "REFUNDED" },
         },
@@ -101,7 +99,7 @@ export async function GET(request: Request) {
   if (view === "daily_revenue") {
     const sales = await db.sale.findMany({
       where: {
-        orgId: org.id,
+        orgId: auth.orgId,
         createdAt: { gte: startDate },
         paymentStatus: { not: "REFUNDED" },
       },
@@ -124,14 +122,14 @@ export async function GET(request: Request) {
   // Default: dashboard summary
   const [salesCount, salesData, pendingPayments, todayStart] = await Promise.all([
     db.sale.count({
-      where: { orgId: org.id, createdAt: { gte: startDate }, paymentStatus: { not: "REFUNDED" } },
+      where: { orgId: auth.orgId, createdAt: { gte: startDate }, paymentStatus: { not: "REFUNDED" } },
     }),
     db.sale.findMany({
-      where: { orgId: org.id, createdAt: { gte: startDate }, paymentStatus: { not: "REFUNDED" } },
+      where: { orgId: auth.orgId, createdAt: { gte: startDate }, paymentStatus: { not: "REFUNDED" } },
       select: { total: true, discount: true },
     }),
     db.sale.count({
-      where: { orgId: org.id, paymentStatus: "PENDING" },
+      where: { orgId: auth.orgId, paymentStatus: "PENDING" },
     }),
     Promise.resolve((() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })()),
   ]);
@@ -142,7 +140,7 @@ export async function GET(request: Request) {
 
   // Today's sales count
   const todaySales = await db.sale.count({
-    where: { orgId: org.id, createdAt: { gte: todayStart }, paymentStatus: { not: "REFUNDED" } },
+    where: { orgId: auth.orgId, createdAt: { gte: todayStart }, paymentStatus: { not: "REFUNDED" } },
   });
 
   return Response.json({

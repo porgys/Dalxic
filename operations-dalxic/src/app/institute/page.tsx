@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect, useCallback } from "react"
+import { useAuth, Session } from "@/lib/use-auth"
 
 /* ═══════════════════════════════════════════════════════════════
    DALXICINSTITUTE — Dashboard / Enrollment / Fees / Staff
@@ -11,7 +12,6 @@ const EMERALD_L  = "#34D399"
 const INST_COL   = "#0EA5E9"
 const INST_L     = "#38BDF8"
 const BG         = "#040A0F"
-const ORG_CODE   = "DEMO"
 
 type Screen = "dashboard" | "enrollment" | "fees" | "schedule" | "staff"
 
@@ -164,8 +164,72 @@ function subjectColor(subject: string): string {
   return SUBJECT_COLORS[subject] || INST_COL
 }
 
+/* ── Login Screen ── */
+function LoginScreen({ onLogin }: { onLogin: (orgCode: string, pin: string) => Promise<{ success: boolean; error?: string }> }) {
+  const [orgCode, setOrgCode] = useState("DEMO")
+  const [pin, setPin] = useState("")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!orgCode.trim() || pin.length !== 4 || loading) return
+    setLoading(true)
+    setError("")
+    const result = await onLogin(orgCode.trim(), pin)
+    if (!result.success) {
+      setError(result.error || "Login failed")
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ minHeight: "100vh", background: BG, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ ...glass, padding: "48px 40px", width: 380, textAlign: "center" }}>
+        <div style={{ marginBottom: 32 }}>
+          <span style={{ fontWeight: 300, fontSize: 18, color: "#94A3B8", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'Space Grotesk', sans-serif" }}>Dalxic</span>
+          <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'Space Grotesk', sans-serif", background: `linear-gradient(135deg, ${INST_COL}, ${INST_L})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginLeft: 8 }}>Institute</span>
+        </div>
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ ...labelStyle, textAlign: "left" }}>Organisation Code</label>
+          <input
+            style={inputStyle}
+            value={orgCode}
+            onChange={e => setOrgCode(e.target.value.toUpperCase())}
+            placeholder="ORG CODE"
+          />
+        </div>
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ ...labelStyle, textAlign: "left" }}>Operator PIN</label>
+          <input
+            style={{ ...inputStyle, fontSize: 28, fontFamily: "'DM Mono', monospace", textAlign: "center", letterSpacing: "0.4em" }}
+            type="password"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={4}
+            value={pin}
+            onChange={e => { const v = e.target.value.replace(/\D/g, ""); setPin(v) }}
+            placeholder="----"
+            onKeyDown={e => { if (e.key === "Enter") handleSubmit() }}
+          />
+        </div>
+        {error && (
+          <div style={{ fontSize: 12, color: "#EF4444", marginBottom: 16, fontFamily: "'DM Sans', sans-serif" }}>{error}</div>
+        )}
+        <button
+          onClick={handleSubmit}
+          disabled={pin.length !== 4 || loading}
+          style={{ ...btnPrimary, width: "100%", padding: "14px 0", fontSize: 13, textAlign: "center", opacity: pin.length !== 4 || loading ? 0.5 : 1 }}
+        >
+          {loading ? "Authenticating..." : "Enter"}
+        </button>
+        <div style={{ marginTop: 32, fontSize: 10, color: "#3A6B7A", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>Powered By DalxicOperations</div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Header ── */
-function Header({ screen, setScreen, orgName }: { screen: Screen; setScreen: (s: Screen) => void; orgName: string }) {
+function Header({ screen, setScreen, session, onLogout }: { screen: Screen; setScreen: (s: Screen) => void; session: Session; onLogout: () => void }) {
   const tabs: { key: Screen; label: string; icon: string }[] = [
     { key: "dashboard", label: "Dashboard", icon: "🏠" },
     { key: "enrollment", label: "Enrollment", icon: "🎓" },
@@ -178,7 +242,8 @@ function Header({ screen, setScreen, orgName }: { screen: Screen; setScreen: (s:
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ fontWeight: 300, fontSize: 14, color: "#94A3B8", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'Space Grotesk', sans-serif" }}>Dalxic</span>
         <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'Space Grotesk', sans-serif", background: `linear-gradient(135deg, ${INST_COL}, ${INST_L})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Institute</span>
-        <span style={{ fontSize: 11, color: "#3A6B7A", marginLeft: 8, fontFamily: "'DM Mono', monospace" }}>{orgName}</span>
+        <span style={{ fontSize: 11, color: "#3A6B7A", marginLeft: 8, fontFamily: "'DM Mono', monospace" }}>{session.orgName}</span>
+        <span style={{ fontSize: 10, color: "#2A4A5A", fontFamily: "'DM Mono', monospace" }}>{session.operatorName}</span>
       </div>
       <div style={{ display: "flex", gap: 4 }}>
         {tabs.map(t => (
@@ -200,6 +265,7 @@ function Header({ screen, setScreen, orgName }: { screen: Screen; setScreen: (s:
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: EMERALD, display: "inline-block", animation: "pulse 2s infinite" }} />
           <span style={{ fontSize: 12, fontWeight: 500, color: EMERALD, fontFamily: "'DM Sans', sans-serif" }}>Online</span>
         </div>
+        <button onClick={onLogout} style={{ ...labelStyle, cursor: "pointer", background: "transparent", border: "none", color: "#3A6B7A", marginBottom: 0 }}>End Session</button>
       </div>
     </div>
   )
@@ -795,6 +861,7 @@ function ScheduleScreen({ schedule }: { schedule: ScheduleEntry[] }) {
    ═══════════════════════════════════════════════════════════════ */
 
 export default function InstitutePage() {
+  const { session, login, logout, authFetch } = useAuth()
   const [screen, setScreen] = useState<Screen>("dashboard")
   const [members, setMembers] = useState<Member[]>([])
   const [staff, setStaff] = useState<StaffMember[]>([])
@@ -805,6 +872,8 @@ export default function InstitutePage() {
   const [loading, setLoading] = useState(true)
   const [feedback, setFeedback] = useState<{ message: string; type: "success" | "error" } | null>(null)
 
+  const orgCode = session?.orgCode ?? ""
+
   const showFeedback = useCallback((message: string, type: "success" | "error") => {
     setFeedback({ message, type })
     setTimeout(() => setFeedback(null), 3000)
@@ -812,59 +881,60 @@ export default function InstitutePage() {
 
   const fetchMembers = useCallback(async () => {
     try {
-      const res = await fetch(`/api/institute/members?orgCode=${ORG_CODE}`)
+      const res = await authFetch(`/api/institute/members?orgCode=${orgCode}`)
       if (!res.ok) throw new Error("Failed to fetch members")
       const data = await res.json()
       setMembers(data.members ?? data)
     } catch { showFeedback("Failed to load members", "error") }
-  }, [showFeedback])
+  }, [authFetch, orgCode, showFeedback])
 
   const fetchStaff = useCallback(async () => {
     try {
-      const res = await fetch(`/api/institute/staff?orgCode=${ORG_CODE}`)
+      const res = await authFetch(`/api/institute/staff?orgCode=${orgCode}`)
       if (!res.ok) throw new Error("Failed to fetch staff")
       const data = await res.json()
       setStaff(data.staff ?? data)
     } catch { showFeedback("Failed to load staff", "error") }
-  }, [showFeedback])
+  }, [authFetch, orgCode, showFeedback])
 
   const fetchGroups = useCallback(async () => {
     try {
-      const res = await fetch(`/api/institute/groups?orgCode=${ORG_CODE}`)
+      const res = await authFetch(`/api/institute/groups?orgCode=${orgCode}`)
       if (!res.ok) throw new Error("Failed to fetch groups")
       const data = await res.json()
       setGroups(data)
     } catch { showFeedback("Failed to load groups", "error") }
-  }, [showFeedback])
+  }, [authFetch, orgCode, showFeedback])
 
   const fetchSchedule = useCallback(async () => {
     try {
-      const res = await fetch(`/api/institute/schedule?orgCode=${ORG_CODE}`)
+      const res = await authFetch(`/api/institute/schedule?orgCode=${orgCode}`)
       if (!res.ok) throw new Error("Failed to fetch schedule")
       const data = await res.json()
       setSchedule(data)
     } catch { showFeedback("Failed to load schedule", "error") }
-  }, [showFeedback])
+  }, [authFetch, orgCode, showFeedback])
 
   const fetchFees = useCallback(async () => {
     try {
-      const res = await fetch(`/api/institute/fees?orgCode=${ORG_CODE}`)
+      const res = await authFetch(`/api/institute/fees?orgCode=${orgCode}`)
       if (!res.ok) throw new Error("Failed to fetch fees")
       const data = await res.json()
       setFees(data.records ?? data)
     } catch { showFeedback("Failed to load fees", "error") }
-  }, [showFeedback])
+  }, [authFetch, orgCode, showFeedback])
 
   const fetchFeeSummary = useCallback(async () => {
     try {
-      const res = await fetch(`/api/institute/fees/summary?orgCode=${ORG_CODE}`)
+      const res = await authFetch(`/api/institute/fees/summary?orgCode=${orgCode}`)
       if (!res.ok) throw new Error("Failed to fetch fee summary")
       const data = await res.json()
       setFeeSummary(data)
     } catch { showFeedback("Failed to load fee summary", "error") }
-  }, [showFeedback])
+  }, [authFetch, orgCode, showFeedback])
 
   useEffect(() => {
+    if (!session) return
     let cancelled = false
     async function loadAll() {
       setLoading(true)
@@ -881,14 +951,14 @@ export default function InstitutePage() {
     loadAll()
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [session])
 
   const handleAddMember = useCallback(async (data: { name: string; role: string; groupId: string; phone: string }) => {
     try {
-      const res = await fetch("/api/institute/members", {
+      const res = await authFetch("/api/institute/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgCode: ORG_CODE, name: data.name, role: data.role, groupId: data.groupId, phone: data.phone || undefined }),
+        body: JSON.stringify({ orgCode, name: data.name, role: data.role, groupId: data.groupId, phone: data.phone || undefined }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -899,14 +969,14 @@ export default function InstitutePage() {
     } catch (e) {
       showFeedback(e instanceof Error ? e.message : "Failed to enroll member", "error")
     }
-  }, [showFeedback, fetchMembers, fetchGroups])
+  }, [authFetch, orgCode, showFeedback, fetchMembers, fetchGroups])
 
   const handleAddGroup = useCallback(async (data: { name: string; type: string }): Promise<Group | null> => {
     try {
-      const res = await fetch("/api/institute/groups", {
+      const res = await authFetch("/api/institute/groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgCode: ORG_CODE, name: data.name, type: data.type }),
+        body: JSON.stringify({ orgCode, name: data.name, type: data.type }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -920,14 +990,14 @@ export default function InstitutePage() {
       showFeedback(e instanceof Error ? e.message : "Failed to create group", "error")
       return null
     }
-  }, [showFeedback, fetchGroups])
+  }, [authFetch, orgCode, showFeedback, fetchGroups])
 
   const handleAddStaff = useCallback(async (data: { name: string; role: string; department: string; phone: string }) => {
     try {
-      const res = await fetch("/api/institute/staff", {
+      const res = await authFetch("/api/institute/staff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgCode: ORG_CODE, name: data.name, role: data.role, department: data.department, phone: data.phone || undefined }),
+        body: JSON.stringify({ orgCode, name: data.name, role: data.role, department: data.department, phone: data.phone || undefined }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -938,14 +1008,14 @@ export default function InstitutePage() {
     } catch (e) {
       showFeedback(e instanceof Error ? e.message : "Failed to add staff", "error")
     }
-  }, [showFeedback, fetchStaff])
+  }, [authFetch, orgCode, showFeedback, fetchStaff])
 
   const handleRecordPayment = useCallback(async (feeRecordId: string, amount: number, paymentMethod: string) => {
     try {
-      const res = await fetch("/api/institute/fees/pay", {
+      const res = await authFetch("/api/institute/fees/pay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgCode: ORG_CODE, feeRecordId, amount, paymentMethod, receivedBy: "system" }),
+        body: JSON.stringify({ orgCode, feeRecordId, amount, paymentMethod, receivedBy: "system" }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -956,7 +1026,11 @@ export default function InstitutePage() {
     } catch (e) {
       showFeedback(e instanceof Error ? e.message : "Failed to record payment", "error")
     }
-  }, [showFeedback, fetchFees, fetchFeeSummary])
+  }, [authFetch, orgCode, showFeedback, fetchFees, fetchFeeSummary])
+
+  if (!session) {
+    return <LoginScreen onLogin={login} />
+  }
 
   if (loading) {
     return (
@@ -973,7 +1047,7 @@ export default function InstitutePage() {
         @keyframes fadeUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
       `}</style>
-      <Header screen={screen} setScreen={setScreen} orgName="Demo School" />
+      <Header screen={screen} setScreen={setScreen} session={session} onLogout={logout} />
       {screen === "dashboard" && <DashboardScreen members={members} staff={staff} groups={groups} feeSummary={feeSummary} setScreen={setScreen} />}
       {screen === "enrollment" && <EnrollmentScreen members={members} groups={groups} onAddMember={handleAddMember} onAddGroup={handleAddGroup} feedback={feedback} />}
       {screen === "fees" && <FeesScreen fees={fees} feeSummary={feeSummary} onRecordPayment={handleRecordPayment} feedback={feedback} />}

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
+import { authenticateRequest } from "@/lib/auth";
 
 /**
  * Institute Fee Records — create and list fee records.
@@ -13,20 +14,17 @@ export async function GET(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   const { searchParams } = new URL(request.url);
-  const orgCode = searchParams.get("orgCode");
   const memberId = searchParams.get("memberId");
   const status = searchParams.get("status");
   const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 500);
   const offset = parseInt(searchParams.get("offset") || "0");
 
-  if (!orgCode) return Response.json({ error: "orgCode required" }, { status: 400 });
-
-  const org = await db.organization.findUnique({ where: { code: orgCode } });
-  if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = { orgId: org.id };
+  const where: any = { orgId: auth.orgId };
   if (memberId) where.memberId = memberId;
   if (status) where.status = status;
 
@@ -51,25 +49,25 @@ export async function POST(request: Request) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
 
+  const auth = await authenticateRequest(request);
+  if (auth instanceof Response) return auth;
+
   try {
     const body = await request.json();
-    const { orgCode, memberId, description, amount, dueDate } = body;
+    const { memberId, description, amount, dueDate } = body;
 
-    if (!orgCode || !memberId || !description?.trim() || !amount) {
-      return Response.json({ error: "orgCode, memberId, description, and amount required" }, { status: 400 });
+    if (!memberId || !description?.trim() || !amount) {
+      return Response.json({ error: "memberId, description, and amount required" }, { status: 400 });
     }
 
-    const org = await db.organization.findUnique({ where: { code: orgCode } });
-    if (!org) return Response.json({ error: "Organization not found" }, { status: 404 });
-
     const member = await db.member.findUnique({ where: { id: memberId } });
-    if (!member || member.orgId !== org.id) {
+    if (!member || member.orgId !== auth.orgId) {
       return Response.json({ error: "Member not found" }, { status: 404 });
     }
 
     const record = await db.feeRecord.create({
       data: {
-        orgId: org.id,
+        orgId: auth.orgId,
         memberId,
         description: description.trim(),
         amount,
@@ -80,8 +78,8 @@ export async function POST(request: Request) {
 
     await logAudit({
       actorType: "operator",
-      actorId: body.operatorId || "system",
-      orgId: org.id,
+      actorId: auth.operatorId,
+      orgId: auth.orgId,
       action: "fee.created",
       metadata: { feeRecordId: record.id, memberId, amount, description },
       ipAddress: getClientIP(request),
@@ -89,7 +87,7 @@ export async function POST(request: Request) {
 
     return Response.json(record, { status: 201 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    console.error("API error:", err);
+    return Response.json({ error: "An error occurred" }, { status: 500 });
   }
 }

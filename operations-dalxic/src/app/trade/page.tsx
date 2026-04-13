@@ -1,12 +1,11 @@
 "use client"
 import { useState, useRef, useCallback, useEffect } from "react"
+import { useAuth, Session } from "@/lib/use-auth"
 
 /* ═══════════════════════════════════════════════════════════════
    DALXICTRADE — Dashboard / POS / Inventory
    Flexible retail platform with photo-based catalogue.
    ═══════════════════════════════════════════════════════════════ */
-
-const ORG_CODE = "DEMO"
 
 const EMERALD    = "#10B981"
 const EMERALD_L  = "#34D399"
@@ -171,8 +170,72 @@ const btnPrimary: React.CSSProperties = {
   boxShadow: `0 4px 16px ${EMERALD}25`,
 }
 
+/* ── Login Screen ── */
+function LoginScreen({ onLogin }: { onLogin: (orgCode: string, pin: string) => Promise<{ success: boolean; error?: string }> }) {
+  const [orgCode, setOrgCode] = useState("DEMO")
+  const [pin, setPin] = useState("")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!orgCode.trim() || pin.length !== 4 || loading) return
+    setLoading(true)
+    setError("")
+    const result = await onLogin(orgCode.trim(), pin)
+    if (!result.success) {
+      setError(result.error || "Login failed")
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ minHeight: "100vh", background: BG, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ ...glass, padding: "48px 40px", width: 380, textAlign: "center" }}>
+        <div style={{ marginBottom: 32 }}>
+          <span style={{ fontWeight: 300, fontSize: 18, color: "#94A3B8", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'Space Grotesk', sans-serif" }}>Dalxic</span>
+          <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'Space Grotesk', sans-serif", background: `linear-gradient(135deg, ${TRADE_COL}, #FBBF24)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginLeft: 8 }}>Trade</span>
+        </div>
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ ...labelStyle, textAlign: "left" }}>Organisation Code</label>
+          <input
+            style={inputStyle}
+            value={orgCode}
+            onChange={e => setOrgCode(e.target.value.toUpperCase())}
+            placeholder="ORG CODE"
+          />
+        </div>
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ ...labelStyle, textAlign: "left" }}>Operator PIN</label>
+          <input
+            style={{ ...inputStyle, fontSize: 28, fontFamily: "'DM Mono', monospace", textAlign: "center", letterSpacing: "0.4em" }}
+            type="password"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={4}
+            value={pin}
+            onChange={e => { const v = e.target.value.replace(/\D/g, ""); setPin(v) }}
+            placeholder="----"
+            onKeyDown={e => { if (e.key === "Enter") handleSubmit() }}
+          />
+        </div>
+        {error && (
+          <div style={{ fontSize: 12, color: "#EF4444", marginBottom: 16, fontFamily: "'DM Sans', sans-serif" }}>{error}</div>
+        )}
+        <button
+          onClick={handleSubmit}
+          disabled={pin.length !== 4 || loading}
+          style={{ ...btnPrimary, width: "100%", padding: "14px 0", fontSize: 13, textAlign: "center", opacity: pin.length !== 4 || loading ? 0.5 : 1 }}
+        >
+          {loading ? "Authenticating..." : "Enter"}
+        </button>
+        <div style={{ marginTop: 32, fontSize: 10, color: "#3A6B5A", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>Powered By DalxicOperations</div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Header ── */
-function Header({ screen, setScreen, storeName }: { screen: Screen; setScreen: (s: Screen) => void; storeName: string }) {
+function Header({ screen, setScreen, session, onLogout }: { screen: Screen; setScreen: (s: Screen) => void; session: Session; onLogout: () => void }) {
   const tabs: { key: Screen; label: string; icon: string }[] = [
     { key: "dashboard", label: "Dashboard", icon: "🏠" },
     { key: "pos", label: "Point Of Sale", icon: "💳" },
@@ -185,7 +248,8 @@ function Header({ screen, setScreen, storeName }: { screen: Screen; setScreen: (
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ fontWeight: 300, fontSize: 14, color: "#94A3B8", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'Space Grotesk', sans-serif" }}>Dalxic</span>
         <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'Space Grotesk', sans-serif", background: `linear-gradient(135deg, ${TRADE_COL}, #FBBF24)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Trade</span>
-        <span style={{ fontSize: 11, color: "#3A6B5A", marginLeft: 8, fontFamily: "'DM Mono', monospace" }}>{storeName}</span>
+        <span style={{ fontSize: 11, color: "#3A6B5A", marginLeft: 8, fontFamily: "'DM Mono', monospace" }}>{session.orgName}</span>
+        <span style={{ fontSize: 10, color: "#2A4A3A", fontFamily: "'DM Mono', monospace" }}>{session.operatorName}</span>
       </div>
       <div style={{ display: "flex", gap: 4 }}>
         {tabs.map(t => (
@@ -207,6 +271,7 @@ function Header({ screen, setScreen, storeName }: { screen: Screen; setScreen: (
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: EMERALD, display: "inline-block", animation: "pulse 2s infinite" }} />
           <span style={{ fontSize: 12, fontWeight: 500, color: EMERALD, fontFamily: "'DM Sans', sans-serif" }}>Online</span>
         </div>
+        <button onClick={onLogout} style={{ ...labelStyle, cursor: "pointer", background: "transparent", border: "none", color: "#3A6B5A", marginBottom: 0 }}>End Session</button>
       </div>
     </div>
   )
@@ -295,7 +360,7 @@ function DashboardScreen({ products, setScreen }: { products: Product[]; setScre
 }
 
 /* ── POS Screen ── */
-function POSScreen({ products, onSaleComplete }: { products: Product[]; onSaleComplete: () => void }) {
+function POSScreen({ products, onSaleComplete, authFetch, orgCode }: { products: Product[]; onSaleComplete: () => void; authFetch: (url: string, options?: RequestInit) => Promise<Response>; orgCode: string }) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [search, setSearch] = useState("")
   const [selectedCat, setSelectedCat] = useState("All")
@@ -329,11 +394,11 @@ function POSScreen({ products, onSaleComplete }: { products: Product[]; onSaleCo
     setCharging(true)
     setSaleResult(null)
     try {
-      const res = await fetch("/api/trade/sales", {
+      const res = await authFetch("/api/trade/sales", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orgCode: ORG_CODE,
+          orgCode,
           items: cart.map(c => ({ productId: c.product.id, quantity: c.qty })),
           paymentMethod: "CASH",
           soldBy: "system",
@@ -450,13 +515,15 @@ function POSScreen({ products, onSaleComplete }: { products: Product[]; onSaleCo
 }
 
 /* ── Inventory Screen ── */
-function InventoryScreen({ products, onProductAdded, categories, onCategoryAdded, feedback, setFeedback }: {
+function InventoryScreen({ products, onProductAdded, categories, onCategoryAdded, feedback, setFeedback, authFetch, orgCode }: {
   products: Product[]
   onProductAdded: () => void
   categories: Category[]
   onCategoryAdded: () => void
   feedback: string | null
   setFeedback: (msg: string | null) => void
+  authFetch: (url: string, options?: RequestInit) => Promise<Response>
+  orgCode: string
 }) {
   const [showAdd, setShowAdd] = useState(false)
   const [search, setSearch] = useState("")
@@ -485,10 +552,10 @@ function InventoryScreen({ products, onProductAdded, categories, onCategoryAdded
   const addCategory = async () => {
     if (!newCatName.trim()) return
     try {
-      const res = await fetch("/api/trade/categories", {
+      const res = await authFetch("/api/trade/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgCode: ORG_CODE, name: newCatName.trim() }),
+        body: JSON.stringify({ orgCode, name: newCatName.trim() }),
       })
       if (!res.ok) throw new Error("Failed to create category")
       const created = await res.json() as Category
@@ -509,7 +576,7 @@ function InventoryScreen({ products, onProductAdded, categories, onCategoryAdded
     setSaving(true)
     try {
       const body: Record<string, unknown> = {
-        orgCode: ORG_CODE,
+        orgCode,
         name: newProduct.name,
         sellingPrice: Math.round(parseFloat(newProduct.price) * 100),
         stock: parseInt(newProduct.stock),
@@ -520,7 +587,7 @@ function InventoryScreen({ products, onProductAdded, categories, onCategoryAdded
       if (newProduct.batchNo) body.batchNo = newProduct.batchNo
       if (newProduct.expiresAt) body.expiresAt = newProduct.expiresAt
 
-      const res = await fetch("/api/trade/products", {
+      const res = await authFetch("/api/trade/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -913,6 +980,7 @@ function AnalyticsScreen({ products, analytics }: { products: Product[]; analyti
    ═══════════════════════════════════════════════════════════════ */
 
 export default function TradePage() {
+  const { session, login, logout, authFetch } = useAuth()
   const [screen, setScreen] = useState<Screen>("dashboard")
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -921,41 +989,43 @@ export default function TradePage() {
   const [loading, setLoading] = useState(true)
   const [feedback, setFeedback] = useState<string | null>(null)
 
+  const orgCode = session?.orgCode ?? ""
+
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await fetch(`/api/trade/products?orgCode=${ORG_CODE}`)
+      const res = await authFetch(`/api/trade/products?orgCode=${orgCode}`)
       if (!res.ok) return
       const data = await res.json()
       setProducts((data.products ?? data).map(mapApiProduct))
     } catch { /* silent */ }
-  }, [])
+  }, [authFetch, orgCode])
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await fetch(`/api/trade/categories?orgCode=${ORG_CODE}`)
+      const res = await authFetch(`/api/trade/categories?orgCode=${orgCode}`)
       if (!res.ok) return
       const data = await res.json() as Category[]
       setCategories(data)
     } catch { /* silent */ }
-  }, [])
+  }, [authFetch, orgCode])
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await fetch(`/api/trade/sales?orgCode=${ORG_CODE}`)
+      const res = await authFetch(`/api/trade/sales?orgCode=${orgCode}`)
       if (!res.ok) return
       const data = await res.json()
       setOrders((data.sales ?? data).map(mapApiSale))
     } catch { /* silent */ }
-  }, [])
+  }, [authFetch, orgCode])
 
   const fetchAnalytics = useCallback(async () => {
     try {
-      const base = `/api/trade/analytics?orgCode=${ORG_CODE}&period=week`
+      const base = `/api/trade/analytics?orgCode=${orgCode}&period=week`
       const [summaryRes, topRes, catRes, dailyRes] = await Promise.all([
-        fetch(base),
-        fetch(`${base}&view=top_sellers`),
-        fetch(`${base}&view=category_breakdown`),
-        fetch(`${base}&view=daily_revenue`),
+        authFetch(base),
+        authFetch(`${base}&view=top_sellers`),
+        authFetch(`${base}&view=category_breakdown`),
+        authFetch(`${base}&view=daily_revenue`),
       ])
       const summary = summaryRes.ok ? await summaryRes.json() : {}
       const top = topRes.ok ? await topRes.json() : {}
@@ -988,9 +1058,10 @@ export default function TradePage() {
         dailyRevenue,
       })
     } catch { /* silent */ }
-  }, [products.length])
+  }, [authFetch, orgCode, products.length])
 
   useEffect(() => {
+    if (!session) return
     let cancelled = false
     const load = async () => {
       setLoading(true)
@@ -1000,13 +1071,17 @@ export default function TradePage() {
     load()
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [session])
 
   const handleSaleComplete = useCallback(() => {
     fetchProducts()
     fetchOrders()
     fetchAnalytics()
   }, [fetchProducts, fetchOrders, fetchAnalytics])
+
+  if (!session) {
+    return <LoginScreen onLogin={login} />
+  }
 
   if (loading) {
     return (
@@ -1025,10 +1100,10 @@ export default function TradePage() {
         @keyframes fadeUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
       `}</style>
-      <Header screen={screen} setScreen={setScreen} storeName="Demo Store" />
+      <Header screen={screen} setScreen={setScreen} session={session} onLogout={logout} />
       {screen === "dashboard" && <DashboardScreen products={products} setScreen={setScreen} />}
-      {screen === "pos" && <POSScreen products={products} onSaleComplete={handleSaleComplete} />}
-      {screen === "inventory" && <InventoryScreen products={products} onProductAdded={fetchProducts} categories={categories} onCategoryAdded={fetchCategories} feedback={feedback} setFeedback={setFeedback} />}
+      {screen === "pos" && <POSScreen products={products} onSaleComplete={handleSaleComplete} authFetch={authFetch} orgCode={orgCode} />}
+      {screen === "inventory" && <InventoryScreen products={products} onProductAdded={fetchProducts} categories={categories} onCategoryAdded={fetchCategories} feedback={feedback} setFeedback={setFeedback} authFetch={authFetch} orgCode={orgCode} />}
       {screen === "orders" && <OrdersScreen orders={orders} />}
       {screen === "analytics" && <AnalyticsScreen products={products} analytics={analytics} />}
     </div>
