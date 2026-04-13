@@ -224,7 +224,7 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: theme.textMuted, marginBottom: 8 }}>{stat.label}</p>
               <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
             </motion.div>
           ))}
@@ -252,8 +252,8 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
                       <motion.div key={bg.bloodGroup} whileHover={{ y: -2 }}
                         style={{ padding: 16, borderRadius: 14, background: theme.navInactiveBg, border: "1px solid rgba(255,255,255,0.04)", textAlign: "center" }}>
                         <p style={{ fontSize: 24, fontWeight: 800, fontFamily: fontFamily.mono, color, marginBottom: 8 }}>{bg.bloodGroup}</p>
-                        <p style={{ fontSize: 28, fontWeight: 800, fontFamily: fontFamily.mono, color: "white", marginBottom: 8 }}>{total}</p>
-                        <div style={{ display: "flex", gap: 4, justifyContent: "center", fontSize: 9, color: "#64748B" }}>
+                        <p style={{ fontSize: 28, fontWeight: 800, fontFamily: fontFamily.mono, color: theme.textPrimary, marginBottom: 8 }}>{total}</p>
+                        <div style={{ display: "flex", gap: 4, justifyContent: "center", fontSize: 9, color: theme.textMuted }}>
                           <span>WB:{bg.wholeBlood}</span>
                           <span>RBC:{bg.packedRBC}</span>
                           <span>PLT:{bg.platelets}</span>
@@ -271,7 +271,7 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
             <motion.div key={activeNav} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {requests.length === 0 ? (
                 <WorkshopBox title={activeNav === "requests" ? "No Pending Requests" : "No Issued Blood"} icon="📋">
-                  <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>
+                  <p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 24 }}>
                     {activeNav === "requests" ? "No Active Transfusion Requests." : "No Blood Issued Yet."}
                   </p>
                 </WorkshopBox>
@@ -286,21 +286,21 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <span style={{ fontSize: 20, fontWeight: 800, fontFamily: fontFamily.mono, color }}>{req.bloodGroup}</span>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{req.patientName}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>{req.patientName}</span>
                             <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: COPPER }}>{req.queueToken}</span>
                             <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", background: ss.bg, border: `1px solid ${ss.border}`, color: ss.text }}>{req.status.replace("_", " ")}</span>
                             {req.urgency === "stat" && <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", background: "rgba(239,68,68,0.08)", color: "#EF4444" }}>STAT</span>}
                           </div>
-                          <span style={{ fontSize: 11, color: "#64748B" }}>{new Date(req.requestedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
+                          <span style={{ fontSize: 11, color: theme.textMuted }}>{new Date(req.requestedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
                         </div>
 
                         <div style={{ display: "flex", gap: 20, marginBottom: 12 }}>
-                          <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase" }}>Component</p><p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{req.component.replace("_", " ")}</p></div>
-                          <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase" }}>Units</p><p style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: "#D4956B" }}>{req.units}</p></div>
-                          <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase" }}>Requested By</p><p style={{ fontSize: 13, color: "#94A3B8" }}>{req.requestedBy}</p></div>
+                          <div><p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase" }}>Component</p><p style={{ fontSize: 14, fontWeight: 700, color: theme.textPrimary }}>{req.component.replace("_", " ")}</p></div>
+                          <div><p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase" }}>Units</p><p style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: theme.copperText }}>{req.units}</p></div>
+                          <div><p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase" }}>Requested By</p><p style={{ fontSize: 13, color: theme.textSecondary }}>{req.requestedBy}</p></div>
                         </div>
 
-                        {req.notes && <p style={{ fontSize: 11, color: "#64748B", marginBottom: 12, fontStyle: "italic" }}>{req.notes}</p>}
+                        {req.notes && <p style={{ fontSize: 11, color: theme.textMuted, marginBottom: 12, fontStyle: "italic" }}>{req.notes}</p>}
 
                         <div style={{ display: "flex", gap: 8 }}>
                           {req.status === "pending" && (
@@ -333,28 +333,28 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
               <WorkshopBox title="Register Walk-In Donor" icon="🫀" delay={0}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
                   <div>
-                    <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Donor Name *</label>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Donor Name *</label>
                     <input value={donorForm.donorName} onChange={(e) => setDonorForm({ ...donorForm, donorName: e.target.value })} placeholder="Full Name"
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: theme.textPrimary, fontSize: 13, fontWeight: 600, outline: "none" }} />
                   </div>
                   <div>
-                    <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Phone</label>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Phone</label>
                     <input value={donorForm.phone} onChange={(e) => setDonorForm({ ...donorForm, phone: e.target.value })} placeholder="0XX XXX XXXX"
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: theme.textPrimary, fontSize: 13, fontWeight: 600, outline: "none" }} />
                   </div>
                   <div>
-                    <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Gender</label>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Gender</label>
                     <select value={donorForm.gender} onChange={(e) => setDonorForm({ ...donorForm, gender: e.target.value })}
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }}>
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: theme.textPrimary, fontSize: 13, fontWeight: 600, outline: "none" }}>
                       <option value="" style={{ background: "#1a1a2e" }}>Select</option>
                       <option value="male" style={{ background: "#1a1a2e" }}>Male</option>
                       <option value="female" style={{ background: "#1a1a2e" }}>Female</option>
                     </select>
                   </div>
                   <div>
-                    <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Blood Group (If Known)</label>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Blood Group (If Known)</label>
                     <select value={donorForm.bloodGroup} onChange={(e) => setDonorForm({ ...donorForm, bloodGroup: e.target.value })}
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }}>
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: theme.textPrimary, fontSize: 13, fontWeight: 600, outline: "none" }}>
                       <option value="" style={{ background: "#1a1a2e" }}>Unknown</option>
                       {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => <option key={bg} value={bg} style={{ background: "#1a1a2e" }}>{bg}</option>)}
                     </select>
@@ -371,29 +371,29 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
                 <WorkshopBox title="Screen Donor — Vitals Check" icon="🩺" delay={0.05}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", gap: 10, alignItems: "end", marginBottom: 16 }}>
                     <div>
-                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Weight (Kg)</label>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Weight (Kg)</label>
                       <input value={screeningForm.weight} onChange={(e) => setScreeningForm({ ...screeningForm, weight: e.target.value })} placeholder="50+"
-                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: theme.textPrimary, fontSize: 13, fontWeight: 600, outline: "none" }} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Blood Pressure</label>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Blood Pressure</label>
                       <input value={screeningForm.bloodPressure} onChange={(e) => setScreeningForm({ ...screeningForm, bloodPressure: e.target.value })} placeholder="120/80"
-                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: theme.textPrimary, fontSize: 13, fontWeight: 600, outline: "none" }} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Hemoglobin (g/dL) *</label>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Hemoglobin (g/dL) *</label>
                       <input value={screeningForm.hemoglobin} onChange={(e) => setScreeningForm({ ...screeningForm, hemoglobin: e.target.value })} placeholder="≥12.5"
-                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: theme.textPrimary, fontSize: 13, fontWeight: 600, outline: "none" }} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Pulse (BPM)</label>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Pulse (BPM)</label>
                       <input value={screeningForm.pulse} onChange={(e) => setScreeningForm({ ...screeningForm, pulse: e.target.value })} placeholder="60-100"
-                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: theme.textPrimary, fontSize: 13, fontWeight: 600, outline: "none" }} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Temp (°C)</label>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Temp (°C)</label>
                       <input value={screeningForm.temperature} onChange={(e) => setScreeningForm({ ...screeningForm, temperature: e.target.value })} placeholder="36.5-37.5"
-                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: theme.textPrimary, fontSize: 13, fontWeight: 600, outline: "none" }} />
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
@@ -402,7 +402,7 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
                       Complete Screening
                     </motion.button>
                     <motion.button type="button" onClick={() => setScreeningForm(null)} whileHover={{ y: -1 }}
-                      style={{ padding: "10px 24px", borderRadius: 10, fontSize: 11, fontWeight: 700, color: "#64748B", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer", textTransform: "uppercase" }}>
+                      style={{ padding: "10px 24px", borderRadius: 10, fontSize: 11, fontWeight: 700, color: theme.textMuted, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer", textTransform: "uppercase" }}>
                       Cancel
                     </motion.button>
                   </div>
@@ -414,17 +414,17 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
                 <WorkshopBox title="Collect Donation" icon="🩸" delay={0.05}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
                     <div>
-                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Blood Group *</label>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Blood Group *</label>
                       <select value={collectForm.bloodGroup} onChange={(e) => setCollectForm({ ...collectForm, bloodGroup: e.target.value })}
-                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }}>
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: theme.textPrimary, fontSize: 13, fontWeight: 600, outline: "none" }}>
                         <option value="" style={{ background: "#1a1a2e" }}>Select Blood Group</option>
                         {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => <option key={bg} value={bg} style={{ background: "#1a1a2e" }}>{bg}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Component</label>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Component</label>
                       <select value={collectForm.component} onChange={(e) => setCollectForm({ ...collectForm, component: e.target.value })}
-                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }}>
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: theme.textPrimary, fontSize: 13, fontWeight: 600, outline: "none" }}>
                         <option value="whole_blood" style={{ background: "#1a1a2e" }}>Whole Blood</option>
                         <option value="packed_rbc" style={{ background: "#1a1a2e" }}>Packed RBC</option>
                         <option value="platelets" style={{ background: "#1a1a2e" }}>Platelets</option>
@@ -432,9 +432,9 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Units</label>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 4 }}>Units</label>
                       <input value={collectForm.units} onChange={(e) => setCollectForm({ ...collectForm, units: e.target.value })} placeholder="1"
-                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: "white", fontSize: 13, fontWeight: 600, outline: "none" }} />
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${COPPER}20`, color: theme.textPrimary, fontSize: 13, fontWeight: 600, outline: "none" }} />
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
                       <motion.button type="button" onClick={collectDonation} disabled={donorSubmitting || !collectForm.bloodGroup} whileHover={{ y: -1 }}
@@ -442,7 +442,7 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
                         Collect
                       </motion.button>
                       <motion.button type="button" onClick={() => setCollectForm(null)} whileHover={{ y: -1 }}
-                        style={{ padding: "10px 24px", borderRadius: 10, fontSize: 11, fontWeight: 700, color: "#64748B", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer", textTransform: "uppercase" }}>
+                        style={{ padding: "10px 24px", borderRadius: 10, fontSize: 11, fontWeight: 700, color: theme.textMuted, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer", textTransform: "uppercase" }}>
                         Cancel
                       </motion.button>
                     </div>
@@ -454,7 +454,7 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
               <div style={{ marginTop: 16 }}>
                 {donors.length === 0 ? (
                   <WorkshopBox title="No Donors Today" icon="🫀">
-                    <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>No Walk-In Donors Registered Yet.</p>
+                    <p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 24 }}>No Walk-In Donors Registered Yet.</p>
                   </WorkshopBox>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -473,29 +473,29 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                               <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: bgColor }}>{d.bloodGroup || "?"}</span>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{d.fullName}</span>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: theme.textPrimary }}>{d.fullName}</span>
                               <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: COPPER }}>{d.donorToken}</span>
                               <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", background: ss.bg, border: `1px solid ${ss.border}`, color: ss.text }}>
                                 {d.donorStatus}
                               </span>
                             </div>
-                            <span style={{ fontSize: 11, color: "#64748B" }}>{new Date(d.registeredAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
+                            <span style={{ fontSize: 11, color: theme.textMuted }}>{new Date(d.registeredAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
                           </div>
 
                           {d.screening && (
                             <div style={{ display: "flex", gap: 16, marginBottom: 12, fontSize: 11 }}>
-                              {d.screening.weight && <span style={{ color: "#94A3B8" }}>Weight: <strong style={{ color: "white" }}>{d.screening.weight} Kg</strong></span>}
-                              {d.screening.bloodPressure && <span style={{ color: "#94A3B8" }}>BP: <strong style={{ color: "white" }}>{d.screening.bloodPressure}</strong></span>}
-                              {d.screening.hemoglobin && <span style={{ color: "#94A3B8" }}>Hb: <strong style={{ color: (d.screening.hemoglobin >= 12.5 ? "#22C55E" : "#EF4444") }}>{d.screening.hemoglobin} g/dL</strong></span>}
-                              {d.screening.pulse && <span style={{ color: "#94A3B8" }}>Pulse: <strong style={{ color: "white" }}>{d.screening.pulse}</strong></span>}
+                              {d.screening.weight && <span style={{ color: theme.textSecondary }}>Weight: <strong style={{ color: theme.textPrimary }}>{d.screening.weight} Kg</strong></span>}
+                              {d.screening.bloodPressure && <span style={{ color: theme.textSecondary }}>BP: <strong style={{ color: theme.textPrimary }}>{d.screening.bloodPressure}</strong></span>}
+                              {d.screening.hemoglobin && <span style={{ color: theme.textSecondary }}>Hb: <strong style={{ color: (d.screening.hemoglobin >= 12.5 ? "#22C55E" : "#EF4444") }}>{d.screening.hemoglobin} g/dL</strong></span>}
+                              {d.screening.pulse && <span style={{ color: theme.textSecondary }}>Pulse: <strong style={{ color: theme.textPrimary }}>{d.screening.pulse}</strong></span>}
                               {d.screening.deferralReason && <span style={{ color: "#EF4444", fontWeight: 700 }}>Deferred: {d.screening.deferralReason}</span>}
                             </div>
                           )}
 
                           {d.collection && (
                             <div style={{ display: "flex", gap: 16, marginBottom: 12, fontSize: 11 }}>
-                              <span style={{ color: "#94A3B8" }}>Collected: <strong style={{ color: "#22C55E" }}>{d.collection.units} Unit(s) {d.collection.component.replace("_", " ")}</strong></span>
-                              <span style={{ color: "#94A3B8" }}>At: {new Date(d.collection.collectedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
+                              <span style={{ color: theme.textSecondary }}>Collected: <strong style={{ color: "#22C55E" }}>{d.collection.units} Unit(s) {d.collection.component.replace("_", " ")}</strong></span>
+                              <span style={{ color: theme.textSecondary }}>At: {new Date(d.collection.collectedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
                             </div>
                           )}
 

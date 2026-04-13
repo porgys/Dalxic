@@ -1,0 +1,315 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SHARED — Multi-tenant core
+// ═══════════════════════════════════════════════════════════════
+
+model Organization {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  logoUrl       String?  @map("logo_url")
+  tagline       String?
+  type          String   // "trade" | "institute"
+  tier          String   @default("T1")
+  activeModules String[] @default([]) @map("active_modules")
+  maxOperators  Int      @default(3) @map("max_operators")
+  whatsappBundle Int     @default(100) @map("whatsapp_bundle")
+  active        Boolean  @default(true)
+  meta          Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  operators       Operator[]
+  auditLogs       AuditLog[]
+  categories      Category[]
+  products        Product[]
+  sales           Sale[]
+  stockMovements  StockMovement[]
+  groups          Group[]
+  members         Member[]
+  staff           Staff[]
+  feeRecords      FeeRecord[]
+  scheduleSlots   ScheduleSlot[]
+
+  @@map("organizations")
+}
+
+model Operator {
+  id          String    @id @default(cuid())
+  orgId       String    @map("org_id")
+  name        String
+  phone       String?
+  pin         String
+  role        String    // cashier | manager | admin | teacher | accountant | registrar
+  meta        Json?
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  lastLoginAt DateTime? @map("last_login_at")
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  @@unique([orgId, pin])
+  @@index([orgId, isActive])
+  @@map("operators")
+}
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("system_config")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorType String   @map("actor_type")
+  actorId   String   @map("actor_id")
+  orgId     String   @map("org_id")
+  action    String
+  metadata  Json?
+  ipAddress String   @map("ip_address")
+  timestamp DateTime @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  @@index([orgId, timestamp])
+  @@index([actorType, actorId])
+  @@map("audit_log")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRADE — Retail / POS / Inventory
+// ═══════════════════════════════════════════════════════════════
+
+model Category {
+  id        String  @id @default(cuid())
+  orgId     String  @map("org_id")
+  name      String
+  sortOrder Int     @default(0) @map("sort_order")
+  isActive  Boolean @default(true) @map("is_active")
+
+  org      Organization @relation(fields: [orgId], references: [id])
+  products Product[]
+
+  @@unique([orgId, name])
+  @@map("categories")
+}
+
+model Product {
+  id           String    @id @default(cuid())
+  orgId        String    @map("org_id")
+  categoryId   String    @map("category_id")
+  name         String
+  sku          String?
+  unit         String    @default("piece")
+  costPrice    Int       @default(0) @map("cost_price")
+  sellingPrice Int       @map("selling_price")
+  stock        Int       @default(0)
+  minStock     Int       @default(5) @map("min_stock")
+  photoUrl     String?   @map("photo_url")
+  batchNo      String?   @map("batch_no")
+  expiresAt    DateTime? @map("expires_at")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  org      Organization @relation(fields: [orgId], references: [id])
+  category Category     @relation(fields: [categoryId], references: [id])
+  saleItems       SaleItem[]
+  stockMovements  StockMovement[]
+
+  @@index([orgId, categoryId])
+  @@index([orgId, name])
+  @@map("products")
+}
+
+model Sale {
+  id            String   @id @default(cuid())
+  orgId         String   @map("org_id")
+  receiptCode   String   @unique @map("receipt_code")
+  customerName  String?  @map("customer_name")
+  customerPhone String?  @map("customer_phone")
+  subtotal      Int
+  discount      Int      @default(0)
+  total         Int
+  paymentMethod String?  @map("payment_method")
+  paymentRef    String?  @map("payment_ref")
+  paymentStatus String   @default("PENDING") @map("payment_status")
+  soldBy        String   @map("sold_by")
+  soldByName    String   @map("sold_by_name")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  org   Organization @relation(fields: [orgId], references: [id])
+  items SaleItem[]
+
+  @@index([orgId, createdAt])
+  @@index([orgId, paymentStatus])
+  @@map("sales")
+}
+
+model SaleItem {
+  id          String @id @default(cuid())
+  saleId      String @map("sale_id")
+  productId   String @map("product_id")
+  productName String @map("product_name")
+  unitPrice   Int    @map("unit_price")
+  quantity    Int
+  total       Int
+
+  sale    Sale    @relation(fields: [saleId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("sale_items")
+}
+
+model StockMovement {
+  id            String   @id @default(cuid())
+  orgId         String   @map("org_id")
+  productId     String   @map("product_id")
+  type          String   // RECEIVED | SOLD | ADJUSTED | RETURNED | EXPIRED
+  quantity      Int
+  balanceBefore Int      @map("balance_before")
+  balanceAfter  Int      @map("balance_after")
+  reference     String?
+  performedBy   String   @map("performed_by")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  org     Organization @relation(fields: [orgId], references: [id])
+  product Product      @relation(fields: [productId], references: [id])
+
+  @@index([orgId, productId])
+  @@index([orgId, type])
+  @@map("stock_movements")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INSTITUTE — Schools / NGOs / Training Centres
+// ═══════════════════════════════════════════════════════════════
+
+model Group {
+  id       String  @id @default(cuid())
+  orgId    String  @map("org_id")
+  name     String
+  type     String  @default("class") // class | cohort | department | custom
+  isActive Boolean @default(true) @map("is_active")
+
+  org       Organization   @relation(fields: [orgId], references: [id])
+  members   Member[]
+  schedules ScheduleSlot[]
+
+  @@unique([orgId, name])
+  @@map("groups")
+}
+
+model Member {
+  id            String   @id @default(cuid())
+  orgId         String   @map("org_id")
+  name          String
+  role          String   @default("student")
+  status        String   @default("active")
+  groupId       String?  @map("group_id")
+  phone         String?
+  email         String?
+  dateOfBirth   String?  @map("date_of_birth")
+  gender        String?
+  guardianName  String?  @map("guardian_name")
+  guardianPhone String?  @map("guardian_phone")
+  enrolledAt    DateTime @default(now()) @map("enrolled_at")
+  meta          Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  org        Organization @relation(fields: [orgId], references: [id])
+  group      Group?       @relation(fields: [groupId], references: [id])
+  feeRecords FeeRecord[]
+
+  @@index([orgId, status])
+  @@index([orgId, groupId])
+  @@map("members")
+}
+
+model Staff {
+  id         String   @id @default(cuid())
+  orgId      String   @map("org_id")
+  name       String
+  role       String
+  department String
+  phone      String?
+  email      String?
+  status     String   @default("active")
+  meta       Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  org       Organization   @relation(fields: [orgId], references: [id])
+  schedules ScheduleSlot[]
+
+  @@index([orgId, department])
+  @@map("staff")
+}
+
+model FeeRecord {
+  id          String    @id @default(cuid())
+  orgId       String    @map("org_id")
+  memberId    String    @map("member_id")
+  description String
+  amount      Int
+  paid        Int       @default(0)
+  balance     Int
+  status      String    @default("UNPAID")
+  dueDate     DateTime? @map("due_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  org      Organization @relation(fields: [orgId], references: [id])
+  member   Member       @relation(fields: [memberId], references: [id])
+  payments FeePayment[]
+
+  @@index([orgId, memberId])
+  @@index([orgId, status])
+  @@map("fee_records")
+}
+
+model FeePayment {
+  id            String   @id @default(cuid())
+  feeRecordId   String   @map("fee_record_id")
+  amount        Int
+  paymentMethod String   @map("payment_method")
+  paymentRef    String?  @map("payment_ref")
+  receivedBy    String   @map("received_by")
+  receivedAt    DateTime @default(now()) @map("received_at")
+  notes         String?
+
+  feeRecord FeeRecord @relation(fields: [feeRecordId], references: [id])
+
+  @@map("fee_payments")
+}
+
+model ScheduleSlot {
+  id        String  @id @default(cuid())
+  orgId     String  @map("org_id")
+  groupId   String  @map("group_id")
+  staffId   String? @map("staff_id")
+  subject   String
+  dayOfWeek Int     @map("day_of_week")
+  startTime String  @map("start_time")
+  endTime   String  @map("end_time")
+  room      String?
+
+  org   Organization @relation(fields: [orgId], references: [id])
+  group Group        @relation(fields: [groupId], references: [id])
+  staff Staff?       @relation(fields: [staffId], references: [id])
+
+  @@index([orgId, groupId])
+  @@map("schedule_slots")
+}

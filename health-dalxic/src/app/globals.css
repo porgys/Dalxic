@@ -152,9 +152,12 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
-[data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: rgba(139,90,43,0.2);
-}
+[data-theme="light"] *::-webkit-scrollbar { width: 4px; background: #C5B8A5; }
+[data-theme="light"] *::-webkit-scrollbar-track { background: #C5B8A5; }
+[data-theme="light"] *::-webkit-scrollbar-thumb { background: rgba(139,90,43,0.3); border-radius: 2px; }
+[data-theme="light"]::-webkit-scrollbar { width: 4px; background: #C5B8A5; }
+[data-theme="light"]::-webkit-scrollbar-track { background: #C5B8A5; }
+[data-theme="light"]::-webkit-scrollbar-thumb { background: rgba(139,90,43,0.3); border-radius: 2px; }
 
 /* Day mode hover — kept for class reference, no pseudo-elements */
 .l-glow-day {

@@ -165,7 +165,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
           <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Maternity</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: theme.copperText }}>Maternity</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
@@ -188,7 +188,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: theme.textMuted, marginBottom: 8 }}>{stat.label}</p>
               <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
             </motion.div>
           ))}
@@ -220,7 +220,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
                   ))}
                 </div>
                 <motion.button type="button" onClick={registerPatient} disabled={registering || !regForm.recordId.trim()} whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
-                  style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: registering ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: registering || !regForm.recordId.trim() ? 0.5 : 1 }}>
+                  style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: theme.textPrimary, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: registering ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: registering || !regForm.recordId.trim() ? 0.5 : 1 }}>
                   {registering ? "Registering..." : "Register Patient"}
                 </motion.button>
               </WorkshopBox>
@@ -232,7 +232,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
               <WorkshopBox title="Record Delivery" icon="👶">
                 {/* Patient selector from antenatal/labour patients */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Select Patient</label>
+                  <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: theme.textSecondary, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Select Patient</label>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {patients.filter((p) => p.stage === "antenatal" || p.stage === "labour").map((p) => (
                       <motion.button key={p.recordId} type="button" onClick={() => setDelForm({ ...delForm, recordId: p.recordId })} whileHover={{ y: -1 }}
@@ -263,7 +263,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
                 </div>
 
                 <motion.button type="button" onClick={recordDelivery} disabled={delivering || !delForm.recordId} whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
-                  style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: "white", background: "linear-gradient(135deg, #22C55E, #16A34A)", border: "none", cursor: delivering ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: delivering || !delForm.recordId ? 0.5 : 1 }}>
+                  style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: theme.textPrimary, background: "linear-gradient(135deg, #22C55E, #16A34A)", border: "none", cursor: delivering ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: delivering || !delForm.recordId ? 0.5 : 1 }}>
                   {delivering ? "Recording..." : "Record Delivery"}
                 </motion.button>
               </WorkshopBox>
@@ -273,7 +273,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
           {activeNav === "patients" && (
             <motion.div key="patients" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {patients.length === 0 ? (
-                <WorkshopBox title="No Maternity Patients" icon="🤱"><p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>No Active Maternity Patients. Use Register Tab To Add One.</p></WorkshopBox>
+                <WorkshopBox title="No Maternity Patients" icon="🤱"><p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 24 }}>No Active Maternity Patients. Use Register Tab To Add One.</p></WorkshopBox>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {patients.map((p, i) => {
@@ -285,20 +285,20 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <span style={{ fontSize: 16 }}>{sc.icon}</span>
                             <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{p.queueToken}</span>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{p.patientName}</span>
-                            {p.age && <span style={{ fontSize: 11, color: "#64748B" }}>{p.age}y</span>}
+                            <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>{p.patientName}</span>
+                            {p.age && <span style={{ fontSize: 11, color: theme.textMuted }}>{p.age}y</span>}
                             <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", background: sc.bg, border: `1px solid ${sc.border}`, color: sc.text }}>{p.stage}</span>
                           </div>
-                          <span style={{ fontSize: 11, color: "#64748B" }}>{p.visitsCount} Visits</span>
+                          <span style={{ fontSize: 11, color: theme.textMuted }}>{p.visitsCount} Visits</span>
                         </div>
 
                         <div style={{ display: "flex", gap: 20, marginBottom: 12 }}>
-                          {p.gestationalWeeks && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Weeks</p><p style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: "#D4956B" }}>{p.gestationalWeeks}</p></div>}
-                          {p.gravida != null && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>G</p><p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{p.gravida}</p></div>}
-                          {p.para != null && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>P</p><p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{p.para}</p></div>}
-                          {p.edd && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>EDD</p><p style={{ fontSize: 13, color: "#94A3B8" }}>{new Date(p.edd).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</p></div>}
-                          {p.deliveryMode && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Delivery</p><p style={{ fontSize: 12, color: "#22C55E", fontWeight: 700 }}>{p.deliveryMode}</p></div>}
-                          {p.babyWeight && <div><p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Baby</p><p style={{ fontSize: 12, color: "white" }}>{p.babyGender} — {p.babyWeight}kg</p></div>}
+                          {p.gestationalWeeks && <div><p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>Weeks</p><p style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: theme.copperText }}>{p.gestationalWeeks}</p></div>}
+                          {p.gravida != null && <div><p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>G</p><p style={{ fontSize: 14, fontWeight: 700, color: theme.textPrimary }}>{p.gravida}</p></div>}
+                          {p.para != null && <div><p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>P</p><p style={{ fontSize: 14, fontWeight: 700, color: theme.textPrimary }}>{p.para}</p></div>}
+                          {p.edd && <div><p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>EDD</p><p style={{ fontSize: 13, color: theme.textSecondary }}>{new Date(p.edd).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</p></div>}
+                          {p.deliveryMode && <div><p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>Delivery</p><p style={{ fontSize: 12, color: "#22C55E", fontWeight: 700 }}>{p.deliveryMode}</p></div>}
+                          {p.babyWeight && <div><p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>Baby</p><p style={{ fontSize: 12, color: theme.textPrimary }}>{p.babyGender} — {p.babyWeight}kg</p></div>}
                         </div>
 
                         {/* Add visit note */}
@@ -312,7 +312,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
                               <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
                                 <div style={{ flex: 1 }}><DInput value={visitNotes} onChange={(e) => setVisitNotes(e.target.value)} onKeyDown={(e) => e.key === "Enter" && recordVisit()} placeholder="Visit notes..." /></div>
                                 <motion.button type="button" onClick={recordVisit} disabled={savingVisit} whileHover={{ y: -1 }}
-                                  style={{ padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: "pointer", textTransform: "uppercase", opacity: savingVisit ? 0.5 : 1 }}>
+                                  style={{ padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: theme.textPrimary, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: "pointer", textTransform: "uppercase", opacity: savingVisit ? 0.5 : 1 }}>
                                   Save
                                 </motion.button>
                               </div>

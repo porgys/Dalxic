@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+/* ============================================================
+   DALXIC OPERATIONS — BRAND DESIGN SYSTEM
+   Emerald spectrum — commerce, growth, prosperity
+   ============================================================ */
+
+:root {
+  --bg:        #040A0F;
+  --surf:      #081410;
+  --surf2:     #0A1A14;
+  --surf3:     #0E2218;
+  --border:    #0F2A1E;
+  --border2:   #154030;
+
+  --primary:   #10B981;
+  --primaryD:  #059669;
+  --primaryL:  #34D399;
+
+  --glow:      #6EE7B7;
+  --glowD:     #10B981;
+  --glowL:     #A7F3D0;
+
+  --trade:     #F59E0B;
+  --tradeL:    #FBBF24;
+  --inst:      #0EA5E9;
+  --instL:     #38BDF8;
+
+  --tx:        #ECF5F0;
+  --txM:       #6B9B8A;
+  --txD:       #3A6B5A;
+
+  --gr:        #10B981;
+  --re:        #EF4444;
+  --gold:      #F59E0B;
+
+  --radius:    16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Space Grotesk', 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--tx);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(16,185,129,0.15); }
+  50% { box-shadow: 0 0 40px rgba(16,185,129,0.3); }
+}
+@keyframes barGrow { from { width: 0; } }
+@keyframes marqueeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes charJuggle {
+  0% { opacity: 0; transform: translateY(12px) rotate(-2deg); }
+  60% { transform: translateY(-3px) rotate(0.5deg); }
+  100% { opacity: 1; transform: translateY(0) rotate(0); }
+}
+
+/* ============================================================
+   GLASS CARDS — Dalxic DNA
+   ============================================================ */
+.glass {
+  background: rgba(16,185,129,0.03);
+  border: 1px solid rgba(16,185,129,0.08);
+  border-radius: var(--radius);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transform: translateZ(0);
+  will-change: transform;
+  transition: all 0.3s ease;
+}
+.glass:hover {
+  border-color: rgba(16,185,129,0.2);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(16,185,129,0.08);
+}
+.glass-emerald {
+  background: rgba(16,185,129,0.06);
+  border: 1px solid rgba(16,185,129,0.15);
+}
+.glass-trade {
+  background: rgba(245,158,11,0.04);
+  border: 1px solid rgba(245,158,11,0.12);
+}
+.glass-inst {
+  background: rgba(14,165,233,0.04);
+  border: 1px solid rgba(14,165,233,0.12);
+}
+
+/* Typography gradients */
+.text-gradient-emerald {
+  background: linear-gradient(135deg, #10B981, #34D399, #6EE7B7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Nav */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 40px;
+  background: linear-gradient(180deg, rgba(4,10,15,0.95) 0%, rgba(4,10,15,0.7) 70%, transparent 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transform: translateZ(0); will-change: transform;
+  transition: all 0.3s ease;
+}
+.nav.scrolled {
+  background: rgba(4,10,15,0.95);
+  border-bottom: 1px solid rgba(16,185,129,0.08);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}

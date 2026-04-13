@@ -45,8 +45,20 @@ const TEMPLATE_MESSAGES: Record<MessageTemplate, (p: TemplateParams) => string> 
     `URGENT: ${p.patientName} has been admitted as an emergency at ${p.hospitalName || "the hospital"}. ER Token: ${p.token}. Please contact the hospital immediately.`,
   referral_notice: (p) =>
     `Hello ${p.patientName}, you have been referred to ${p.specialty || "a specialist"} at ${p.hospitalName || "the hospital"}. Reason: ${p.reason || "specialist evaluation"}. Please check with the front desk.`,
-  discharge_summary: (p) =>
-    `Hello ${p.patientName}, you have been discharged from ${p.hospitalName || "the hospital"}. ${p.followUp ? `Follow-up: ${p.followUp}` : "We wish you a speedy recovery."}`,
+  discharge_summary: (p) => {
+    const lines: string[] = [];
+    lines.push(`*${p.hospitalName || "Hospital"}*`);
+    lines.push(`_Visit Summary_\n`);
+    lines.push(`*Patient:* ${p.patientName}`);
+    if (p.department) lines.push(`*Department:* ${p.department}`);
+    if (p.token) lines.push(`*Token:* ${p.token}`);
+    if (p.diagnosis) lines.push(`\n*Diagnosis:* ${p.diagnosis}`);
+    if (p.prescriptions) lines.push(`\n*Prescriptions:*\n${p.prescriptions}`);
+    if (p.followUp) lines.push(`\n*Follow-Up:* ${p.followUp}`);
+    lines.push(`\nThank you for visiting ${p.hospitalName || "the hospital"}.`);
+    lines.push(`_Powered by DalxicHealth_`);
+    return lines.join("\n");
+  },
 };
 
 /**

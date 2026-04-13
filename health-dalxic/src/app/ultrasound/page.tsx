@@ -205,7 +205,7 @@ function UltrasoundContent({ operator }: { operator: OperatorSession }) {
           <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>{STATION_TITLE}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: theme.copperText }}>{STATION_TITLE}</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
@@ -229,7 +229,7 @@ function UltrasoundContent({ operator }: { operator: OperatorSession }) {
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: theme.textMuted, marginBottom: 8 }}>{stat.label}</p>
               <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
             </motion.div>
           ))}
@@ -254,8 +254,8 @@ function UltrasoundContent({ operator }: { operator: OperatorSession }) {
             {reportingOrder && (
               <WorkshopBox title={`Report — ${reportingOrder.examType}`} icon="📝" className="mb-4">
                 <div style={{ marginBottom: 12 }}>
-                  <p style={{ fontSize: 12, color: "white", marginBottom: 4 }}><strong>{reportingOrder.patientName}</strong> — {reportingOrder.queueToken}</p>
-                  <p style={{ fontSize: 11, color: "#64748B" }}>Body Part: {reportingOrder.bodyPart} — Indication: {reportingOrder.clinicalIndication}</p>
+                  <p style={{ fontSize: 12, color: theme.textPrimary, marginBottom: 4 }}><strong>{reportingOrder.patientName}</strong> — {reportingOrder.queueToken}</p>
+                  <p style={{ fontSize: 11, color: theme.textMuted }}>Body Part: {reportingOrder.bodyPart} — Indication: {reportingOrder.clinicalIndication}</p>
                 </div>
                 <div style={{ marginBottom: 12 }}>
                   <DTextarea label="Findings" value={reportForm.findings} onChange={(e) => setReportForm({ ...reportForm, findings: e.target.value })} rows={4} placeholder="Describe ultrasound findings..." />
@@ -265,11 +265,11 @@ function UltrasoundContent({ operator }: { operator: OperatorSession }) {
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <motion.button type="button" onClick={submitReport} disabled={!!processingId} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
-                    style={{ flex: 1, padding: "12px 24px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: "pointer", textTransform: "uppercase" }}>
+                    style={{ flex: 1, padding: "12px 24px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: theme.textPrimary, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: "pointer", textTransform: "uppercase" }}>
                     Submit Report
                   </motion.button>
                   <motion.button type="button" onClick={() => { setReportingOrder(null); setReportForm({ findings: "", impression: "" }); }} whileHover={{ y: -1 }}
-                    style={{ padding: "12px 16px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "#64748B", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", cursor: "pointer" }}>
+                    style={{ padding: "12px 16px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: theme.textMuted, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", cursor: "pointer" }}>
                     Cancel
                   </motion.button>
                 </div>
@@ -278,7 +278,7 @@ function UltrasoundContent({ operator }: { operator: OperatorSession }) {
 
             {filteredOrders.length === 0 && !reportingOrder ? (
               <WorkshopBox title="No Orders" icon="📡">
-                <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>No {activeNav === "completed" ? "Completed" : "Pending"} Ultrasound Orders.</p>
+                <p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 24 }}>No {activeNav === "completed" ? "Completed" : "Pending"} Ultrasound Orders.</p>
               </WorkshopBox>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -290,36 +290,36 @@ function UltrasoundContent({ operator }: { operator: OperatorSession }) {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{order.queueToken}</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{order.patientName}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>{order.patientName}</span>
                           <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", background: statusInfo.bg, border: `1px solid ${statusInfo.border}`, color: statusInfo.text }}>{order.status.replace("_", " ")}</span>
                         </div>
-                        <span style={{ fontSize: 11, color: "#64748B" }}>{new Date(order.orderedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
+                        <span style={{ fontSize: 11, color: theme.textMuted }}>{new Date(order.orderedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
                       </div>
                       <div style={{ display: "flex", gap: 20, marginBottom: 12 }}>
                         <div>
-                          <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Exam</p>
-                          <p style={{ fontSize: 16, fontWeight: 800, color: "white" }}>{order.examType}</p>
+                          <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Exam</p>
+                          <p style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{order.examType}</p>
                         </div>
                         <div>
-                          <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Body Part</p>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "#D4956B" }}>{order.bodyPart}</p>
+                          <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Body Part</p>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: theme.copperText }}>{order.bodyPart}</p>
                         </div>
                         {order.clinicalIndication && (
                           <div style={{ flex: 1 }}>
-                            <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Indication</p>
-                            <p style={{ fontSize: 13, color: "#94A3B8" }}>{order.clinicalIndication}</p>
+                            <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Indication</p>
+                            <p style={{ fontSize: 13, color: theme.textSecondary }}>{order.clinicalIndication}</p>
                           </div>
                         )}
                       </div>
                       {order.findings && (
                         <div style={{ padding: 12, borderRadius: 10, background: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.1)", marginBottom: 12 }}>
                           <p style={{ fontSize: 9, fontWeight: 700, color: "#22C55E", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>Findings</p>
-                          <p style={{ fontSize: 13, color: "#94A3B8" }}>{order.findings}</p>
-                          {order.impression && <p style={{ fontSize: 12, color: "white", fontWeight: 600, marginTop: 6 }}>Impression: {order.impression}</p>}
+                          <p style={{ fontSize: 13, color: theme.textSecondary }}>{order.findings}</p>
+                          {order.impression && <p style={{ fontSize: 12, color: theme.textPrimary, fontWeight: 600, marginTop: 6 }}>Impression: {order.impression}</p>}
                         </div>
                       )}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: 10, color: "#4A5568" }}>Ordered By: {order.orderedBy} — {order.department}</span>
+                        <span style={{ fontSize: 10, color: theme.textMuted }}>Ordered By: {order.orderedBy} — {order.department}</span>
                         <div style={{ display: "flex", gap: 8 }}>
                           {order.status === "pending" && (
                             <motion.button type="button" onClick={() => startScan(order)} disabled={processingId === order.id} whileHover={{ y: -1 }}

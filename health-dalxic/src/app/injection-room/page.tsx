@@ -201,7 +201,7 @@ function InjectionRoomContent({ operator }: { operator: OperatorSession }) {
           <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Injection Room</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: theme.copperText }}>Injection Room</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
@@ -226,7 +226,7 @@ function InjectionRoomContent({ operator }: { operator: OperatorSession }) {
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: theme.textMuted, marginBottom: 8 }}>{stat.label}</p>
               <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
             </motion.div>
           ))}
@@ -251,7 +251,7 @@ function InjectionRoomContent({ operator }: { operator: OperatorSession }) {
           <motion.div key={activeNav} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             {orders.length === 0 ? (
               <WorkshopBox title={activeNav === "queue" ? "No Pending Injections" : "No Completed Injections"} icon={activeNav === "queue" ? "💉" : "✅"}>
-                <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>
+                <p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 24 }}>
                   {activeNav === "queue"
                     ? "No Injection Orders In Queue. Orders Appear Here When Doctors Prescribe Injections."
                     : "No Completed Injections Today Yet."}
@@ -269,44 +269,44 @@ function InjectionRoomContent({ operator }: { operator: OperatorSession }) {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{order.queueToken}</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{order.patientName}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>{order.patientName}</span>
                           <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", background: statusInfo.bg, border: `1px solid ${statusInfo.border}`, color: statusInfo.text }}>
                             {order.status.replace("_", " ")}
                           </span>
                         </div>
-                        <span style={{ fontSize: 11, color: "#64748B" }}>{new Date(order.orderedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
+                        <span style={{ fontSize: 11, color: theme.textMuted }}>{new Date(order.orderedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
                       </div>
 
                       {/* Drug info */}
                       <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 12 }}>
                         <div style={{ flex: 1 }}>
-                          <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Drug</p>
-                          <p style={{ fontSize: 16, fontWeight: 800, color: "white" }}>{order.drug}</p>
+                          <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Drug</p>
+                          <p style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{order.drug}</p>
                         </div>
                         <div>
-                          <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Route</p>
+                          <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Route</p>
                           <span style={{ padding: "4px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, background: routeInfo.bg, color: routeInfo.text }}>
                             {order.route} — {routeInfo.label}
                           </span>
                         </div>
                         <div>
-                          <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Dose</p>
-                          <p style={{ fontSize: 14, fontWeight: 700, fontFamily: fontFamily.mono, color: "#D4956B" }}>{order.dose}</p>
+                          <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Dose</p>
+                          <p style={{ fontSize: 14, fontWeight: 700, fontFamily: fontFamily.mono, color: theme.copperText }}>{order.dose}</p>
                         </div>
                         <div>
-                          <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Frequency</p>
-                          <p style={{ fontSize: 13, color: "#94A3B8" }}>{order.frequency}</p>
+                          <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Frequency</p>
+                          <p style={{ fontSize: 13, color: theme.textSecondary }}>{order.frequency}</p>
                         </div>
                       </div>
 
                       {/* Notes */}
                       {order.notes && (
-                        <p style={{ fontSize: 11, color: "#64748B", marginBottom: 12, fontStyle: "italic" }}>{order.notes}</p>
+                        <p style={{ fontSize: 11, color: theme.textMuted, marginBottom: 12, fontStyle: "italic" }}>{order.notes}</p>
                       )}
 
                       {/* Ordered by */}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: 10, color: "#4A5568" }}>Ordered By: {order.orderedBy} — Dept: {order.department}</span>
+                        <span style={{ fontSize: 10, color: theme.textMuted }}>Ordered By: {order.orderedBy} — Dept: {order.department}</span>
 
                         {/* Action buttons */}
                         {order.status === "pending" && (

@@ -290,7 +290,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
           <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Nurse Station</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: theme.copperText }}>Nurse Station</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
@@ -315,7 +315,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: theme.textMuted, marginBottom: 8 }}>{stat.label}</p>
               <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
             </motion.div>
           ))}
@@ -342,7 +342,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
             <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {patients.length === 0 ? (
                 <WorkshopBox title="No Patients Today" icon="📋">
-                  <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>No Patients Registered Today. Patients Will Appear Here After Front Desk Registration.</p>
+                  <p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 24 }}>No Patients Registered Today. Patients Will Appear Here After Front Desk Registration.</p>
                 </WorkshopBox>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -357,8 +357,8 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
                           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                             <span style={{ fontSize: 13, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{p.queueToken}</span>
                             <div>
-                              <p style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{p.patientName}</p>
-                              <p style={{ fontSize: 10, color: "#64748B" }}>{p.age ? `${p.age}y` : ""} {p.gender || ""} — {p.department} {p.chiefComplaint ? `— ${p.chiefComplaint}` : ""}</p>
+                              <p style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>{p.patientName}</p>
+                              <p style={{ fontSize: 10, color: theme.textMuted }}>{p.age ? `${p.age}y` : ""} {p.gender || ""} — {p.department} {p.chiefComplaint ? `— ${p.chiefComplaint}` : ""}</p>
                             </div>
                           </div>
                           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -372,7 +372,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
                               <span style={{ padding: "3px 10px", borderRadius: 8, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.2)", color: "#38BDF8" }}>{p.pendingTasks} Task{p.pendingTasks > 1 ? "s" : ""}</span>
                             )}
                             {p.latestVitals && (
-                              <div style={{ display: "flex", gap: 8, fontSize: 10, fontFamily: fontFamily.mono, color: "#94A3B8" }}>
+                              <div style={{ display: "flex", gap: 8, fontSize: 10, fontFamily: fontFamily.mono, color: theme.textSecondary }}>
                                 {p.latestVitals.temperature && <span>🌡️ {p.latestVitals.temperature}°C</span>}
                                 {p.latestVitals.bloodPressure && <span>🫀 {p.latestVitals.bloodPressure}</span>}
                                 {p.latestVitals.pulse && <span>💓 {p.latestVitals.pulse}</span>}
@@ -427,7 +427,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
                           { label: "BMI", value: selectedPatientData.latestVitals.bmi ? `${selectedPatientData.latestVitals.bmi}` : "—", icon: "📐", warn: false },
                         ].map((v) => (
                           <div key={v.label} style={{ padding: 12, borderRadius: 10, background: v.warn ? "rgba(239,68,68,0.04)" : "rgba(255,255,255,0.02)", border: `1px solid ${v.warn ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.04)"}` }}>
-                            <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>{v.icon} {v.label}</p>
+                            <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>{v.icon} {v.label}</p>
                             <p style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: v.warn ? "#EF4444" : "white" }}>{v.value}</p>
                           </div>
                         ))}
@@ -464,7 +464,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
                     </div>
                     <motion.button type="button" onClick={recordVitals} disabled={savingVitals}
                       whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
-                      style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: savingVitals ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: savingVitals ? 0.6 : 1 }}>
+                      style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: theme.textPrimary, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: savingVitals ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: savingVitals ? 0.6 : 1 }}>
                       {savingVitals ? "Saving..." : "Record Vitals"}
                     </motion.button>
                   </WorkshopBox>
@@ -508,7 +508,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
                                 <span style={{ fontSize: 14 }}>{typeInfo?.icon || "📝"}</span>
                                 <div>
                                   <p style={{ fontSize: 12, fontWeight: 600, color: task.status === "completed" ? "#22C55E" : "white", textDecoration: task.status === "completed" ? "line-through" : "none" }}>{task.description}</p>
-                                  <p style={{ fontSize: 10, color: "#64748B" }}>{typeInfo?.label || task.type} {task.completedBy ? `— Done By ${task.completedBy}` : ""}</p>
+                                  <p style={{ fontSize: 10, color: theme.textMuted }}>{typeInfo?.label || task.type} {task.completedBy ? `— Done By ${task.completedBy}` : ""}</p>
                                 </div>
                               </div>
                               {task.status === "pending" && (
@@ -551,7 +551,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
                       </div>
                       <motion.button type="button" onClick={addTask} disabled={savingTask || !taskForm.description.trim()}
                         whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
-                        style={{ padding: "10px 24px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: savingTask ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "0.5px", opacity: savingTask || !taskForm.description.trim() ? 0.5 : 1 }}>
+                        style={{ padding: "10px 24px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: theme.textPrimary, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: savingTask ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "0.5px", opacity: savingTask || !taskForm.description.trim() ? 0.5 : 1 }}>
                         {savingTask ? "Saving..." : "Add Task"}
                       </motion.button>
                     </div>

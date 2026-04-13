@@ -238,8 +238,8 @@ function QueueDisplay() {
         }}>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 64, marginBottom: 16 }}>🔊</div>
-            <p style={{ fontSize: 22, fontWeight: 800, color: "#E2E8F0", letterSpacing: "0.02em" }}>Tap To Enable Voice Callout</p>
-            <p style={{ fontSize: 13, color: "#64748B", marginTop: 8 }}>Patient Names Will Be Announced When Called</p>
+            <p style={{ fontSize: 22, fontWeight: 800, color: theme.textPrimary, letterSpacing: "0.02em" }}>Tap To Enable Voice Callout</p>
+            <p style={{ fontSize: 13, color: theme.textMuted, marginTop: 8 }}>Patient Names Will Be Announced When Called</p>
           </div>
         </div>
       )}
@@ -264,13 +264,13 @@ function QueueDisplay() {
             <div className="w-2 h-2 rounded-full bg-[#B87333]" style={{ boxShadow: "0 0 8px rgba(184,115,51,0.6)" }} />
           </div>
           <div className="flex items-center">
-            <span className="font-display font-light text-[#94A3B8] text-sm uppercase" style={{ letterSpacing: "0.08em" }}>Dalxic</span>
+            <span className="font-display font-light text-sm uppercase" style={{ letterSpacing: "0.08em", color: theme.textSecondary }}>Dalxic</span>
             <span className="font-display font-bold text-sm uppercase" style={{ letterSpacing: "0.08em", background: "linear-gradient(135deg, #B87333, #D4956B)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
           </div>
         </div>
         <div style={{ textAlign: "center" }}>
-          <h1 className="font-display font-medium text-lg text-white tracking-tight">{HOSPITAL_NAME}</h1>
-          {dept && <div style={{ fontSize: 11, color: "#D4956B", letterSpacing: "1px", textTransform: "uppercase", marginTop: 2 }}>{dept} Department</div>}
+          <h1 className="font-display font-medium text-lg tracking-tight" style={{ color: theme.textPrimary }}>{HOSPITAL_NAME}</h1>
+          {dept && <div style={{ fontSize: 11, color: theme.copperText, letterSpacing: "1px", textTransform: "uppercase", marginTop: 2 }}>{dept} Department</div>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
@@ -287,8 +287,8 @@ function QueueDisplay() {
         <div style={{ width: 260, minWidth: 260, display: "flex", flexDirection: "column" }}>
           <div style={{
             padding: 16, borderRadius: 16, flex: 1,
-            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(184,115,51,0.08)",
-            backdropFilter: "blur(12px)",
+            background: theme.cardBg, border: theme.cardBorder,
+            backdropFilter: "blur(12px)", boxShadow: theme.cardShadow,
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#22C55E", fontFamily: "monospace" }}>
@@ -310,8 +310,8 @@ function QueueDisplay() {
                     exit={{ opacity: 0, x: -20 }}
                     style={{
                       padding: "10px 12px", borderRadius: 10,
-                      background: s.token === serving?.token ? "rgba(184,115,51,0.08)" : "rgba(255,255,255,0.02)",
-                      border: `1px solid ${s.token === serving?.token ? "rgba(184,115,51,0.15)" : "rgba(255,255,255,0.04)"}`,
+                      background: s.token === serving?.token ? (theme.isDayMode ? "rgba(184,115,51,0.08)" : "rgba(184,115,51,0.08)") : (theme.isDayMode ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)"),
+                      border: `1px solid ${s.token === serving?.token ? "rgba(184,115,51,0.15)" : (theme.isDayMode ? "rgba(139,90,43,0.04)" : "rgba(255,255,255,0.04)")}`,
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -320,20 +320,20 @@ function QueueDisplay() {
                         {s.token}
                       </span>
                     </div>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "#E2E8F0", marginTop: 4, marginLeft: 14 }}>{s.patientName}</p>
-                    <p style={{ fontSize: 9, fontWeight: 600, color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px", marginTop: 2, marginLeft: 14 }}>{s.department}</p>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: theme.textPrimary, marginTop: 4, marginLeft: 14 }}>{s.patientName}</p>
+                    <p style={{ fontSize: 9, fontWeight: 600, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.5px", marginTop: 2, marginLeft: 14 }}>{s.department}</p>
                   </motion.div>
                 ))}
               </AnimatePresence>
               {allServing.length === 0 && (
-                <p style={{ fontSize: 12, color: "#3D4D78", textAlign: "center", padding: 20, opacity: 0.6 }}>No Active Consultations</p>
+                <p style={{ fontSize: 12, color: theme.textMuted, textAlign: "center", padding: 20, opacity: 0.6 }}>No Active Consultations</p>
               )}
             </div>
 
             {/* Recently Called */}
             {recentCallouts.length > 0 && (
-              <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-                <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#475569", marginBottom: 8, fontFamily: "monospace" }}>
+              <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${theme.divider}` }}>
+                <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: theme.textMuted, marginBottom: 8, fontFamily: "monospace" }}>
                   Recently Called
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -342,8 +342,8 @@ function QueueDisplay() {
                       display: "flex", alignItems: "center", justifyContent: "space-between",
                       padding: "4px 8px", borderRadius: 6, opacity: 0.7 - i * 0.12,
                     }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "monospace", color: "#475569" }}>{entry.token}</span>
-                      <span style={{ fontSize: 9, color: "#3D4D78" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "monospace", color: theme.textMuted }}>{entry.token}</span>
+                      <span style={{ fontSize: 9, color: theme.textMuted }}>
                         {new Date(entry.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>
@@ -366,7 +366,7 @@ function QueueDisplay() {
                 transition={{ type: "spring", stiffness: 300, damping: 25 }}
                 style={{ textAlign: "center", animation: isSpeaking ? "pulseGlow 2s ease-in-out infinite" : undefined, padding: 40, borderRadius: 24 }}
               >
-                <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "4px", textTransform: "uppercase", color: "#64748B", marginBottom: 24 }}>
+                <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "4px", textTransform: "uppercase", color: theme.textMuted, marginBottom: 24 }}>
                   Now Serving
                 </p>
                 <div style={{
@@ -378,13 +378,13 @@ function QueueDisplay() {
                   {serving.token}
                 </div>
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                  <p style={{ fontSize: 22, fontWeight: 700, marginTop: 16, color: "white" }}>{serving.patientName}</p>
+                  <p style={{ fontSize: 22, fontWeight: 700, marginTop: 16, color: theme.textPrimary }}>{serving.patientName}</p>
                   {currentCallout?.room && (
-                    <p style={{ fontSize: 16, color: "#D4956B", marginTop: 8, fontWeight: 600 }}>
+                    <p style={{ fontSize: 16, color: theme.copperText, marginTop: 8, fontWeight: 600 }}>
                       Proceed To {currentCallout.room}
                     </p>
                   )}
-                  <p style={{ fontSize: 13, color: "#64748B", marginTop: 8, textTransform: "uppercase", letterSpacing: "1px" }}>{serving.department}</p>
+                  <p style={{ fontSize: 13, color: theme.textMuted, marginTop: 8, textTransform: "uppercase", letterSpacing: "1px" }}>{serving.department}</p>
                 </motion.div>
                 {isSpeaking && (
                   <motion.div
@@ -403,7 +403,7 @@ function QueueDisplay() {
               </motion.div>
             ) : (
               <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center" }}>
-                <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "4px", textTransform: "uppercase", color: "#64748B", marginBottom: 24 }}>
+                <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "4px", textTransform: "uppercase", color: theme.textMuted, marginBottom: 24 }}>
                   Now Serving
                 </p>
                 <div style={{
@@ -412,7 +412,7 @@ function QueueDisplay() {
                 }}>
                   ---
                 </div>
-                <p style={{ fontSize: 16, color: "#D4956B", marginTop: 16, opacity: 0.5 }}>Waiting For Next Patient</p>
+                <p style={{ fontSize: 16, color: theme.copperText, marginTop: 16, opacity: 0.5 }}>Waiting For Next Patient</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -422,11 +422,11 @@ function QueueDisplay() {
         <div style={{ width: 320, minWidth: 320, display: "flex", flexDirection: "column" }}>
           <div style={{
             padding: 20, borderRadius: 16, flex: 1,
-            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(184,115,51,0.08)",
-            backdropFilter: "blur(12px)",
+            background: theme.cardBg, border: theme.cardBorder,
+            backdropFilter: "blur(12px)", boxShadow: theme.cardShadow,
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: "monospace" }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: theme.copperText, fontFamily: "monospace" }}>
                 Up Next
               </p>
               {waiting.length > 0 && (
@@ -447,8 +447,8 @@ function QueueDisplay() {
                     style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between",
                       padding: "12px 16px", borderRadius: 10,
-                      background: item.emergencyFlag ? "rgba(220,38,38,0.05)" : "rgba(255,255,255,0.02)",
-                      border: `1px solid ${item.emergencyFlag ? "rgba(220,38,38,0.15)" : "rgba(184,115,51,0.06)"}`,
+                      background: item.emergencyFlag ? "rgba(220,38,38,0.05)" : (theme.isDayMode ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)"),
+                      border: `1px solid ${item.emergencyFlag ? "rgba(220,38,38,0.15)" : (theme.isDayMode ? "rgba(139,90,43,0.1)" : "rgba(184,115,51,0.06)")}`,
                       animation: item.emergencyFlag ? "erFlash 2s ease-in-out infinite" : undefined,
                     }}
                   >
@@ -459,22 +459,22 @@ function QueueDisplay() {
                       }}>
                         {item.token}
                       </span>
-                      <span style={{ fontSize: 12, fontWeight: 500, color: "#94A3B8" }}>
+                      <span style={{ fontSize: 12, fontWeight: 500, color: theme.textSecondary }}>
                         {item.patientName}
                       </span>
                     </div>
-                    <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", color: "#64748B", textTransform: "uppercase" }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.5px", color: theme.textMuted, textTransform: "uppercase" }}>
                       {item.emergencyFlag ? "ER" : item.department}
                     </span>
                   </motion.div>
                 ))}
               </AnimatePresence>
               {upNext.length === 0 && (
-                <p style={{ fontSize: 13, color: "#3D4D78", textAlign: "center", padding: 24 }}>Queue Empty</p>
+                <p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 24 }}>Queue Empty</p>
               )}
             </div>
             {waiting.length > 5 && (
-              <p style={{ fontSize: 11, color: "#64748B", textAlign: "center", marginTop: 12 }}>
+              <p style={{ fontSize: 11, color: theme.textMuted, textAlign: "center", marginTop: 12 }}>
                 +{waiting.length - 5} More Waiting
               </p>
             )}
@@ -488,14 +488,14 @@ function QueueDisplay() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6 }}
         className="relative z-10 px-8 py-3 flex justify-between items-center"
-        style={{ borderTop: "1px solid rgba(184,115,51,0.1)" }}
+        style={{ borderTop: `1px solid ${theme.divider}` }}
       >
-        <p className="text-xs font-body" style={{ color: "#64748B" }}>
+        <p className="text-xs font-body" style={{ color: theme.textMuted }}>
           {waiting.length} Patient{waiting.length !== 1 ? "s" : ""} Waiting · Est. Wait ~{Math.max(5, waiting.length * 8)} Min
         </p>
         <div className="flex items-center gap-2">
           <div className="w-1 h-1 rounded-full bg-[#B87333]/40" />
-          <p className="text-[10px] font-body" style={{ color: "#64748B" }}>
+          <p className="text-[10px] font-body" style={{ color: theme.textMuted }}>
             Powered By DalxicHealth — A Dalxic Subsidiary
           </p>
         </div>

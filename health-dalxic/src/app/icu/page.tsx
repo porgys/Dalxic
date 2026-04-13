@@ -161,7 +161,7 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: theme.textMuted, marginBottom: 8 }}>{stat.label}</p>
               <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
             </motion.div>
           ))}
@@ -194,7 +194,7 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
                   </div>
                 </div>
                 <motion.button type="button" onClick={admitPatient} disabled={admitting || !admitForm.recordId.trim()} whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
-                  style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: "white", background: "linear-gradient(135deg, #EF4444, #DC2626)", border: "none", cursor: admitting ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: admitting || !admitForm.recordId.trim() ? 0.5 : 1 }}>
+                  style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: theme.textPrimary, background: "linear-gradient(135deg, #EF4444, #DC2626)", border: "none", cursor: admitting ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: admitting || !admitForm.recordId.trim() ? 0.5 : 1 }}>
                   {admitting ? "Admitting..." : "Admit To ICU"}
                 </motion.button>
               </WorkshopBox>
@@ -204,7 +204,7 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
           {activeNav === "monitor" && (
             <motion.div key="monitor" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {patients.length === 0 ? (
-                <WorkshopBox title="No ICU Patients" icon="❤️"><p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>No Patients Currently In ICU.</p></WorkshopBox>
+                <WorkshopBox title="No ICU Patients" icon="❤️"><p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 24 }}>No Patients Currently In ICU.</p></WorkshopBox>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   {patients.map((p, i) => (
@@ -214,15 +214,15 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{p.bedLabel}</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{p.patientName}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>{p.patientName}</span>
                           {p.ventilator && <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: "uppercase", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#EF4444" }}>Ventilator</span>}
                           <span style={{ padding: "3px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, fontFamily: fontFamily.mono, background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.2)", color: "#38BDF8" }}>Day {p.dayCount}</span>
                         </div>
-                        <span style={{ fontSize: 10, color: "#64748B" }}>{p.obsCount} Observations</span>
+                        <span style={{ fontSize: 10, color: theme.textMuted }}>{p.obsCount} Observations</span>
                       </div>
 
                       {/* Diagnosis */}
-                      {p.diagnosis && <p style={{ fontSize: 13, color: "#94A3B8", marginBottom: 12 }}>{p.diagnosis}</p>}
+                      {p.diagnosis && <p style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 12 }}>{p.diagnosis}</p>}
 
                       {/* Latest vitals grid */}
                       {p.latestObs && (
@@ -237,9 +237,9 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
                             { label: "GCS", value: p.latestObs.gcs ? `${p.latestObs.gcs}` : "—", unit: "/15", warn: p.latestObs.gcs && p.latestObs.gcs < 8 },
                           ].map((v) => (
                             <div key={v.label} style={{ padding: 8, borderRadius: 8, background: v.warn ? "rgba(239,68,68,0.06)" : "rgba(255,255,255,0.02)", border: `1px solid ${v.warn ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.04)"}`, textAlign: "center" }}>
-                              <p style={{ fontSize: 8, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 2 }}>{v.label}</p>
+                              <p style={{ fontSize: 8, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 2 }}>{v.label}</p>
                               <p style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: v.warn ? "#EF4444" : "white" }}>{v.value}</p>
-                              <p style={{ fontSize: 8, color: "#4A5568" }}>{v.unit}</p>
+                              <p style={{ fontSize: 8, color: theme.textMuted }}>{v.unit}</p>
                             </div>
                           ))}
                         </div>
@@ -247,7 +247,7 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
 
                       {/* Record observation */}
                       <motion.button type="button" onClick={() => setSelectedPatient(selectedPatient === p.recordId ? null : p.recordId)} whileHover={{ y: -1 }}
-                        style={{ padding: "8px 16px", borderRadius: 10, fontSize: 11, fontWeight: 700, color: "#D4956B", background: "rgba(184,115,51,0.08)", border: "1px solid rgba(184,115,51,0.15)", cursor: "pointer", textTransform: "uppercase" }}>
+                        style={{ padding: "8px 16px", borderRadius: 10, fontSize: 11, fontWeight: 700, color: theme.copperText, background: "rgba(184,115,51,0.08)", border: "1px solid rgba(184,115,51,0.15)", cursor: "pointer", textTransform: "uppercase" }}>
                         {selectedPatient === p.recordId ? "Close" : "Record Observation"}
                       </motion.button>
 
@@ -267,7 +267,7 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
                             <DInput value={obsForm.notes} onChange={(e) => setObsForm({ ...obsForm, notes: e.target.value })} placeholder="Notes..." />
                           </div>
                           <motion.button type="button" onClick={recordObs} disabled={savingObs} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
-                            style={{ width: "100%", padding: "12px 24px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: savingObs ? "wait" : "pointer", textTransform: "uppercase", opacity: savingObs ? 0.5 : 1 }}>
+                            style={{ width: "100%", padding: "12px 24px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: theme.textPrimary, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: savingObs ? "wait" : "pointer", textTransform: "uppercase", opacity: savingObs ? 0.5 : 1 }}>
                             {savingObs ? "Saving..." : "Save Observation"}
                           </motion.button>
                         </div>

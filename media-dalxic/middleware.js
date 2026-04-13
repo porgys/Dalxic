@@ -53,12 +53,6 @@ export function middleware(request) {
     return applySecurityHeaders(NextResponse.next())
   }
 
-  // Password gate
-  const auth = request.cookies.get("dalxic_access")?.value
-  if (auth !== "granted") {
-    return NextResponse.redirect("https://dalxic.com/gate")
-  }
-
   return applySecurityHeaders(NextResponse.next())
 }
 

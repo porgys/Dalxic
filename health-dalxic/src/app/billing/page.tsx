@@ -336,7 +336,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
           <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Billing Station</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: theme.copperText }}>Billing Station</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
@@ -379,7 +379,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                 ].map((stat, i) => (
                   <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                     style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
+                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: theme.textMuted, marginBottom: 8 }}>{stat.label}</p>
                     <p style={{ fontSize: 28, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
                   </motion.div>
                 ))}
@@ -389,11 +389,11 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
               <WorkshopBox title="Outstanding Balance" icon="⚠️" delay={0.15}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
-                    <p style={{ fontSize: 10, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>Total Unpaid Across All Patients</p>
+                    <p style={{ fontSize: 10, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>Total Unpaid Across All Patients</p>
                     <p style={{ fontSize: 36, fontWeight: 800, fontFamily: fontFamily.mono, color: "#F59E0B" }}>{formatCurrency(stats.pendingAmount)}</p>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <p style={{ fontSize: 10, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>Bills Pending</p>
+                    <p style={{ fontSize: 10, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>Bills Pending</p>
                     <p style={{ fontSize: 36, fontWeight: 800, fontFamily: fontFamily.mono, color: "#F59E0B" }}>{stats.pendingBillsCount}</p>
                   </div>
                 </div>
@@ -417,7 +417,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                     />
                   </div>
                   <motion.button type="button" onClick={searchPatient} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
-                    style={{ padding: "10px 24px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    style={{ padding: "10px 24px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: theme.textPrimary, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                     Search
                   </motion.button>
                 </div>
@@ -443,7 +443,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                   {patientView === "unbilled" && (
                     <WorkshopBox title={`Unbilled Items — ${activePatientId.slice(0, 12)}...`} icon="📝" delay={0.1}>
                       {unbilledItems.length === 0 ? (
-                        <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>No Unbilled Items For This Patient</p>
+                        <p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 24 }}>No Unbilled Items For This Patient</p>
                       ) : (
                         <>
                           {/* Items table */}
@@ -452,22 +452,22 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                               <thead>
                                 <tr>
                                   {["Service", "Description", "Unit Cost", "Qty", "Total", "When"].map((h) => (
-                                    <th key={h} style={{ padding: "8px 12px", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#64748B", textAlign: "left", borderBottom: "1px solid rgba(184,115,51,0.08)" }}>{h}</th>
+                                    <th key={h} style={{ padding: "8px 12px", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: theme.textMuted, textAlign: "left", borderBottom: "1px solid rgba(184,115,51,0.08)" }}>{h}</th>
                                   ))}
                                 </tr>
                               </thead>
                               <tbody>
                                 {unbilledItems.map((item) => (
                                   <tr key={item.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                                    <td style={{ padding: "10px 12px", fontSize: 12, color: "#D4956B" }}>
+                                    <td style={{ padding: "10px 12px", fontSize: 12, color: theme.copperText }}>
                                       <span style={{ marginRight: 6 }}>{SERVICE_ICONS[item.serviceType] || "📋"}</span>
                                       {item.serviceType}
                                     </td>
-                                    <td style={{ padding: "10px 12px", fontSize: 12, color: "white" }}>{item.description}</td>
-                                    <td style={{ padding: "10px 12px", fontSize: 13, color: "#94A3B8", fontFamily: fontFamily.mono }}>{formatCurrency(item.unitCost)}</td>
-                                    <td style={{ padding: "10px 12px", fontSize: 13, color: "#94A3B8", textAlign: "center" }}>{item.quantity}</td>
-                                    <td style={{ padding: "10px 12px", fontSize: 12, color: "white", fontWeight: 700, fontFamily: fontFamily.mono }}>{formatCurrency(item.totalCost)}</td>
-                                    <td style={{ padding: "10px 12px", fontSize: 11, color: "#64748B" }}>{formatTime(item.renderedAt)}</td>
+                                    <td style={{ padding: "10px 12px", fontSize: 12, color: theme.textPrimary }}>{item.description}</td>
+                                    <td style={{ padding: "10px 12px", fontSize: 13, color: theme.textSecondary, fontFamily: fontFamily.mono }}>{formatCurrency(item.unitCost)}</td>
+                                    <td style={{ padding: "10px 12px", fontSize: 13, color: theme.textSecondary, textAlign: "center" }}>{item.quantity}</td>
+                                    <td style={{ padding: "10px 12px", fontSize: 12, color: theme.textPrimary, fontWeight: 700, fontFamily: fontFamily.mono }}>{formatCurrency(item.totalCost)}</td>
+                                    <td style={{ padding: "10px 12px", fontSize: 11, color: theme.textMuted }}>{formatTime(item.renderedAt)}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -477,24 +477,24 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                           {/* Totals + assemble */}
                           <div style={{ marginTop: 20, padding: 16, borderRadius: 12, background: theme.navInactiveBg, border: "1px solid rgba(184,115,51,0.08)" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                              <span style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Subtotal</span>
-                              <span style={{ fontSize: 18, fontWeight: 800, fontFamily: fontFamily.mono, color: "white" }}>{formatCurrency(unbilledTotal)}</span>
+                              <span style={{ fontSize: 11, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>Subtotal</span>
+                              <span style={{ fontSize: 18, fontWeight: 800, fontFamily: fontFamily.mono, color: theme.textPrimary }}>{formatCurrency(unbilledTotal)}</span>
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                              <label style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", whiteSpace: "nowrap" }}>Discount (GHS)</label>
+                              <label style={{ fontSize: 11, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", whiteSpace: "nowrap" }}>Discount (GHS)</label>
                               <input
                                 type="number" min="0" step="0.01" value={discount || ""}
                                 onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                                style={{ flex: 1, maxWidth: 140, padding: "8px 12px", borderRadius: 10, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none", fontFamily: fontFamily.mono }}
+                                style={{ flex: 1, maxWidth: 140, padding: "8px 12px", borderRadius: 10, fontSize: 13, color: theme.textPrimary, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(184,115,51,0.15)", outline: "none", fontFamily: fontFamily.mono }}
                               />
                               <div style={{ marginLeft: "auto", textAlign: "right" }}>
-                                <span style={{ fontSize: 10, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", display: "block" }}>Bill Total</span>
+                                <span style={{ fontSize: 10, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block" }}>Bill Total</span>
                                 <span style={{ fontSize: 24, fontWeight: 800, fontFamily: fontFamily.mono, color: "#22C55E" }}>{formatCurrency(Math.max(0, unbilledTotal - discount))}</span>
                               </div>
                             </div>
                             <motion.button type="button" onClick={assembleBill} disabled={assembling || unbilledItems.length === 0}
                               whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
-                              style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: assembling ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: assembling ? 0.6 : 1 }}>
+                              style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: theme.textPrimary, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: assembling ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: assembling ? 0.6 : 1 }}>
                               {assembling ? "Creating Bill..." : `Assemble Bill — ${unbilledItems.length} Items`}
                             </motion.button>
                           </div>
@@ -507,7 +507,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                   {patientView === "history" && (
                     <WorkshopBox title="Bill History" icon="📋" delay={0.1}>
                       {patientBills.length === 0 ? (
-                        <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>No Bills Found For This Patient</p>
+                        <p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 24 }}>No Bills Found For This Patient</p>
                       ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                           {patientBills.map((bill) => {
@@ -521,29 +521,29 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                                     <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{bill.billNumber}</span>
                                     <span style={{ padding: "3px 10px", borderRadius: 8, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", background: sc.bg, border: `1px solid ${sc.border}`, color: sc.text }}>{bill.status}</span>
                                   </div>
-                                  <span style={{ fontSize: 11, color: "#64748B" }}>{formatDate(bill.createdAt)}</span>
+                                  <span style={{ fontSize: 11, color: theme.textMuted }}>{formatDate(bill.createdAt)}</span>
                                 </div>
 
                                 {/* Bill amounts */}
                                 <div style={{ display: "flex", gap: 24, marginBottom: 10 }}>
                                   <div>
-                                    <span style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Subtotal</span>
-                                    <p style={{ fontSize: 13, fontFamily: fontFamily.mono, color: "#94A3B8" }}>{formatCurrency(bill.subtotal)}</p>
+                                    <span style={{ fontSize: 9, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>Subtotal</span>
+                                    <p style={{ fontSize: 13, fontFamily: fontFamily.mono, color: theme.textSecondary }}>{formatCurrency(bill.subtotal)}</p>
                                   </div>
                                   {bill.discount > 0 && (
                                     <div>
-                                      <span style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Discount</span>
+                                      <span style={{ fontSize: 9, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>Discount</span>
                                       <p style={{ fontSize: 13, fontFamily: fontFamily.mono, color: "#F59E0B" }}>-{formatCurrency(bill.discount)}</p>
                                     </div>
                                   )}
                                   <div>
-                                    <span style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Total</span>
-                                    <p style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: "white" }}>{formatCurrency(bill.total)}</p>
+                                    <span style={{ fontSize: 9, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>Total</span>
+                                    <p style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: theme.textPrimary }}>{formatCurrency(bill.total)}</p>
                                   </div>
                                   {bill.paymentMethod && (
                                     <div>
-                                      <span style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Method</span>
-                                      <p style={{ fontSize: 13, color: "#94A3B8" }}>{bill.paymentMethod}</p>
+                                      <span style={{ fontSize: 9, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>Method</span>
+                                      <p style={{ fontSize: 13, color: theme.textSecondary }}>{bill.paymentMethod}</p>
                                     </div>
                                   )}
                                 </div>
@@ -552,7 +552,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                                 {bill.items && bill.items.length > 0 && (
                                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
                                     {bill.items.map((item) => (
-                                      <span key={item.id} style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, background: "rgba(184,115,51,0.06)", border: "1px solid rgba(184,115,51,0.1)", color: "#D4956B" }}>
+                                      <span key={item.id} style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, background: "rgba(184,115,51,0.06)", border: "1px solid rgba(184,115,51,0.1)", color: theme.copperText }}>
                                         {SERVICE_ICONS[item.serviceType] || "📋"} {item.description}
                                       </span>
                                     ))}
@@ -581,23 +581,23 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                                         </div>
                                         {/* Partial payment */}
                                         <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
-                                          <label style={{ fontSize: 10, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", whiteSpace: "nowrap" }}>Paid Amount (Leave Empty For Full)</label>
+                                          <label style={{ fontSize: 10, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", whiteSpace: "nowrap" }}>Paid Amount (Leave Empty For Full)</label>
                                           <input
                                             type="number" min="0" step="0.01" value={paidAmount}
                                             onChange={(e) => setPaidAmount(e.target.value)}
                                             placeholder={bill.total.toFixed(2)}
-                                            style={{ flex: 1, maxWidth: 160, padding: "8px 12px", borderRadius: 10, fontSize: 13, color: "white", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(34,197,94,0.15)", outline: "none", fontFamily: fontFamily.mono }}
+                                            style={{ flex: 1, maxWidth: 160, padding: "8px 12px", borderRadius: 10, fontSize: 13, color: theme.textPrimary, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(34,197,94,0.15)", outline: "none", fontFamily: fontFamily.mono }}
                                           />
                                         </div>
                                         <div style={{ display: "flex", gap: 8 }}>
                                           <motion.button type="button" onClick={recordPayment} disabled={!paymentMethod || processing}
                                             whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
-                                            style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: "linear-gradient(135deg, #22C55E, #16A34A)", border: "none", cursor: processing ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "0.5px", opacity: processing || !paymentMethod ? 0.5 : 1 }}>
+                                            style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: theme.textPrimary, background: "linear-gradient(135deg, #22C55E, #16A34A)", border: "none", cursor: processing ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "0.5px", opacity: processing || !paymentMethod ? 0.5 : 1 }}>
                                             {processing ? "Processing..." : "Confirm Payment"}
                                           </motion.button>
                                           <motion.button type="button" onClick={() => { setPayingBillId(null); setPaymentMethod(""); setPaidAmount(""); }}
                                             whileHover={{ y: -1 }}
-                                            style={{ padding: "10px 16px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "#64748B", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", cursor: "pointer" }}>
+                                            style={{ padding: "10px 16px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: theme.textMuted, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", cursor: "pointer" }}>
                                             Cancel
                                           </motion.button>
                                         </div>
@@ -627,10 +627,10 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
           {activeNav === "bills" && (
             <motion.div key="bills" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <WorkshopBox title="All Recent Bills" icon="📋" delay={0}>
-                <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>
+                <p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 24 }}>
                   Use Patient Billing Tab To Search Bills By Patient ID.
                   <br /><br />
-                  <span style={{ fontSize: 11, color: "#4A5568" }}>Search By Patient ID In The Patient Billing Tab</span>
+                  <span style={{ fontSize: 11, color: theme.textMuted }}>Search By Patient ID In The Patient Billing Tab</span>
                 </p>
               </WorkshopBox>
             </motion.div>
@@ -640,12 +640,12 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
           {activeNav === "prices" && (
             <motion.div key="prices" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <WorkshopBox title="Set Service Prices" icon="⚙️" delay={0}>
-                <p style={{ fontSize: 11, color: "#64748B", marginBottom: 16 }}>
+                <p style={{ fontSize: 11, color: theme.textMuted, marginBottom: 16 }}>
                   Configure Default Prices For Each Service Type. These Override Module-Provided Costs.
                 </p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
                   <div>
-                    <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Service Type</label>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: theme.textSecondary, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Service Type</label>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       {SERVICE_TYPES.map((st) => (
                         <motion.button key={st} type="button" onClick={() => setPriceForm({ ...priceForm, serviceType: st })}
@@ -682,7 +682,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                   </div>
                   <motion.button type="button" onClick={savePrice} disabled={savingPrice || !priceForm.name || !priceForm.unitCost}
                     whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
-                    style={{ padding: "10px 24px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: savingPrice ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "0.5px", opacity: savingPrice || !priceForm.name || !priceForm.unitCost ? 0.5 : 1 }}>
+                    style={{ padding: "10px 24px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: theme.textPrimary, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: savingPrice ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "0.5px", opacity: savingPrice || !priceForm.name || !priceForm.unitCost ? 0.5 : 1 }}>
                     {savingPrice ? "Saving..." : "Save Price"}
                   </motion.button>
                 </div>
@@ -690,7 +690,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
 
               {/* Price examples */}
               <WorkshopBox title="How Billing Auto-Capture Works" icon="💡" delay={0.1} className="mt-4">
-                <div style={{ fontSize: 13, color: "#94A3B8", lineHeight: 1.8 }}>
+                <div style={{ fontSize: 13, color: theme.textSecondary, lineHeight: 1.8 }}>
                   <p style={{ marginBottom: 8 }}>Every Module Automatically Emits Billable Items When Services Are Rendered:</p>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                     {[
@@ -703,12 +703,12 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
                     ].map((eg) => (
                       <div key={eg.from} style={{ padding: 10, borderRadius: 10, background: theme.navInactiveBg, border: "1px solid rgba(255,255,255,0.04)" }}>
                         <span style={{ fontSize: 14 }}>{eg.icon}</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "#D4956B", marginLeft: 6 }}>{eg.from}</span>
-                        <span style={{ fontSize: 11, color: "#64748B" }}> → {eg.item}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: theme.copperText, marginLeft: 6 }}>{eg.from}</span>
+                        <span style={{ fontSize: 11, color: theme.textMuted }}> → {eg.item}</span>
                       </div>
                     ))}
                   </div>
-                  <p style={{ marginTop: 12, fontSize: 11, color: "#64748B" }}>
+                  <p style={{ marginTop: 12, fontSize: 11, color: theme.textMuted }}>
                     Prices Set Here Override Default Module Costs. The Billing Officer Simply Searches A Patient, Reviews Auto-Captured Items, And Assembles The Bill.
                   </p>
                 </div>

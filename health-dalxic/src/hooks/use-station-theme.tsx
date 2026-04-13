@@ -66,9 +66,9 @@ export function getStyles(isDayMode: boolean) {
       padding: "12px 14px",
       borderRadius: radius.md,
       fontSize: fontSize.base,
-      background: d ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.7)",
-      border: `1px solid ${d ? COPPER + "12" : "rgba(139,90,43,0.2)"}`,
-      color: d ? "#E2E8F0" : "#1A1714",
+      background: d ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.04)",
+      border: `1px solid ${d ? COPPER + "12" : "rgba(139,90,43,0.55)"}`,
+      color: d ? "#E2E8F0" : "#0D0A07",
       outline: "none",
       fontFamily: fontFamily.primary,
     } as const,
@@ -78,26 +78,26 @@ export function getStyles(isDayMode: boolean) {
       fontWeight: fontWeight.bold,
       letterSpacing: "0.1em",
       textTransform: "uppercase" as const,
-      color: d ? "#64748B" : "#5C534A",
+      color: d ? "#64748B" : "#3A3228",
       marginBottom: 6,
     } as const,
     card: {
       padding: spacing.cardPadding,
       borderRadius: radius.xl,
-      background: d ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.82)",
-      border: `1px solid ${d ? COPPER + "10" : "rgba(139,90,43,0.18)"}`,
+      background: d ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.03)",
+      border: `1px solid ${d ? COPPER + "10" : "rgba(139,90,43,0.5)"}`,
       marginBottom: spacing.sectionGap,
     } as const,
     sectionTitle: {
       fontSize: fontSize.sm,
       fontWeight: fontWeight.heavy,
-      color: d ? COPPER_LIGHT : "#8B5A2B",
+      color: d ? COPPER_LIGHT : "#5C3D1A",
       letterSpacing: wider,
       textTransform: "uppercase" as const,
     } as const,
     description: {
       fontSize: fontSize.sm,
-      color: d ? "#64748B" : "#6B7280",
+      color: d ? "#64748B" : "#4A4035",
       lineHeight: 1.6,
       marginBottom: 14,
     } as const,
@@ -121,10 +121,10 @@ export function getStyles(isDayMode: boolean) {
       fontWeight: fontWeight.bold,
       letterSpacing: letterSpacing.wider,
       textTransform: "uppercase" as const,
-      color: d ? "#64748B" : "#6B7280",
+      color: d ? "#64748B" : "#4A4035",
       cursor: "pointer",
-      background: d ? "rgba(255,255,255,0.03)" : "rgba(139,90,43,0.04)",
-      border: `1px solid ${d ? "rgba(255,255,255,0.06)" : "rgba(139,90,43,0.12)"}`,
+      background: d ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)",
+      border: `1px solid ${d ? "rgba(255,255,255,0.06)" : "rgba(139,90,43,0.06)"}`,
       fontFamily: fontFamily.primary,
     } as const,
     statusBadge: {
@@ -142,7 +142,7 @@ export function getStyles(isDayMode: boolean) {
     sectionLabel: {
       fontSize: 10,
       fontWeight: fontWeight.bold,
-      color: d ? "#475569" : "#6B7280",
+      color: d ? "#475569" : "#7C7268",
       letterSpacing: "0.1em",
       textTransform: "uppercase" as const,
       marginBottom: 4,
@@ -202,46 +202,61 @@ export interface StationTheme {
 
 export function useStationTheme(): StationTheme {
   const [isDayMode, setIsDayMode] = useState(false);
-  const toggle = useCallback(() => setIsDayMode((p) => !p), []);
+  const toggle = useCallback(() => setIsDayMode((p) => {
+    const next = !p;
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-theme", next ? "light" : "dark");
+    }
+    return next;
+  }), []);
 
   if (isDayMode) {
     return {
       isDayMode: true,
       toggle,
+      /* ── Warm parchment base ── */
       pageBg: "linear-gradient(180deg, #EDE5DB 0%, #E4DACE 30%, #D9CFC0 60%, #D0C4B3 100%)",
-      cardBg: "rgba(255,255,255,0.82)",
-      cardBorder: "1.5px solid rgba(139,90,43,0.18)",
-      cardShadow: "0 4px 20px rgba(139,90,43,0.08), 0 0 40px rgba(184,115,51,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
-      cardHoverBg: "rgba(255,255,255,0.92)",
-      cardHoverBorder: "rgba(184,140,80,0.30)",
-      cardHoverShadow: "0 8px 32px rgba(139,90,43,0.12), 0 0 48px rgba(184,115,51,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
-      headerBg: "rgba(237,229,219,0.85)",
+      /* ── Surfaces: 5% darker tint from bg, NOT white overlay ── */
+      cardBg: "rgba(0,0,0,0.03)",           // 3% darken — barely visible, matches dark mode's 2.5% lighten
+      cardBorder: "1px solid rgba(139,90,43,0.5)",
+      cardShadow: "none",
+      cardHoverBg: "rgba(0,0,0,0.05)",      // 5% darken on hover — matches dark's 4% lighten
+      cardHoverBorder: "rgba(139,90,43,0.6)",
+      cardHoverShadow: "none",
+      /* ── Header: blend into page ── */
+      headerBg: "rgba(237,229,219,0.9)",
       headerBorder: "1px solid rgba(139,90,43,0.12)",
-      inputBg: "rgba(255,255,255,0.7)",
-      inputBorder: "rgba(139,90,43,0.2)",
-      inputText: "#1A1714",
+      /* ── Inputs: subtle inset feel ── */
+      inputBg: "rgba(0,0,0,0.04)",          // inset tint, not white box
+      inputBorder: "rgba(139,90,43,0.55)",
+      inputText: "#0D0A07",
       inputPlaceholder: "#9CA3AF",
-      inputFocusRing: "rgba(184,115,51,0.25)",
-      selectOptionBg: "#F5F0EB",
-      textPrimary: "#1A1714",
-      textSecondary: "#4A4035",
-      textMuted: "#6B7280",
-      textLabel: "#5C534A",
-      canvasOpacity: 0.08,
-      overlayCopper: "rgba(184,115,51,0.03)",
-      overlayBlue: "rgba(14,165,233,0.015)",
-      gridOpacity: 0.04,
-      navActiveBg: "rgba(184,115,51,0.1)",
-      navActiveBorder: `${COPPER}50`,
-      navActiveText: "#8B5A2B",
-      navInactiveBg: "rgba(139,90,43,0.04)",
-      navInactiveBorder: "rgba(139,90,43,0.12)",
-      navInactiveText: "#6B7280",
-      copperText: "#8B5A2B",
-      copperSubtle: "rgba(139,90,43,0.12)",
-      divider: "rgba(139,90,43,0.15)",
-      chipBg: "rgba(139,90,43,0.06)",
-      chipBorder: "rgba(139,90,43,0.15)",
+      inputFocusRing: "rgba(184,115,51,0.2)",
+      selectOptionBg: "#E4DACE",
+      /* ── Text: 7:1+ primary, 4.5:1+ secondary, muted holds ── */
+      textPrimary: "#0D0A07",               // near-black
+      textSecondary: "#2C2418",             // dark brown
+      textMuted: "#4A4035",                 // warm dark gray
+      textLabel: "#3A3228",                 // dark label
+      /* ── Ambient layers: almost invisible ── */
+      canvasOpacity: 0.06,
+      overlayCopper: "rgba(184,115,51,0.02)",
+      overlayBlue: "rgba(14,165,233,0.01)",
+      gridOpacity: 0.03,
+      /* ── Nav: copper tinted, not opaque ── */
+      navActiveBg: "rgba(139,90,43,0.08)",
+      navActiveBorder: "rgba(139,90,43,0.55)",
+      navActiveText: "#4A2D15",
+      navInactiveBg: "rgba(0,0,0,0.02)",
+      navInactiveBorder: "rgba(139,90,43,0.35)",
+      navInactiveText: "#4A4035",
+      /* ── Copper accent: darker for contrast on light bg ── */
+      copperText: "#5C3D1A",
+      copperSubtle: "rgba(139,90,43,0.08)",
+      /* ── Dividers + chips ── */
+      divider: "rgba(139,90,43,0.45)",
+      chipBg: "rgba(139,90,43,0.04)",
+      chipBorder: "rgba(139,90,43,0.45)",
     };
   }
 
@@ -285,36 +300,9 @@ export function useStationTheme(): StationTheme {
   };
 }
 
-/* ─── Toggle Button Component ─── */
+/* ─── Toggle Button Component (disabled — day mode not yet ready) ─── */
 export function ThemeToggle({ isDayMode, onToggle }: { isDayMode: boolean; onToggle: () => void }) {
-  return (
-    <button
-      onClick={onToggle}
-      style={{
-        width: 52, height: 28, borderRadius: 14, border: "none", cursor: "pointer",
-        background: isDayMode
-          ? "linear-gradient(135deg, #F59E0B, #FBBF24)"
-          : "linear-gradient(135deg, #1E293B, #334155)",
-        position: "relative",
-        transition: "background 0.4s ease",
-        boxShadow: isDayMode
-          ? "0 2px 8px rgba(245,158,11,0.3)"
-          : "0 2px 8px rgba(0,0,0,0.3)",
-      }}
-    >
-      <div style={{
-        width: 22, height: 22, borderRadius: "50%",
-        position: "absolute", top: 3,
-        left: isDayMode ? 27 : 3,
-        background: isDayMode ? "#FFF" : "#0F172A",
-        transition: "left 0.3s ease, background 0.3s ease",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: isDayMode ? "0 1px 4px rgba(0,0,0,0.15)" : "none",
-      }}>
-        <span style={{ fontSize: 12, lineHeight: 1 }}>{isDayMode ? "\u2600\uFE0F" : "\uD83C\uDF19"}</span>
-      </div>
-    </button>
-  );
+  return null;
 }
 
 /* ─── Theme Context (avoids prop-drilling through every component) ─── */

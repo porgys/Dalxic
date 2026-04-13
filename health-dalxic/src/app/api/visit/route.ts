@@ -298,8 +298,15 @@ export async function POST(request: Request) {
       data: { visit: JSON.parse(JSON.stringify(visit)) },
     });
 
-    // WhatsApp discharge notification
+    // WhatsApp discharge notification with full visit summary
+    const rxList = treatment.prescriptions?.length
+      ? (treatment.prescriptions as { medication: string; dosage: string; frequency: string; duration: string }[])
+          .map((rx, i) => `${i + 1}. ${rx.medication} — ${rx.dosage}, ${rx.frequency}, ${rx.duration}`)
+          .join("\n")
+      : undefined;
     notifyPatient(recordId, "discharge_summary", {
+      diagnosis: diagnosis.primary || undefined,
+      prescriptions: rxList,
       followUp: (visit.followUp as string) || undefined,
     }).catch(() => {});
 

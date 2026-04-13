@@ -92,7 +92,7 @@ function WorkshopBox({ children, title, icon, delay = 0, className = "" }: {
     >
       <div className="flex items-center gap-2 mb-4">
         <span className="text-lg">{icon}</span>
-        <h3 style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: "#D4956B", fontFamily: fontFamily.mono }}>{title}</h3>
+        <h3 style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: theme.copperText, fontFamily: fontFamily.mono }}>{title}</h3>
       </div>
       {children}
     </motion.div>
@@ -105,7 +105,7 @@ function DInput({ label, required, ...props }: React.InputHTMLAttributes<HTMLInp
   return (
     <div>
       {label && (
-        <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#94A3B8", marginBottom: 6 }}>
+        <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: theme.textSecondary, marginBottom: 6 }}>
           {label} {required && <span style={{ color: "#EF4444" }}>*</span>}
         </label>
       )}
@@ -123,7 +123,7 @@ function DSelect({ label, options, ...props }: React.SelectHTMLAttributes<HTMLSe
   const theme = useThemeContext();
   return (
     <div>
-      {label && <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: "#94A3B8", marginBottom: 6 }}>{label}</label>}
+      {label && <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: theme.textSecondary, marginBottom: 6 }}>{label}</label>}
       <select
         {...props}
         className="w-full rounded-xl border px-3.5 py-2.5 text-sm font-body text-white focus:outline-none focus:ring-2 focus:ring-[#B87333]/30 focus:border-[#B87333]/30 transition-all duration-300 appearance-none"
@@ -265,7 +265,7 @@ function LabContent({ operator }: { operator: OperatorSession }) {
           <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Lab Station</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: theme.copperText }}>Lab Station</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
@@ -325,7 +325,7 @@ function LabContent({ operator }: { operator: OperatorSession }) {
                   <span style={{
                     fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase",
                     padding: "4px 12px", borderRadius: 8,
-                    background: "rgba(184,115,51,0.1)", border: "1px solid rgba(184,115,51,0.2)", color: "#D4956B",
+                    background: "rgba(184,115,51,0.1)", border: "1px solid rgba(184,115,51,0.2)", color: theme.copperText,
                   }}>
                     In Progress
                   </span>
@@ -336,7 +336,7 @@ function LabContent({ operator }: { operator: OperatorSession }) {
                   style={{
                     padding: "8px 20px", borderRadius: 12, fontSize: 14, fontWeight: 500,
                     background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-                    color: "#94A3B8", cursor: "pointer", transition: "all 0.3s",
+                    color: theme.textSecondary, cursor: "pointer", transition: "all 0.3s",
                   }}
                 >
                   Back To Queue
@@ -372,11 +372,11 @@ function LabContent({ operator }: { operator: OperatorSession }) {
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                        <h4 style={{ fontSize: 16, fontWeight: 700, color: "white" }}>{test.testName}</h4>
+                        <h4 style={{ fontSize: 16, fontWeight: 700, color: theme.textPrimary }}>{test.testName}</h4>
                         <span style={{
                           fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase",
                           padding: "3px 10px", borderRadius: 6,
-                          background: "rgba(184,115,51,0.08)", border: "1px solid rgba(184,115,51,0.15)", color: "#D4956B",
+                          background: "rgba(184,115,51,0.08)", border: "1px solid rgba(184,115,51,0.15)", color: theme.copperText,
                         }}>
                           {test.category}
                         </span>
@@ -400,7 +400,7 @@ function LabContent({ operator }: { operator: OperatorSession }) {
                 disabled={submitting}
                 style={{
                   width: "100%", marginTop: 20, padding: "16px 32px", borderRadius: 16,
-                  fontSize: 16, fontWeight: 600, color: "white", cursor: "pointer",
+                  fontSize: 16, fontWeight: 600, color: theme.textPrimary, cursor: "pointer",
                   background: `linear-gradient(135deg, ${COPPER}, #D4956B)`,
                   border: "none", boxShadow: `0 4px 24px ${COPPER}20`,
                   opacity: submitting ? 0.6 : 1, transition: "all 0.3s",
@@ -434,7 +434,7 @@ function LabContent({ operator }: { operator: OperatorSession }) {
                     <p style={{ fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800, fontFamily: fontFamily.mono, color: stat.accent ? COPPER : "white" }}>
                       {stat.value}
                     </p>
-                    <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: "#94A3B8", marginTop: 4 }}>{stat.label}</p>
+                    <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: theme.textSecondary, marginTop: 4 }}>{stat.label}</p>
                   </motion.div>
                 ))}
               </div>
@@ -445,8 +445,8 @@ function LabContent({ operator }: { operator: OperatorSession }) {
                   <div style={{ width: 64, height: 64, margin: "0 auto 16px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid rgba(184,115,51,0.15)" }}>
                     <div style={{ width: 16, height: 16, borderRadius: "50%", background: "rgba(184,115,51,0.2)" }} />
                   </div>
-                  <p style={{ fontSize: 14.5, fontWeight: 500, color: "#94A3B8" }}>No Pending Orders</p>
-                  <p style={{ fontSize: 12, fontWeight: 500, color: "#4A5568", marginTop: 4 }}>Orders Will Appear Here When Doctors Send Lab Requests</p>
+                  <p style={{ fontSize: 14.5, fontWeight: 500, color: theme.textSecondary }}>No Pending Orders</p>
+                  <p style={{ fontSize: 12, fontWeight: 500, color: theme.textMuted, marginTop: 4 }}>Orders Will Appear Here When Doctors Send Lab Requests</p>
                 </motion.div>
               )}
 
@@ -487,7 +487,7 @@ function LabContent({ operator }: { operator: OperatorSession }) {
                           {order.status === "pending" ? "Pending" : "Completed"}
                         </span>
                       </div>
-                      <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: "#64748B" }}>
+                      <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: theme.textMuted }}>
                         {new Date(order.orderedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>

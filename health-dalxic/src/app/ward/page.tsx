@@ -373,7 +373,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
           <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Ward / IPD</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: theme.copperText }}>Ward / IPD</span>
           {assignedWardNames.length > 0 && !isAdmin && (
             <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
               {assignedWardNames.map(name => (
@@ -406,7 +406,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               style={{ padding: 20, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: theme.textMuted, marginBottom: 8 }}>{stat.label}</p>
               <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
             </motion.div>
           ))}
@@ -434,9 +434,9 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
               {/* Pending Admission Orders from Doctors */}
               <WorkshopBox title={`Pending Admission Orders (${pendingOrders.length})`} icon="📋">
                 {loadingOrders ? (
-                  <p style={{ fontSize: 12, color: "#64748B", textAlign: "center", padding: 16 }}>Loading Orders...</p>
+                  <p style={{ fontSize: 12, color: theme.textMuted, textAlign: "center", padding: 16 }}>Loading Orders...</p>
                 ) : pendingOrders.length === 0 ? (
-                  <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>No Pending Admission Orders From Doctors.</p>
+                  <p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 24 }}>No Pending Admission Orders From Doctors.</p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
                     {pendingOrders.map((order) => {
@@ -452,15 +452,15 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                               <span style={{ fontSize: 12, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{order.queueToken}</span>
-                              <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{order.patientName}</span>
-                              {order.age && <span style={{ fontSize: 11, color: "#64748B" }}>{order.age}y {order.gender || ""}</span>}
+                              <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>{order.patientName}</span>
+                              {order.age && <span style={{ fontSize: 11, color: theme.textMuted }}>{order.age}y {order.gender || ""}</span>}
                             </div>
                             <span style={{ fontSize: 10, fontWeight: 700, color: "#A855F7", textTransform: "uppercase" }}>
                               {isSelected ? "✓ Selected" : "Select"}
                             </span>
                           </div>
-                          <div style={{ display: "flex", gap: 16, fontSize: 11, color: "#94A3B8" }}>
-                            <span>Reason: <strong style={{ color: "#D4956B" }}>{order.admissionReason || order.chiefComplaint || "—"}</strong></span>
+                          <div style={{ display: "flex", gap: 16, fontSize: 11, color: theme.textSecondary }}>
+                            <span>Reason: <strong style={{ color: theme.copperText }}>{order.admissionReason || order.chiefComplaint || "—"}</strong></span>
                             <span>By: <strong>{order.orderedByName}</strong></span>
                             {order.diagnosis && <span>Dx: <strong>{order.diagnosis}</strong></span>}
                             {order.orderedAt && <span>{new Date(order.orderedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>}
@@ -477,9 +477,9 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                 <WorkshopBox title={`Assign Bed For ${selectedOrder.patientName}`} icon="🛏️" delay={0.1}>
                   {/* Ward Selector */}
                   <div style={{ marginBottom: 12 }}>
-                    <label className="block text-xs font-medium font-body mb-2" style={{ color: "#94A3B8" }}>Select Ward</label>
+                    <label className="block text-xs font-medium font-body mb-2" style={{ color: theme.textSecondary }}>Select Ward</label>
                     {loadingWards ? (
-                      <p style={{ fontSize: 12, color: "#64748B", padding: 12 }}>Loading Wards...</p>
+                      <p style={{ fontSize: 12, color: theme.textMuted, padding: 12 }}>Loading Wards...</p>
                     ) : visibleWards.length === 0 ? (
                       <p style={{ fontSize: 12, color: "#F59E0B", padding: 12 }}>No Wards Configured. Set Up Wards In Bed Management First.</p>
                     ) : (
@@ -510,7 +510,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                   {/* Bed Grid */}
                   {selectedWardId && (
                     <div style={{ marginBottom: 16 }}>
-                      <label className="block text-xs font-medium font-body mb-2" style={{ color: "#94A3B8" }}>Select Bed</label>
+                      <label className="block text-xs font-medium font-body mb-2" style={{ color: theme.textSecondary }}>Select Bed</label>
                       {(() => {
                         const ward = wards.find((w) => w.id === selectedWardId);
                         if (!ward) return null;
@@ -531,7 +531,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                                     opacity: isAvailable ? 1 : 0.35,
                                   }}>
                                   <div style={{ fontSize: 15, fontWeight: 800, fontFamily: fontFamily.mono, color: isSel ? "#22C55E" : isAvailable ? "white" : "#64748B" }}>{bed.label}</div>
-                                  <div style={{ fontSize: 9, color: "#64748B", marginTop: 2 }}>{bed.roomName}</div>
+                                  <div style={{ fontSize: 9, color: theme.textMuted, marginTop: 2 }}>{bed.roomName}</div>
                                   <div style={{ fontSize: 8, marginTop: 3, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px",
                                     color: bed.status === "AVAILABLE" ? "#22C55E" : bed.status === "OCCUPIED" ? "#38BDF8" : bed.status === "CLEANING" ? "#FB923C" : bed.status === "MAINTENANCE" ? "#A855F7" : "#F59E0B",
                                   }}>{bed.status}</div>
@@ -554,7 +554,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                   )}
 
                   <motion.button type="button" onClick={admitPatient} disabled={admitting || !selectedBed} whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
-                    style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: admitting ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: admitting || !selectedBed ? 0.5 : 1 }}>
+                    style={{ width: "100%", padding: "14px 24px", borderRadius: 14, fontSize: 13, fontWeight: 800, color: theme.textPrimary, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: admitting ? "wait" : "pointer", textTransform: "uppercase", letterSpacing: "1px", opacity: admitting || !selectedBed ? 0.5 : 1 }}>
                     {admitting ? "Admitting..." : "Admit Patient"}
                   </motion.button>
                 </WorkshopBox>
@@ -567,7 +567,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
             <motion.div key={activeNav} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {inpatients.length === 0 ? (
                 <WorkshopBox title={activeNav === "inpatients" ? "No Inpatients" : "No Discharged Patients"} icon="🛏️">
-                  <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 24 }}>
+                  <p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 24 }}>
                     {activeNav === "inpatients" ? "No Patients Currently Admitted. Use Admit Patient Tab To Add One." : "No Discharged Patients Found."}
                   </p>
                 </WorkshopBox>
@@ -582,47 +582,47 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{p.queueToken}</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{p.patientName}</span>
-                          {p.age && <span style={{ fontSize: 11, color: "#64748B" }}>{p.age}y {p.gender || ""}</span>}
+                          <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>{p.patientName}</span>
+                          {p.age && <span style={{ fontSize: 11, color: theme.textMuted }}>{p.age}y {p.gender || ""}</span>}
                         </div>
                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                           <span style={{ padding: "3px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, fontFamily: fontFamily.mono, background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.2)", color: "#38BDF8" }}>Day {p.dayCount}</span>
-                          <span style={{ fontSize: 11, color: "#64748B" }}>{p.roundsCount} Rounds</span>
+                          <span style={{ fontSize: 11, color: theme.textMuted }}>{p.roundsCount} Rounds</span>
                         </div>
                       </div>
 
                       {/* Details Row */}
                       <div style={{ display: "flex", gap: 20, marginBottom: 12, flexWrap: "wrap" }}>
                         <div>
-                          <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 2 }}>Ward</p>
-                          <p style={{ fontSize: 13, fontWeight: 700, color: "#D4956B" }}>{p.wardName}</p>
+                          <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 2 }}>Ward</p>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: theme.copperText }}>{p.wardName}</p>
                         </div>
                         <div>
-                          <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 2 }}>Bed</p>
-                          <p style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{p.bedLabel}</p>
+                          <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 2 }}>Bed</p>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>{p.bedLabel}</p>
                         </div>
                         <div>
-                          <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 2 }}>Doctor</p>
+                          <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 2 }}>Doctor</p>
                           <p style={{ fontSize: 13, fontWeight: 700, color: p.assignedDoctorName ? "#A855F7" : "#475569" }}>
                             {p.assignedDoctorName || "Not Assigned"}
                           </p>
                         </div>
                         <div>
-                          <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 2 }}>Visiting Hours</p>
+                          <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 2 }}>Visiting Hours</p>
                           <p style={{ fontSize: 13, fontWeight: 700, color: p.visitingHours ? "#F59E0B" : "#475569" }}>
                             {p.visitingHours || "Not Set"}
                           </p>
                         </div>
                         {p.diagnosis && (
                           <div style={{ flex: 1 }}>
-                            <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 2 }}>Diagnosis</p>
-                            <p style={{ fontSize: 13, color: "#94A3B8" }}>{p.diagnosis}</p>
+                            <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 2 }}>Diagnosis</p>
+                            <p style={{ fontSize: 13, color: theme.textSecondary }}>{p.diagnosis}</p>
                           </div>
                         )}
                         {p.admittedAt && (
                           <div>
-                            <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 2 }}>Admitted</p>
-                            <p style={{ fontSize: 11, color: "#94A3B8" }}>{new Date(p.admittedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}</p>
+                            <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 2 }}>Admitted</p>
+                            <p style={{ fontSize: 11, color: theme.textSecondary }}>{new Date(p.admittedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}</p>
                           </div>
                         )}
                       </div>
@@ -634,7 +634,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                             {p.prescriptions.map((rx, ri) => (
                               <span key={ri} style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 600, color: "#C084FC", background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.12)" }}>
-                                {rx.medication} {rx.dosage && <span style={{ color: "#94A3B8" }}>— {rx.dosage} {rx.frequency}</span>}
+                                {rx.medication} {rx.dosage && <span style={{ color: theme.textSecondary }}>— {rx.dosage} {rx.frequency}</span>}
                               </span>
                             ))}
                           </div>
@@ -644,8 +644,8 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                       {/* Last round note */}
                       {p.lastRound && (
                         <div style={{ padding: 10, borderRadius: 10, background: theme.navInactiveBg, border: "1px solid rgba(255,255,255,0.04)", marginBottom: 12 }}>
-                          <p style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>Latest Round — {new Date(p.lastRound.date).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</p>
-                          <p style={{ fontSize: 13, color: "#94A3B8" }}>{p.lastRound.notes}</p>
+                          <p style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>Latest Round — {new Date(p.lastRound.date).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</p>
+                          <p style={{ fontSize: 13, color: theme.textSecondary }}>{p.lastRound.notes}</p>
                         </div>
                       )}
 
@@ -677,11 +677,11 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                           <DTextarea label="Round Notes" value={roundNotes} onChange={(e) => setRoundNotes(e.target.value)} rows={3} placeholder="Patient observations, progress notes..." />
                           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                             <motion.button type="button" onClick={recordRound} disabled={savingRound || !roundNotes.trim()} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
-                              style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: savingRound ? "wait" : "pointer", textTransform: "uppercase", opacity: savingRound || !roundNotes.trim() ? 0.5 : 1 }}>
+                              style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: theme.textPrimary, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", cursor: savingRound ? "wait" : "pointer", textTransform: "uppercase", opacity: savingRound || !roundNotes.trim() ? 0.5 : 1 }}>
                               {savingRound ? "Saving..." : "Save Round"}
                             </motion.button>
                             <button type="button" onClick={() => { setSelectedPatient(null); setExpandedSection(null); }}
-                              style={{ padding: "10px 16px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "#64748B", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+                              style={{ padding: "10px 16px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: theme.textMuted, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
                               Cancel
                             </button>
                           </div>
@@ -694,11 +694,11 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                           <DInput label="Doctor Name" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} placeholder="Enter doctor name..." required />
                           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                             <motion.button type="button" onClick={() => assignDoctor(p.recordId)} disabled={assigningDoctor || !doctorName.trim()} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
-                              style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: "linear-gradient(135deg, #A855F7, #C084FC)", border: "none", cursor: assigningDoctor ? "wait" : "pointer", textTransform: "uppercase", opacity: assigningDoctor || !doctorName.trim() ? 0.5 : 1 }}>
+                              style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: theme.textPrimary, background: "linear-gradient(135deg, #A855F7, #C084FC)", border: "none", cursor: assigningDoctor ? "wait" : "pointer", textTransform: "uppercase", opacity: assigningDoctor || !doctorName.trim() ? 0.5 : 1 }}>
                               {assigningDoctor ? "Assigning..." : "Assign Doctor"}
                             </motion.button>
                             <button type="button" onClick={() => { setSelectedPatient(null); setExpandedSection(null); }}
-                              style={{ padding: "10px 16px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "#64748B", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+                              style={{ padding: "10px 16px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: theme.textMuted, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
                               Cancel
                             </button>
                           </div>
@@ -708,7 +708,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                       {/* Expanded: Visiting Hours */}
                       {isSelected && expandedSection === "visiting" && !p.discharged && (
                         <div style={{ marginTop: 12, padding: 16, borderRadius: 12, background: theme.navInactiveBg, border: "1px solid rgba(245,158,11,0.1)" }}>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Visiting Hours</label>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: theme.textSecondary, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Visiting Hours</label>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
                             {["9:00 AM — 12:00 PM", "2:00 PM — 5:00 PM", "9:00 AM — 5:00 PM", "No Visitors"].map((preset) => (
                               <button key={preset} type="button" onClick={() => setVisitHours(preset)}
@@ -726,11 +726,11 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                           </div>
                           <div style={{ display: "flex", gap: 8 }}>
                             <motion.button type="button" onClick={() => saveVisitingHours(p.recordId)} disabled={savingVisitHours || !visitHours.trim()} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
-                              style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: "linear-gradient(135deg, #F59E0B, #FBBF24)", border: "none", cursor: savingVisitHours ? "wait" : "pointer", textTransform: "uppercase", opacity: savingVisitHours || !visitHours.trim() ? 0.5 : 1 }}>
+                              style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: theme.textPrimary, background: "linear-gradient(135deg, #F59E0B, #FBBF24)", border: "none", cursor: savingVisitHours ? "wait" : "pointer", textTransform: "uppercase", opacity: savingVisitHours || !visitHours.trim() ? 0.5 : 1 }}>
                               {savingVisitHours ? "Saving..." : "Save Visiting Hours"}
                             </motion.button>
                             <button type="button" onClick={() => { setSelectedPatient(null); setExpandedSection(null); }}
-                              style={{ padding: "10px 16px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "#64748B", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+                              style={{ padding: "10px 16px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: theme.textMuted, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
                               Cancel
                             </button>
                           </div>
@@ -743,11 +743,11 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
                           <DTextarea label="Discharge Summary" value={dischargeSummary} onChange={(e) => setDischargeSummary(e.target.value)} rows={3} placeholder="Discharge summary, instructions..." />
                           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                             <motion.button type="button" onClick={dischargePatient} disabled={discharging} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}
-                              style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "white", background: "linear-gradient(135deg, #22C55E, #4ADE80)", border: "none", cursor: discharging ? "wait" : "pointer", textTransform: "uppercase" }}>
+                              style={{ flex: 1, padding: "10px 20px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: theme.textPrimary, background: "linear-gradient(135deg, #22C55E, #4ADE80)", border: "none", cursor: discharging ? "wait" : "pointer", textTransform: "uppercase" }}>
                               {discharging ? "Discharging..." : "Confirm Discharge"}
                             </motion.button>
                             <button type="button" onClick={() => { setSelectedPatient(null); setExpandedSection(null); }}
-                              style={{ padding: "10px 16px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "#64748B", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+                              style={{ padding: "10px 16px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: theme.textMuted, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
                               Cancel
                             </button>
                           </div>

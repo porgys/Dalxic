@@ -758,7 +758,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
                     setTimeout(() => document.body.removeChild(iframe), 10000);
                   }}
                     className="px-2.5 py-1 rounded-lg text-[10px] font-body font-medium transition-all"
-                    style={{ background: "rgba(184,115,51,0.1)", border: `1px solid ${COPPER}30`, color: "#D4956B" }}>
+                    style={{ background: "rgba(184,115,51,0.1)", border: `1px solid ${COPPER}30`, color: theme.copperText }}>
                     🖨 Print Ticket
                   </button>
                   <span className="text-[9px] text-[#4A5568]">Click Toast To Dismiss</span>
@@ -794,7 +794,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
                       />
                     </div>
                     {cardSearching && (
-                      <span style={{ fontSize: 11, color: "#94A3B8", fontFamily: fontFamily.mono }}>Searching...</span>
+                      <span style={{ fontSize: 11, color: theme.textSecondary, fontFamily: fontFamily.mono }}>Searching...</span>
                     )}
                     {cardFound && (
                       <motion.div
@@ -807,8 +807,8 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
                         }}
                       >
                         <span style={{ fontSize: 12, color: "#22C55E", fontWeight: 700 }}>Card Member Found</span>
-                        <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: fontFamily.mono }}>{cardFound.cardNumber}</span>
-                        <span style={{ fontSize: 10, color: "#64748B" }}>— Details Auto-Filled</span>
+                        <span style={{ fontSize: 10, color: theme.textSecondary, fontFamily: fontFamily.mono }}>{cardFound.cardNumber}</span>
+                        <span style={{ fontSize: 10, color: theme.textMuted }}>— Details Auto-Filled</span>
                       </motion.div>
                     )}
                   </div>
@@ -973,7 +973,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
                             style={{
                               background: "rgba(184,115,51,0.04)",
                               border: `1px dashed ${COPPER}30`,
-                              color: "#D4956B",
+                              color: theme.copperText,
                             }}>
                             + Add Other
                           </button>
@@ -1191,7 +1191,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
                             {patient.services.length > 0 && (
                               <div className="flex flex-wrap gap-1.5 mt-2">
                                 {patient.services.map((s) => (
-                                  <span key={s} className="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded" style={{ background: "rgba(184,115,51,0.06)", border: "1px solid rgba(184,115,51,0.1)", color: "#D4956B", letterSpacing: "0.5px" }}>
+                                  <span key={s} className="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded" style={{ background: "rgba(184,115,51,0.06)", border: "1px solid rgba(184,115,51,0.1)", color: theme.copperText, letterSpacing: "0.5px" }}>
                                     {s}
                                   </span>
                                 ))}
@@ -1635,28 +1635,28 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
               {newCardNumber ? (
                 <div style={{ textAlign: "center" }}>
                   <p style={{ fontSize: 12, color: "#22C55E", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12 }}>Card Created</p>
-                  <p style={{ fontSize: 36, fontFamily: fontFamily.mono, fontWeight: 800, color: "#D4956B", letterSpacing: "0.08em" }}>{newCardNumber}</p>
-                  <p style={{ fontSize: 11, color: "#94A3B8", marginTop: 8 }}>Write This Number On The Patient Card</p>
+                  <p style={{ fontSize: 36, fontFamily: fontFamily.mono, fontWeight: 800, color: theme.copperText, letterSpacing: "0.08em" }}>{newCardNumber}</p>
+                  <p style={{ fontSize: 11, color: theme.textSecondary, marginTop: 8 }}>Write This Number On The Patient Card</p>
                   <button type="button" onClick={() => { setShowCreateCard(false); setNewCardNumber(null); }}
-                    style={{ marginTop: 20, padding: "8px 24px", borderRadius: 10, background: `${COPPER}15`, border: `1px solid ${COPPER}30`, color: "#D4956B", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    style={{ marginTop: 20, padding: "8px 24px", borderRadius: 10, background: `${COPPER}15`, border: `1px solid ${COPPER}30`, color: theme.copperText, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                     Done
                   </button>
                 </div>
               ) : (
                 <div>
-                  <h3 style={{ fontSize: 14, fontWeight: 800, color: "#D4956B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Create Membership Card</h3>
-                  <p style={{ fontSize: 11, color: "#94A3B8", marginBottom: 20 }}>Generate A Unique Card Number For This Patient</p>
+                  <h3 style={{ fontSize: 14, fontWeight: 800, color: theme.copperText, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Create Membership Card</h3>
+                  <p style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 20 }}>Generate A Unique Card Number For This Patient</p>
                   <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", marginBottom: 20 }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "#E2E8F0" }}>{form.fullName || "—"}</p>
-                    <p style={{ fontSize: 11, color: "#64748B", marginTop: 4 }}>{form.phone || "No Phone"} &middot; {form.gender || "—"} &middot; {form.insuranceProvider || "No Insurance"}</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>{form.fullName || "—"}</p>
+                    <p style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{form.phone || "No Phone"} &middot; {form.gender || "—"} &middot; {form.insuranceProvider || "No Insurance"}</p>
                   </div>
                   <div style={{ display: "flex", gap: 10 }}>
                     <button type="button" onClick={() => { setShowCreateCard(false); setNewCardNumber(null); }}
-                      style={{ flex: 1, padding: "10px 0", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                      style={{ flex: 1, padding: "10px 0", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: theme.textSecondary, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                       Skip
                     </button>
                     <button type="button" onClick={handleCreateCard} disabled={creatingCard}
-                      style={{ flex: 1, padding: "10px 0", borderRadius: 10, background: `${COPPER}20`, border: `1px solid ${COPPER}40`, color: "#D4956B", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: creatingCard ? 0.5 : 1 }}>
+                      style={{ flex: 1, padding: "10px 0", borderRadius: 10, background: `${COPPER}20`, border: `1px solid ${COPPER}40`, color: theme.copperText, fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: creatingCard ? 0.5 : 1 }}>
                       {creatingCard ? "Creating..." : "Create Card"}
                     </button>
                   </div>

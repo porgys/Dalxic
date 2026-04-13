@@ -338,6 +338,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [doctorSpecialty, setDoctorSpecialty] = useState<string>("general");
   const [coveredSpecialties, setCoveredSpecialties] = useState<string[]>([]);
   const [showDeptSwitcher, setShowDeptSwitcher] = useState(false);
+  const skipAutoResumeRef = useRef(false);
   const isAdmin = operator.operatorRole === "admin" || operator.operatorRole === "super_admin";
   const ALL_DEPARTMENTS = [
     { value: "all", label: "All Departments" },
@@ -418,10 +419,6 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [handoverNotes, setHandoverNotes] = useState("");
   const [handoverSending, setHandoverSending] = useState(false);
 
-  // WhatsApp & PDF state
-  const [waPhone, setWaPhone] = useState("");
-  const [waSending, setWaSending] = useState(false);
-  const [waResult, setWaResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   // Load doctor profile by operator name → get specialty + doctorId
   useEffect(() => {
@@ -568,29 +565,6 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
     setHandoverSending(false);
   };
 
-  // WhatsApp send
-  const handleWhatsAppSend = async () => {
-    if (!activeSession?.recordId || !waPhone.trim()) return;
-    setWaSending(true);
-    setWaResult(null);
-    try {
-      const res = await fetch("/api/whatsapp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recordId: activeSession.recordId, phoneNumber: waPhone }),
-      });
-      if (res.ok) {
-        setWaResult({ ok: true, msg: "Report sent via WhatsApp" });
-        setWaPhone("");
-      } else {
-        const err = await res.json();
-        setWaResult({ ok: false, msg: err.error || "Send failed" });
-      }
-    } catch {
-      setWaResult({ ok: false, msg: "Network error" });
-    }
-    setWaSending(false);
-  };
 
   const loadQueue = useCallback(async () => {
     try {
@@ -619,7 +593,8 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
           visitStatus: d.visitStatus ?? "active",
           priorityReturn: d.priorityReturn ?? false,
         }))));
-        // Admin switching departments: auto-resume active consultation in this department
+        // Auto-resume active consultation in this department (skip if admin just switched)
+        if (skipAutoResumeRef.current) return;
         const inConsult = data.filter((d: { visitStatus?: string; department?: string }) => {
           const vs = d.visitStatus ?? "active";
           return vs === "in_consultation" && deptMatch(d);
@@ -686,6 +661,23 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const callNext = async () => {
     if (queue.length === 0) return;
     const next = queue[0];
+    // Double-layer department guard — prevent calling wrong-department patient
+    if (doctorSpecialty !== "all") {
+      const dept = (next.department || "general").toLowerCase();
+      if (doctorSpecialty === "general") {
+        // GM owns general + any department without an active specialist
+        const isGeneral = dept === "general" || dept === "general medicine";
+        if (!isGeneral && coveredSpecialties.includes(dept)) {
+          // This patient belongs to a specialist — skip and refresh queue
+          setQueue((prev) => prev.slice(1));
+          return;
+        }
+      } else if (dept !== doctorSpecialty) {
+        // Specialist got a patient outside their field — skip
+        setQueue((prev) => prev.slice(1));
+        return;
+      }
+    }
     setActiveSession({
       recordId: next.id,
       patient: { fullName: next.patientName },
@@ -907,7 +899,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
           <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Doctor Station</span>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: theme.copperText }}>Doctor Station</span>
           {/* Doctor Status Indicator */}
           <div style={{ position: "relative" }}>
             <button type="button" onClick={() => setShowStatusMenu(!showStatusMenu)}
@@ -925,15 +917,15 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
             {showStatusMenu && (
               <div style={{
                 position: "absolute", top: "100%", right: 0, marginTop: 4, padding: 4, borderRadius: 10, zIndex: 100, minWidth: 160,
-                background: "rgba(10,10,20,0.95)", border: "1px solid rgba(184,115,51,0.15)", backdropFilter: "blur(16px)",
+                background: theme.isDayMode ? "rgba(237,229,219,0.95)" : "rgba(10,10,20,0.95)", border: `1px solid ${theme.divider}`, backdropFilter: "blur(16px)",
               }}>
                 {[
                   { value: "AVAILABLE", color: "#22C55E", label: "Available" },
                   { value: "ON_BREAK", color: "#F59E0B", label: "On Break" },
                   { value: "IN_CONSULTATION", color: "#38BDF8", label: "In Consultation" },
                   { value: "IN_SURGERY", color: "#A855F7", label: "In Surgery" },
-                  { value: "ON_CALL", color: "#D4956B", label: "On Call" },
-                  { value: "OFF_DUTY", color: "#64748B", label: "Off Duty" },
+                  { value: "ON_CALL", color: theme.copperText, label: "On Call" },
+                  { value: "OFF_DUTY", color: theme.textMuted, label: "Off Duty" },
                 ].map((s) => (
                   <button key={s.value} type="button" onClick={() => updateDoctorStatus(s.value)}
                     style={{
@@ -950,7 +942,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                 <button type="button" onClick={() => { setVoiceEnabled(!voiceEnabled); setShowStatusMenu(false); }}
                   style={{
                     display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "7px 10px", borderRadius: 6,
-                    background: "transparent", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 500, color: "#94A3B8",
+                    background: "transparent", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 500, color: theme.textSecondary,
                     textAlign: "left",
                   }}>
                   {voiceEnabled ? "🔊" : "🔇"} Voice Callout {voiceEnabled ? "On" : "Off"}
@@ -990,12 +982,12 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
               {isAdmin && <span style={{ marginLeft: 4, fontSize: 7 }}>▼</span>}
             </span>
             {showDeptSwitcher && isAdmin && (
-              <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, background: "rgba(20,20,20,0.95)", border: `1px solid ${COPPER}30`, borderRadius: 8, padding: 4, zIndex: 999, minWidth: 160, backdropFilter: "blur(12px)" }}>
+              <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, background: theme.isDayMode ? "rgba(237,229,219,0.95)" : "rgba(20,20,20,0.95)", border: `1px solid ${theme.divider}`, borderRadius: 8, padding: 4, zIndex: 999, minWidth: 160, backdropFilter: "blur(12px)" }}>
                 {ALL_DEPARTMENTS.map(d => (
                   <div
                     key={d.value}
-                    onClick={() => { setDoctorSpecialty(d.value); setShowDeptSwitcher(false); setActiveSession(null); setDoctorStatus("AVAILABLE"); }}
-                    style={{ padding: "6px 12px", fontSize: 11, fontWeight: doctorSpecialty === d.value ? 700 : 500, color: doctorSpecialty === d.value ? COPPER : "#94A3B8", cursor: "pointer", borderRadius: 4, background: doctorSpecialty === d.value ? `${COPPER}10` : "transparent" }}
+                    onClick={() => { skipAutoResumeRef.current = true; setDoctorSpecialty(d.value); setShowDeptSwitcher(false); setActiveSession(null); setDoctorStatus("AVAILABLE"); setTimeout(() => { skipAutoResumeRef.current = false; }, 3000); }}
+                    style={{ padding: "6px 12px", fontSize: 11, fontWeight: doctorSpecialty === d.value ? 700 : 500, color: doctorSpecialty === d.value ? COPPER : theme.textSecondary, cursor: "pointer", borderRadius: 4, background: doctorSpecialty === d.value ? `${COPPER}10` : "transparent" }}
                     onMouseEnter={e => { (e.target as HTMLDivElement).style.background = `${COPPER}10`; }}
                     onMouseLeave={e => { (e.target as HTMLDivElement).style.background = doctorSpecialty === d.value ? `${COPPER}10` : "transparent"; }}
                   >
@@ -1006,7 +998,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
             )}
           </div>
           <div style={{ width: 1, height: 12, background: "rgba(184,115,51,0.12)" }} />
-          <span style={{ fontSize: 11, color: "#64748B" }}>{HOSPITAL_NAME}</span>
+          <span style={{ fontSize: 11, color: theme.textMuted }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 12, background: "rgba(184,115,51,0.12)" }} />
           <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 11, color: COPPER }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
@@ -1025,8 +1017,10 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
               position: "fixed", top: 42, left: 0, right: 0, zIndex: 49,
               padding: "8px 28px",
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              background: isER ? "rgba(30,6,6,0.85)" : "rgba(8,6,16,0.85)",
-              borderBottom: `1px solid ${isER ? "rgba(220,38,38,0.12)" : "rgba(184,115,51,0.08)"}`,
+              background: isER
+                ? (theme.isDayMode ? theme.headerBg : "rgba(30,6,6,0.85)")
+                : (theme.isDayMode ? theme.headerBg : "rgba(8,6,16,0.85)"),
+              borderBottom: `1px solid ${isER ? "rgba(220,38,38,0.12)" : (theme.isDayMode ? "transparent" : theme.divider)}`,
               backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
               animation: isER ? "emergencyBorder 2s ease-in-out infinite" : undefined,
             }}
@@ -1037,10 +1031,10 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                 background: isER ? "linear-gradient(135deg, #EF4444, #F87171)" : `linear-gradient(135deg, ${COPPER}, #D4956B)`,
                 WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               }}>{activeSession.visit.queueToken}</span>
-              <span style={{ fontSize: 15, fontWeight: 700, color: "white" }}>{activeSession.patient.fullName}</span>
-              <span style={{ fontSize: 12, fontWeight: 500, color: "#64748B" }}>{activeSession.visit.department}</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: theme.textPrimary }}>{activeSession.patient.fullName}</span>
+              <span style={{ fontSize: 12, fontWeight: 500, color: theme.textMuted }}>{activeSession.visit.department}</span>
               {activeSession.visit.symptomSeverity != null && <SeverityBadge severity={activeSession.visit.symptomSeverity} />}
-              <span style={{ fontSize: 12, color: "#4A5568", fontStyle: "italic" }}>&ldquo;{activeSession.visit.chiefComplaint}&rdquo;</span>
+              <span style={{ fontSize: 12, color: theme.textMuted, fontStyle: "italic" }}>&ldquo;{activeSession.visit.chiefComplaint}&rdquo;</span>
             </div>
             <div style={{ display: "flex", alignItems: "center" }}>
               {isER ? (
@@ -1050,7 +1044,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                   Escalate
                 </button>
               )}
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", padding: "3px 10px", borderRadius: 5, background: "rgba(184,115,51,0.08)", border: theme.cardBorder, color: "#D4956B" }}>In Consultation</span>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", padding: "3px 10px", borderRadius: 5, background: "rgba(184,115,51,0.08)", border: theme.cardBorder, color: theme.copperText }}>In Consultation</span>
             </div>
           </motion.div>
         )}
@@ -1060,10 +1054,10 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
       <div style={{ position: "relative", zIndex: 1, display: "flex", height: "100vh", paddingTop: activeSession ? 82 : 42 }}>
 
         {/* ─── LEFT: Queue Rail ─── */}
-        <div style={{ width: 220, flexShrink: 0, padding: "16px 12px", overflowY: "auto", borderRight: "1px solid rgba(184,115,51,0.06)" }}>
+        <div style={{ width: 220, flexShrink: 0, padding: "16px 12px", overflowY: "auto", borderRight: `1px solid ${theme.divider}` }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: fontFamily.mono }}>Queue</span>
-            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "rgba(184,115,51,0.08)", color: "#D4956B", fontFamily: fontFamily.mono }}>{queue.length}</span>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: theme.copperText, fontFamily: fontFamily.mono }}>Queue</span>
+            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "rgba(184,115,51,0.08)", color: theme.copperText, fontFamily: fontFamily.mono }}>{queue.length}</span>
           </div>
 
           {/* Call next button */}
@@ -1073,7 +1067,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
             disabled={queue.length === 0 || !!activeSession}
             style={{
               width: "100%", padding: "8px 0", borderRadius: 10, marginBottom: 12,
-              fontSize: 12, fontWeight: 600, color: "white", cursor: (queue.length === 0 || activeSession) ? "not-allowed" : "pointer",
+              fontSize: 12, fontWeight: 600, color: theme.textPrimary, cursor: (queue.length === 0 || activeSession) ? "not-allowed" : "pointer",
               background: (queue.length === 0 || activeSession) ? "rgba(255,255,255,0.03)" : `linear-gradient(135deg, ${COPPER}, #D4956B)`,
               border: (queue.length === 0 || activeSession) ? "1px solid rgba(255,255,255,0.05)" : "none",
               opacity: (queue.length === 0 || activeSession) ? 0.4 : 1, transition: "all 0.3s",
@@ -1108,9 +1102,9 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                     Returning — Lab Ready
                   </span>
                 )}
-                <p style={{ fontSize: 12, fontWeight: 600, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.patientName}</p>
+                <p style={{ fontSize: 12, fontWeight: 600, color: theme.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.patientName}</p>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 2 }}>
-                  <p style={{ fontSize: 10, fontWeight: 500, color: "#64748B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{item.chiefComplaint}</p>
+                  <p style={{ fontSize: 10, fontWeight: 500, color: theme.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{item.chiefComplaint}</p>
                   <SeverityBadge severity={item.symptomSeverity} />
                 </div>
               </motion.div>
@@ -1139,8 +1133,8 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                         color: ref.urgency === "stat" ? "#F87171" : ref.urgency === "urgent" ? "#F59E0B" : "#22C55E",
                       }}>{ref.urgency}</span>
                     </div>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ref.patientName}</p>
-                    <p style={{ fontSize: 10, color: "#64748B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>{ref.reason}</p>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: theme.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ref.patientName}</p>
+                    <p style={{ fontSize: 10, color: theme.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>{ref.reason}</p>
                     {ref.specialty && <span style={{ fontSize: 9, fontWeight: 600, color: "#0EA5E9", marginTop: 2, display: "inline-block" }}>{ref.specialty.replace(/_/g, " ").toUpperCase()}</span>}
                     <motion.button whileTap={{ scale: 0.95 }} onClick={() => acceptReferral(ref)}
                       style={{ display: "block", width: "100%", marginTop: 6, padding: "5px 0", borderRadius: 6, fontSize: 10, fontWeight: 600, color: "#38BDF8", cursor: "pointer", background: "rgba(14,165,233,0.06)", border: "1px solid rgba(14,165,233,0.15)" }}>
@@ -1169,11 +1163,11 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                         <span style={{ fontFamily: fontFamily.mono, fontSize: 10, fontWeight: 700, color: pColor }}>{ref.fromHospitalCode}</span>
                         <span style={{ fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 3, textTransform: "uppercase", background: `${pColor}12`, color: pColor }}>{ref.priority}</span>
                       </div>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ref.patientName}</p>
-                      <p style={{ fontSize: 10, color: "#64748B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>{ref.clinicalReason}</p>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: theme.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ref.patientName}</p>
+                      <p style={{ fontSize: 10, color: theme.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>{ref.clinicalReason}</p>
                       <div style={{ display: "flex", gap: 4, marginTop: 2 }}>
                         <span style={{ fontSize: 9, fontWeight: 600, color: COPPER }}>{ref.department}</span>
-                        <span style={{ fontSize: 9, color: "#475569" }}>&middot; {ref.status}</span>
+                        <span style={{ fontSize: 9, color: theme.textMuted }}>&middot; {ref.status}</span>
                       </div>
                       {ref.status === "PENDING" && (
                         <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleIbAccept(ref)}
@@ -1257,7 +1251,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                       style={{ padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)", marginBottom: 12 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
                         <span style={{ fontSize: 14 }}>🩺</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: fontFamily.mono }}>Diagnosis</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: theme.copperText, fontFamily: fontFamily.mono }}>Diagnosis</span>
                       </div>
                       {/* SOAP Template Quick-Select */}
                       <div style={{ marginBottom: 10 }}>
@@ -1269,7 +1263,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                                 Save As Template
                               </button>
                             )}
-                            <button type="button" onClick={() => setShowCreateTemplate(true)} style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, cursor: "pointer", background: `${COPPER}08`, border: `1px solid ${COPPER}20`, color: "#D4956B", letterSpacing: "0.04em" }}>
+                            <button type="button" onClick={() => setShowCreateTemplate(true)} style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, cursor: "pointer", background: `${COPPER}08`, border: `1px solid ${COPPER}20`, color: theme.copperText, letterSpacing: "0.04em" }}>
                               + New
                             </button>
                           </div>
@@ -1310,9 +1304,9 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ fontSize: 14 }}>💊</span>
-                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#D4956B", fontFamily: fontFamily.mono }}>Prescriptions</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: theme.copperText, fontFamily: fontFamily.mono }}>Prescriptions</span>
                         </div>
-                        <button type="button" onClick={addPrescription} style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", color: "#64748B", cursor: "pointer" }}>+ Add</button>
+                        <button type="button" onClick={addPrescription} style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", color: theme.textMuted, cursor: "pointer" }}>+ Add</button>
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1.2fr 1fr 28px", gap: 8, marginBottom: 6, padding: "0 2px" }}>
                         {["Medication", "Dosage", "Frequency", "Duration", ""].map((h) => (
@@ -1348,7 +1342,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: labReferral ? 10 : 0 }}>
                         <input type="checkbox" id="labRef" checked={labReferral} onChange={(e) => setLabReferral(e.target.checked)} style={{ width: 14, height: 14, accentColor: "#0EA5E9" }} />
-                        <label htmlFor="labRef" style={{ fontSize: 12, fontWeight: 500, color: "#94A3B8", cursor: "pointer" }}>Order Lab Tests</label>
+                        <label htmlFor="labRef" style={{ fontSize: 12, fontWeight: 500, color: theme.textSecondary, cursor: "pointer" }}>Order Lab Tests</label>
                       </div>
                       {labReferral && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1385,7 +1379,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                           )}
                           <DTextarea label="Clinical Context For Lab" rows={2} placeholder="Clinical context for lab..." value={clinicalNotes} onChange={(e) => setClinicalNotes(e.target.value)} />
                           <button type="button" onClick={sendToLab} disabled={ending || selectedTests.length === 0}
-                            style={{ padding: "10px 20px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "white", cursor: ending ? "wait" : "pointer", background: "linear-gradient(135deg, #0EA5E9, #38BDF8)", border: "none", opacity: ending || selectedTests.length === 0 ? 0.4 : 1, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                            style={{ padding: "10px 20px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: theme.textPrimary, cursor: ending ? "wait" : "pointer", background: "linear-gradient(135deg, #0EA5E9, #38BDF8)", border: "none", opacity: ending || selectedTests.length === 0 ? 0.4 : 1, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                             {ending ? "Sending..." : "Send To Lab — Pause Consultation"}
                           </button>
                         </div>
@@ -1411,7 +1405,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                             <DSelect label="Specialty" value={referralSpecialty} onChange={(e) => setReferralSpecialty(e.target.value)}
                               options={["Cardiologist", "Neurologist", "Orthopedic", "Dermatologist", "Pediatrician", "Gynecologist", "Surgeon", "Ophthalmologist", "ENT Specialist", "Psychiatrist", "Urologist", "Oncologist", "Pulmonologist", "Endocrinologist"].map((s) => ({ value: s.toLowerCase().replace(/\s+/g, "_"), label: s }))} />
                             <div>
-                              <label className="block text-xs font-medium font-body mb-1.5" style={{ color: "#94A3B8" }}>Urgency</label>
+                              <label className="block text-xs font-medium font-body mb-1.5" style={{ color: theme.textSecondary }}>Urgency</label>
                               <div style={{ display: "flex", gap: 6 }}>
                                 {(["routine", "urgent", "stat"] as const).map((u) => (
                                   <button key={u} type="button" onClick={() => setReferralUrgency(u)}
@@ -1428,7 +1422,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                           <DInput label="Reason For Referral" placeholder="e.g. Suspected cardiac arrhythmia" required value={referralReason} onChange={(e) => setReferralReason(e.target.value)} />
                           <DTextarea label="Additional Notes" rows={2} placeholder="Additional notes..." value={referralNotes} onChange={(e) => setReferralNotes(e.target.value)} />
                           <button type="button" onClick={sendReferral} disabled={referralSending || !referralReason.trim()}
-                            style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: (!referralReason.trim() || referralSending) ? "not-allowed" : "pointer", background: "linear-gradient(135deg, #0EA5E9, #38BDF8)", border: "none", opacity: (!referralReason.trim() || referralSending) ? 0.4 : 1 }}>
+                            style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: theme.textPrimary, cursor: (!referralReason.trim() || referralSending) ? "not-allowed" : "pointer", background: "linear-gradient(135deg, #0EA5E9, #38BDF8)", border: "none", opacity: (!referralReason.trim() || referralSending) ? 0.4 : 1 }}>
                             {referralSending ? "Sending..." : "Send Referral"}
                           </button>
                         </div>
@@ -1443,7 +1437,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <span style={{ fontSize: 14 }}>🌐</span>
                             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: COPPER, fontFamily: fontFamily.mono }}>Inter-Branch Referral</span>
-                            <span style={{ fontSize: 9, color: "#64748B", marginLeft: 4 }}>({hospitalGroup.name})</span>
+                            <span style={{ fontSize: 9, color: theme.textMuted, marginLeft: 4 }}>({hospitalGroup.name})</span>
                           </div>
                           <button type="button" onClick={() => setShowInterBranchPanel(!showInterBranchPanel)}
                             style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: showInterBranchPanel ? `${COPPER}15` : "rgba(255,255,255,0.03)", border: `1px solid ${showInterBranchPanel ? COPPER + "30" : "rgba(255,255,255,0.05)"}`, color: showInterBranchPanel ? COPPER : "#64748B", cursor: "pointer" }}>
@@ -1460,7 +1454,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                               <div>
-                                <label className="block text-xs font-medium font-body mb-1.5" style={{ color: "#94A3B8" }}>Type</label>
+                                <label className="block text-xs font-medium font-body mb-1.5" style={{ color: theme.textSecondary }}>Type</label>
                                 <div style={{ display: "flex", gap: 4 }}>
                                   {(["OUTPATIENT", "ADMISSION", "EMERGENCY", "BLOOD_REQUEST"] as const).map((t) => (
                                     <button key={t} type="button" onClick={() => setIbType(t)}
@@ -1471,7 +1465,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                                 </div>
                               </div>
                               <div>
-                                <label className="block text-xs font-medium font-body mb-1.5" style={{ color: "#94A3B8" }}>Priority</label>
+                                <label className="block text-xs font-medium font-body mb-1.5" style={{ color: theme.textSecondary }}>Priority</label>
                                 <div style={{ display: "flex", gap: 6 }}>
                                   {(["ROUTINE", "URGENT", "CRITICAL"] as const).map((p) => (
                                     <button key={p} type="button" onClick={() => setIbPriority(p)}
@@ -1490,7 +1484,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                               </div>
                             )}
                             <button type="button" onClick={sendInterBranchReferral} disabled={ibSending || !ibDest || !ibDept || !ibReason.trim()}
-                              style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", cursor: (!ibDest || !ibDept || !ibReason.trim() || ibSending) ? "not-allowed" : "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", opacity: (!ibDest || !ibDept || !ibReason.trim() || ibSending) ? 0.4 : 1 }}>
+                              style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: theme.textPrimary, cursor: (!ibDest || !ibDept || !ibReason.trim() || ibSending) ? "not-allowed" : "pointer", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: "none", opacity: (!ibDest || !ibDept || !ibReason.trim() || ibSending) ? 0.4 : 1 }}>
                               {ibSending ? "Sending..." : "Transfer To Branch"}
                             </button>
                           </div>
@@ -1512,8 +1506,8 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                             <div key={ref.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(14,165,233,0.03)", border: "1px solid rgba(14,165,233,0.1)" }}>
                               <div>
                                 <span style={{ fontSize: 12, fontWeight: 700, color: "#38BDF8", fontFamily: fontFamily.mono }}>{ref.queueToken}</span>
-                                <span style={{ fontSize: 12, fontWeight: 600, color: "white", marginLeft: 8 }}>{ref.patientName}</span>
-                                <span style={{ fontSize: 10, color: "#64748B", marginLeft: 8 }}>{ref.reason}</span>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: theme.textPrimary, marginLeft: 8 }}>{ref.patientName}</span>
+                                <span style={{ fontSize: 10, color: theme.textMuted, marginLeft: 8 }}>{ref.reason}</span>
                               </div>
                               <motion.button whileTap={{ scale: 0.95 }} onClick={() => acceptReferral(ref)}
                                 style={{ padding: "5px 12px", borderRadius: 6, fontSize: 10, fontWeight: 600, color: "#38BDF8", cursor: "pointer", background: "rgba(14,165,233,0.06)", border: "1px solid rgba(14,165,233,0.15)" }}>
@@ -1535,10 +1529,10 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                       <motion.div whileHover={{ y: -2 }} onClick={endSession}
                         style={{ padding: 24, borderRadius: 16, background: theme.cardBg, border: `1px solid ${COPPER}20`, backdropFilter: "blur(12px)", cursor: ending ? "wait" : "pointer", opacity: ending ? 0.6 : 1 }}>
                         <div style={{ fontSize: 28, marginBottom: 12 }}>✅</div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: "#D4956B", marginBottom: 4 }}>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: theme.copperText, marginBottom: 4 }}>
                           {prescriptions.some((p) => p.medication) ? "End — Send To Pharmacy" : "End Consultation"}
                         </div>
-                        <p style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5 }}>
+                        <p style={{ fontSize: 11, color: theme.textMuted, lineHeight: 1.5 }}>
                           {prescriptions.some((p) => p.medication)
                             ? "Save diagnosis, vitals, and prescriptions. Patient proceeds to pharmacy for medication."
                             : "Close this consultation and save all records. Patient proceeds to checkout."}
@@ -1550,45 +1544,10 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                         style={{ padding: 24, borderRadius: 16, background: theme.cardBg, border: "1px solid rgba(168,85,247,0.2)", backdropFilter: "blur(12px)", cursor: orderingAdmission ? "wait" : "pointer", opacity: orderingAdmission ? 0.6 : 1 }}>
                         <div style={{ fontSize: 28, marginBottom: 12 }}>🏥</div>
                         <div style={{ fontSize: 14, fontWeight: 800, color: "#A855F7", marginBottom: 4 }}>{orderingAdmission ? "Ordering..." : "Order Admission"}</div>
-                        <p style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5 }}>Order ward admission for this patient. Ward nurse will assign bed and complete admission.</p>
+                        <p style={{ fontSize: 11, color: theme.textMuted, lineHeight: 1.5 }}>Order ward admission for this patient. Ward nurse will assign bed and complete admission.</p>
                       </motion.div>
 
-                      {/* Download PDF */}
-                      <motion.div whileHover={{ y: -2 }} onClick={() => window.open(`/api/reports?recordId=${activeSession.recordId}&type=patient`, "_blank")}
-                        style={{ padding: 24, borderRadius: 16, background: theme.cardBg, border: "1px solid rgba(14,165,233,0.15)", backdropFilter: "blur(12px)", cursor: "pointer" }}>
-                        <div style={{ fontSize: 28, marginBottom: 12 }}>📄</div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: "#38BDF8", marginBottom: 4 }}>Download PDF</div>
-                        <p style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5 }}>Generate and download the patient record as a PDF document for printing or filing.</p>
-                      </motion.div>
-
-                      {/* Send Via WhatsApp */}
-                      <motion.div whileHover={{ y: -2 }} onClick={() => { setWaPhone(activeSession.patient?.phone || ""); setWaResult(null); }}
-                        style={{ padding: 24, borderRadius: 16, background: theme.cardBg, border: "1px solid rgba(37,211,102,0.15)", backdropFilter: "blur(12px)", cursor: "pointer" }}>
-                        <div style={{ fontSize: 28, marginBottom: 12 }}>💬</div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: "#25D366", marginBottom: 4 }}>Send Via WhatsApp</div>
-                        <p style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5 }}>Send consultation summary and prescriptions to the patient via WhatsApp message.</p>
-                      </motion.div>
                     </div>
-
-                    {/* WhatsApp phone input (shows when WhatsApp card clicked) */}
-                    {waPhone !== "" && (
-                      <div style={{ marginTop: 14, padding: 16, borderRadius: 14, background: theme.cardBg, border: "1px solid rgba(37,211,102,0.15)", backdropFilter: "blur(12px)" }}>
-                        <div style={{ display: "flex", gap: 8, alignItems: "end" }}>
-                          <div style={{ flex: 1 }}>
-                            <DInput label="Patient Phone Number" value={waPhone} onChange={(e) => setWaPhone(e.target.value)} placeholder="e.g. 0244123456" />
-                          </div>
-                          <button type="button" onClick={handleWhatsAppSend} disabled={waSending || !waPhone.trim()}
-                            style={{ padding: "10px 20px", borderRadius: 10, fontSize: 12, fontWeight: 700, color: "white", background: "#25D366", border: "none", cursor: "pointer", opacity: waSending ? 0.6 : 1, marginBottom: 1 }}>
-                            {waSending ? "Sending..." : "Send"}
-                          </button>
-                          <button type="button" onClick={() => { setWaPhone(""); setWaResult(null); }}
-                            style={{ padding: "10px 12px", borderRadius: 10, fontSize: 12, color: "#64748B", background: "transparent", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer", marginBottom: 1 }}>
-                            ✕
-                          </button>
-                        </div>
-                        {waResult && <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, color: waResult.ok ? "#25D366" : "#F87171" }}>{waResult.msg}</div>}
-                      </div>
-                    )}
                   </motion.div>
                 )}
               </motion.div>
@@ -1602,12 +1561,12 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                     <div style={{ width: 7, height: 7, borderRadius: "50%", background: "rgba(184,115,51,0.3)" }} />
                   </div>
                 </motion.div>
-                <p style={{ fontSize: 16, fontWeight: 700, color: "white", marginBottom: 4 }}>No Active Consultation</p>
-                <p style={{ fontSize: 12, fontWeight: 500, color: "#64748B", marginBottom: 16 }}>
+                <p style={{ fontSize: 16, fontWeight: 700, color: theme.textPrimary, marginBottom: 4 }}>No Active Consultation</p>
+                <p style={{ fontSize: 12, fontWeight: 500, color: theme.textMuted, marginBottom: 16 }}>
                   {queue.length > 0 ? `${queue.length} patient${queue.length !== 1 ? "s" : ""} waiting` : "Queue is empty"}
                 </p>
                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={callNext} disabled={queue.length === 0}
-                  style={{ padding: "10px 28px", borderRadius: 10, fontSize: 14, fontWeight: 600, color: "white", cursor: queue.length === 0 ? "not-allowed" : "pointer", background: queue.length === 0 ? "rgba(255,255,255,0.03)" : `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: queue.length === 0 ? "1px solid rgba(255,255,255,0.05)" : "none", opacity: queue.length === 0 ? 0.4 : 1 }}>
+                  style={{ padding: "10px 28px", borderRadius: 10, fontSize: 14, fontWeight: 600, color: theme.textPrimary, cursor: queue.length === 0 ? "not-allowed" : "pointer", background: queue.length === 0 ? "rgba(255,255,255,0.03)" : `linear-gradient(135deg, ${COPPER}, #D4956B)`, border: queue.length === 0 ? "1px solid rgba(255,255,255,0.05)" : "none", opacity: queue.length === 0 ? 0.4 : 1 }}>
                   Call Next Patient
                 </motion.button>
               </motion.div>
@@ -1621,9 +1580,9 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
       <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
         onClick={(e) => { if (e.target === e.currentTarget) setShowHandover(false); }}>
         <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-          style={{ width: 420, padding: 28, borderRadius: 16, background: "rgba(10,10,20,0.97)", border: `1px solid ${COPPER}20`, backdropFilter: "blur(16px)" }}>
+          style={{ width: 420, padding: 28, borderRadius: 16, background: theme.isDayMode ? "rgba(237,229,219,0.97)" : "rgba(10,10,20,0.97)", border: `1px solid ${theme.divider}`, backdropFilter: "blur(16px)" }}>
           <h3 style={{ fontSize: 16, fontWeight: 800, color: "#F59E0B", marginBottom: 16 }}>🔄 Shift Handover</h3>
-          <p style={{ fontSize: 11, color: "#94A3B8", marginBottom: 16 }}>Transfer all your active patients to the incoming doctor. Your status will be set to Off Duty.</p>
+          <p style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 16 }}>Transfer all your active patients to the incoming doctor. Your status will be set to Off Duty.</p>
           <div style={{ marginBottom: 12 }}>
             <DSelect label="Incoming Doctor" value={handoverTarget} onChange={(e) => setHandoverTarget(e.target.value)}
               options={handoverDoctors.map(d => ({ value: d.id, label: `${d.name} — ${d.specialty} (${d.status})` }))} />
@@ -1633,11 +1592,11 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button type="button" onClick={() => setShowHandover(false)}
-              style={{ flex: 1, padding: "9px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "#94A3B8", background: "transparent", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+              style={{ flex: 1, padding: "9px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: theme.textSecondary, background: "transparent", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
               Cancel
             </button>
             <button type="button" onClick={handleShiftHandover} disabled={handoverSending || !handoverTarget}
-              style={{ flex: 1, padding: "9px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "white", background: "#F59E0B", border: "none", cursor: "pointer", opacity: handoverSending || !handoverTarget ? 0.5 : 1 }}>
+              style={{ flex: 1, padding: "9px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: theme.textPrimary, background: "#F59E0B", border: "none", cursor: "pointer", opacity: handoverSending || !handoverTarget ? 0.5 : 1 }}>
               {handoverSending ? "Transferring..." : "Confirm Handover"}
             </button>
           </div>
@@ -1717,7 +1676,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
                 Save Template
               </motion.button>
               <button type="button" onClick={() => setShowCreateTemplate(false)}
-                style={{ flex: 1, padding: "11px 20px", borderRadius: 10, fontSize: 11, fontWeight: 600, color: "#64748B", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+                style={{ flex: 1, padding: "11px 20px", borderRadius: 10, fontSize: 11, fontWeight: 600, color: theme.textMuted, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
                 Cancel
               </button>
             </div>

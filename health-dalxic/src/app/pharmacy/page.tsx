@@ -94,7 +94,7 @@ function WorkshopBox({ children, title, icon, delay = 0, className = "" }: {
     >
       <div className="flex items-center gap-2 mb-4">
         <span className="text-lg">{icon}</span>
-        <h3 style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: "#D4956B", fontFamily: fontFamily.mono }}>{title}</h3>
+        <h3 style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", color: theme.copperText, fontFamily: fontFamily.mono }}>{title}</h3>
       </div>
       {children}
     </motion.div>
@@ -505,7 +505,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
           <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Pharmacy</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: theme.copperText }}>Pharmacy</span>
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
@@ -576,7 +576,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                   <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
                     style={{ padding: 20, borderRadius: 16, background: theme.cardBg, border: `1px solid ${stat.color}20`, backdropFilter: "blur(12px)" }}>
                     <p style={{ fontSize: 28, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
-                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94A3B8", marginTop: 4 }}>{stat.label}</p>
+                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: theme.textSecondary, marginTop: 4 }}>{stat.label}</p>
                   </motion.div>
                 ))}
               </div>
@@ -591,7 +591,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
               {/* Prescription cards */}
               {(rxView === "pending" ? pending : dispensedItems).length === 0 ? (
                 <div style={{ textAlign: "center", padding: "64px 0" }}>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "#94A3B8" }}>{rxView === "pending" ? "No Pending Prescriptions" : "No Dispensed Items Yet"}</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: theme.textSecondary }}>{rxView === "pending" ? "No Pending Prescriptions" : "No Dispensed Items Yet"}</p>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -609,17 +609,17 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                                 background: theme.navInactiveBg,
                                 border: `1px solid rgba(184,115,51,0.1)`,
                               }}>
-                                <span style={{ fontSize: 11, fontWeight: 700, width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(184,115,51,0.08)", border: "1px solid rgba(184,115,51,0.15)", color: "#D4956B" }}>{j + 1}</span>
-                                <span style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{rx.medication}</span>
-                                <span style={{ fontSize: 13, fontWeight: 500, color: "#94A3B8" }}>{rx.dosage}</span>
-                                <span style={{ fontSize: 13, fontWeight: 500, color: "#94A3B8" }}>{rx.frequency}</span>
-                                <span style={{ fontSize: 13, fontWeight: 500, color: "#94A3B8" }}>{rx.duration}</span>
+                                <span style={{ fontSize: 11, fontWeight: 700, width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(184,115,51,0.08)", border: "1px solid rgba(184,115,51,0.15)", color: theme.copperText }}>{j + 1}</span>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: theme.textPrimary }}>{rx.medication}</span>
+                                <span style={{ fontSize: 13, fontWeight: 500, color: theme.textSecondary }}>{rx.dosage}</span>
+                                <span style={{ fontSize: 13, fontWeight: 500, color: theme.textSecondary }}>{rx.frequency}</span>
+                                <span style={{ fontSize: 13, fontWeight: 500, color: theme.textSecondary }}>{rx.duration}</span>
                                 {matchedDrug ? (
                                   <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: `${stockColor(matchedDrug.stockStatus)}12`, color: stockColor(matchedDrug.stockStatus), textTransform: "uppercase", letterSpacing: "0.06em" }}>
                                     {matchedDrug.stockStatus === "OUT" ? "Out Of Stock" : matchedDrug.stockStatus === "LOW" ? `Low (${matchedDrug.totalStock})` : `${matchedDrug.totalStock} In Stock`}
                                   </span>
                                 ) : (
-                                  <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: "rgba(100,116,139,0.1)", color: "#64748B" }}>Not In Catalog</span>
+                                  <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: "rgba(100,116,139,0.1)", color: theme.textMuted }}>Not In Catalog</span>
                                 )}
                               </div>
                             );
@@ -672,10 +672,10 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                   <div style={{ position: "relative", marginBottom: 16 }}>
                     <DInput label="Search Medication" value={retailSearch} onChange={(e) => searchRetailDrugs(e.target.value)} placeholder="Type To Search Catalog..." />
                     {retailSearchResults.length > 0 && (
-                      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20, background: "rgba(10,10,20,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, maxHeight: 200, overflow: "auto", marginTop: 4 }}>
+                      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20, background: theme.isDayMode ? "rgba(237,229,219,0.95)" : "rgba(10,10,20,0.95)", border: `1px solid ${theme.divider}`, borderRadius: 12, maxHeight: 200, overflow: "auto", marginTop: 4 }}>
                         {retailSearchResults.map((d) => (
-                          <button key={d.id} onClick={() => addToCart(d)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "10px 14px", border: "none", background: "transparent", color: "#F0F4FF", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left" }}>
-                            <span>{d.name} <span style={{ color: "#64748B", fontSize: 11 }}>({d.unit})</span></span>
+                          <button key={d.id} onClick={() => addToCart(d)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "10px 14px", border: "none", background: "transparent", color: theme.textPrimary, cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left" }}>
+                            <span>{d.name} <span style={{ color: theme.textMuted, fontSize: 11 }}>({d.unit})</span></span>
                             <span style={{ color: COPPER_LIGHT, fontFamily: fontFamily.mono, fontSize: 12 }}>GHS {d.defaultPrice.toFixed(2)}</span>
                           </button>
                         ))}
@@ -685,19 +685,19 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
 
                   {/* Cart items */}
                   {cart.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "32px 0", color: "#475569", fontSize: 13 }}>Search And Add Medications To Cart</div>
+                    <div style={{ textAlign: "center", padding: "32px 0", color: theme.textMuted, fontSize: 13 }}>Search And Add Medications To Cart</div>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
                       {cart.map((item) => (
                         <div key={item.drugCatalogId} style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 12, alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
                           <div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: "#F0F4FF" }}>{item.drugName}</div>
-                            <div style={{ fontSize: 11, color: "#64748B" }}>GHS {item.unitPrice.toFixed(2)} / {item.unit}</div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>{item.drugName}</div>
+                            <div style={{ fontSize: 11, color: theme.textMuted }}>GHS {item.unitPrice.toFixed(2)} / {item.unit}</div>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <button onClick={() => updateCartQty(item.drugCatalogId, item.quantity - 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#94A3B8", cursor: "pointer", fontSize: 14, fontWeight: 700 }}>−</button>
-                            <span style={{ fontSize: 14, fontWeight: 700, color: "#F0F4FF", minWidth: 24, textAlign: "center" }}>{item.quantity}</span>
-                            <button onClick={() => updateCartQty(item.drugCatalogId, item.quantity + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#94A3B8", cursor: "pointer", fontSize: 14, fontWeight: 700 }}>+</button>
+                            <button onClick={() => updateCartQty(item.drugCatalogId, item.quantity - 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: theme.textSecondary, cursor: "pointer", fontSize: 14, fontWeight: 700 }}>−</button>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: theme.textPrimary, minWidth: 24, textAlign: "center" }}>{item.quantity}</span>
+                            <button onClick={() => updateCartQty(item.drugCatalogId, item.quantity + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: theme.textSecondary, cursor: "pointer", fontSize: 14, fontWeight: 700 }}>+</button>
                           </div>
                           <span style={{ fontSize: 13, fontWeight: 700, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>GHS {item.total.toFixed(2)}</span>
                           <button onClick={() => updateCartQty(item.drugCatalogId, 0)} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer", fontSize: 14 }}>✕</button>
@@ -713,7 +713,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                           <DInput label="Discount (GHS)" value={retailDiscount} onChange={(e) => setRetailDiscount(e.target.value)} placeholder="0" />
                         </div>
                         <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Total</div>
+                          <div style={{ fontSize: 11, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Total</div>
                           <div style={{ fontSize: 24, fontWeight: 800, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>GHS {cartTotal.toFixed(2)}</div>
                         </div>
                       </div>
@@ -741,7 +741,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                   </div>
 
                   {retailSales.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "48px 0", color: "#475569", fontSize: 13 }}>No Sales Today</div>
+                    <div style={{ textAlign: "center", padding: "48px 0", color: theme.textMuted, fontSize: 13 }}>No Sales Today</div>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 500, overflow: "auto" }}>
                       {retailSales.map((sale) => (
@@ -756,18 +756,18 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                             </span>
                           </div>
 
-                          {sale.customerName && <div style={{ fontSize: 12, color: "#94A3B8", marginBottom: 4 }}>{sale.customerName}</div>}
+                          {sale.customerName && <div style={{ fontSize: 12, color: theme.textSecondary, marginBottom: 4 }}>{sale.customerName}</div>}
 
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
                             {sale.items.map((item, idx) => (
-                              <span key={idx} style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "rgba(184,115,51,0.06)", border: "1px solid rgba(184,115,51,0.12)", color: "#94A3B8" }}>
+                              <span key={idx} style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "rgba(184,115,51,0.06)", border: "1px solid rgba(184,115,51,0.12)", color: theme.textSecondary }}>
                                 {item.drugName} × {item.quantity}
                               </span>
                             ))}
                           </div>
 
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <span style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: "#F0F4FF" }}>GHS {sale.totalAmount.toFixed(2)}</span>
+                            <span style={{ fontSize: 16, fontWeight: 800, fontFamily: fontFamily.mono, color: theme.textPrimary }}>GHS {sale.totalAmount.toFixed(2)}</span>
 
                             {/* Payment gate: dispense only if PAID */}
                             {sale.paymentStatus === "PAID" && !sale.dispensed && (
@@ -813,7 +813,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                 <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                   {/* View By toggle */}
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569" }}>View By</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: theme.textMuted }}>View By</span>
                     {(["category", "az"] as const).map((v) => (
                       <button key={v} onClick={() => setInvViewBy(v)} style={{ padding: "5px 10px", borderRadius: 7, fontSize: 10, fontWeight: 700, cursor: "pointer", background: invViewBy === v ? `${COPPER}15` : "transparent", border: `1px solid ${invViewBy === v ? COPPER + "30" : "rgba(255,255,255,0.05)"}`, color: invViewBy === v ? COPPER_LIGHT : "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                         {v === "category" ? "Category" : "A — Z"}
@@ -856,10 +856,10 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, padding: "12px 18px", borderRadius: 14, background: `${COPPER}06`, border: `1px solid ${COPPER}15` }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                               <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: COPPER_LIGHT }}>{cat}</span>
-                              <span style={{ fontSize: 11, fontWeight: 600, color: "#64748B" }}>{drugs.length} {drugs.length === 1 ? "Drug" : "Drugs"}</span>
+                              <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted }}>{drugs.length} {drugs.length === 1 ? "Drug" : "Drugs"}</span>
                             </div>
                             <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                              <span style={{ fontSize: 12, fontWeight: 700, fontFamily: fontFamily.mono, color: "#94A3B8" }}>{catStock} Units</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, fontFamily: fontFamily.mono, color: theme.textSecondary }}>{catStock} Units</span>
                               <span style={{ fontSize: 12, fontWeight: 700, fontFamily: fontFamily.mono, color: COPPER_LIGHT }}>GHS {catValue.toFixed(2)}</span>
                             </div>
                           </div>
@@ -871,35 +871,35 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                                   <div>
                                     <div style={{ fontSize: 14, fontWeight: 800, color: theme.textPrimary, transition: "color 0.4s ease" }}>{drug.name}</div>
-                                    {drug.genericName && <div style={{ fontSize: 11, color: "#64748B", fontStyle: "italic" }}>{drug.genericName}</div>}
+                                    {drug.genericName && <div style={{ fontSize: 11, color: theme.textMuted, fontStyle: "italic" }}>{drug.genericName}</div>}
                                   </div>
                                   <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: `${stockColor(drug.stockStatus)}12`, color: stockColor(drug.stockStatus), textTransform: "uppercase", letterSpacing: "0.06em" }}>
                                     {drug.stockStatus === "OUT" ? "Out" : drug.stockStatus === "LOW" ? "Low" : "OK"}
                                   </span>
                                 </div>
                                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                                  <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#94A3B8" }}>{drug.unit}</span>
+                                  <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: theme.textSecondary }}>{drug.unit}</span>
                                   {drug.controlledSubstance && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: "rgba(239,68,68,0.08)", color: "#EF4444" }}>Controlled</span>}
-                                  {drug.requiresPrescription && <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(14,165,233,0.06)", border: "1px solid rgba(14,165,233,0.12)", color: "#64748B" }}>Rx</span>}
+                                  {drug.requiresPrescription && <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(14,165,233,0.06)", border: "1px solid rgba(14,165,233,0.12)", color: theme.textMuted }}>Rx</span>}
                                 </div>
                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                                   <div>
                                     <div style={{ fontSize: 18, fontWeight: 800, color: stockColor(drug.stockStatus), fontFamily: fontFamily.mono }}>{drug.totalStock}</div>
-                                    <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>In Stock</div>
+                                    <div style={{ fontSize: 9, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em" }}>In Stock</div>
                                   </div>
                                   <div>
                                     <div style={{ fontSize: 18, fontWeight: 800, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>{drug.batchCount}</div>
-                                    <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Batches</div>
+                                    <div style={{ fontSize: 9, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Batches</div>
                                   </div>
                                   <div>
                                     <div style={{ fontSize: 14, fontWeight: 800, color: expiryColor(drug.daysToExpiry), fontFamily: fontFamily.mono }}>
                                       {drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}
                                     </div>
-                                    <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Expiry</div>
+                                    <div style={{ fontSize: 9, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Expiry</div>
                                   </div>
                                 </div>
                                 <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: theme.textPrimary, fontFamily: fontFamily.mono, transition: "color 0.4s ease" }}>
-                                  GHS {drug.defaultPrice.toFixed(2)} <span style={{ fontSize: 10, color: "#475569", fontWeight: 500 }}>/ {drug.unit}</span>
+                                  GHS {drug.defaultPrice.toFixed(2)} <span style={{ fontSize: 10, color: theme.textMuted, fontWeight: 500 }}>/ {drug.unit}</span>
                                 </div>
                               </motion.div>
                             ))}
@@ -918,35 +918,35 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                         <div>
                           <div style={{ fontSize: 14, fontWeight: 800, color: theme.textPrimary, transition: "color 0.4s ease" }}>{drug.name}</div>
-                          {drug.genericName && <div style={{ fontSize: 11, color: "#64748B", fontStyle: "italic" }}>{drug.genericName}</div>}
+                          {drug.genericName && <div style={{ fontSize: 11, color: theme.textMuted, fontStyle: "italic" }}>{drug.genericName}</div>}
                         </div>
                         <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: `${stockColor(drug.stockStatus)}12`, color: stockColor(drug.stockStatus), textTransform: "uppercase", letterSpacing: "0.06em" }}>
                           {drug.stockStatus === "OUT" ? "Out" : drug.stockStatus === "LOW" ? "Low" : "OK"}
                         </span>
                       </div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#94A3B8" }}>{drug.category}</span>
-                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#94A3B8" }}>{drug.unit}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: theme.textSecondary }}>{drug.category}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: theme.textSecondary }}>{drug.unit}</span>
                         {drug.controlledSubstance && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: "rgba(239,68,68,0.08)", color: "#EF4444" }}>Controlled</span>}
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                         <div>
                           <div style={{ fontSize: 18, fontWeight: 800, color: stockColor(drug.stockStatus), fontFamily: fontFamily.mono }}>{drug.totalStock}</div>
-                          <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>In Stock</div>
+                          <div style={{ fontSize: 9, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em" }}>In Stock</div>
                         </div>
                         <div>
                           <div style={{ fontSize: 18, fontWeight: 800, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>{drug.batchCount}</div>
-                          <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Batches</div>
+                          <div style={{ fontSize: 9, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Batches</div>
                         </div>
                         <div>
                           <div style={{ fontSize: 14, fontWeight: 800, color: expiryColor(drug.daysToExpiry), fontFamily: fontFamily.mono }}>
                             {drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}
                           </div>
-                          <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Expiry</div>
+                          <div style={{ fontSize: 9, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Expiry</div>
                         </div>
                       </div>
                       <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: theme.textPrimary, fontFamily: fontFamily.mono, transition: "color 0.4s ease" }}>
-                        GHS {drug.defaultPrice.toFixed(2)} <span style={{ fontSize: 10, color: "#475569", fontWeight: 500 }}>/ {drug.unit}</span>
+                        GHS {drug.defaultPrice.toFixed(2)} <span style={{ fontSize: 10, color: theme.textMuted, fontWeight: 500 }}>/ {drug.unit}</span>
                       </div>
                     </motion.div>
                   ))}
@@ -954,7 +954,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
               )}
 
               {catalog.length === 0 && (
-                <div style={{ textAlign: "center", padding: "48px 0", color: "#475569" }}>
+                <div style={{ textAlign: "center", padding: "48px 0", color: theme.textMuted }}>
                   <p style={{ fontSize: 14, fontWeight: 600 }}>No Drugs In Catalog</p>
                   <p style={{ fontSize: 12, marginTop: 4 }}>Add Medications To Get Started</p>
                 </div>
@@ -964,14 +964,14 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
               {inventory.length > 0 && (
                 <div style={{ background: theme.cardBg, border: theme.cardBorder, borderRadius: 20, padding: 24, backdropFilter: "blur(12px)" }}>
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: COPPER_LIGHT, marginBottom: 16 }}>Stock Batches ({inventory.length})</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", gap: 8, padding: "8px 12px", fontSize: 10, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", gap: 8, padding: "8px 12px", fontSize: 10, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                     <span>Drug</span><span>Batch</span><span>Qty</span><span>Price</span><span>Expiry</span><span>Status</span>
                   </div>
                   <div style={{ maxHeight: 400, overflow: "auto" }}>
                     {inventory.map((s) => (
                       <div key={s.id} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", gap: 8, padding: "10px 12px", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.02)" }}>
                         <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary, transition: "color 0.4s ease" }}>{s.drugName}</span>
-                        <span style={{ fontSize: 11, fontFamily: fontFamily.mono, color: "#94A3B8" }}>{s.batchNumber}</span>
+                        <span style={{ fontSize: 11, fontFamily: fontFamily.mono, color: theme.textSecondary }}>{s.batchNumber}</span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: s.quantityRemaining === 0 ? "#EF4444" : theme.textPrimary }}>{s.quantityRemaining} / {s.quantityReceived}</span>
                         <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: COPPER_LIGHT }}>GHS {s.sellPrice.toFixed(2)}</span>
                         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -1020,11 +1020,11 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                           <DInput label="Min Stock Alert" type="number" value={addDrugForm.minStockThreshold} onChange={(e) => setAddDrugForm({ ...addDrugForm, minStockThreshold: e.target.value })} />
                         </div>
                         <div style={{ display: "flex", gap: 16, marginTop: 4 }}>
-                          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#94A3B8", cursor: "pointer" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: theme.textSecondary, cursor: "pointer" }}>
                             <input type="checkbox" checked={addDrugForm.controlledSubstance} onChange={(e) => setAddDrugForm({ ...addDrugForm, controlledSubstance: e.target.checked })} />
                             Controlled Substance
                           </label>
-                          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#94A3B8", cursor: "pointer" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: theme.textSecondary, cursor: "pointer" }}>
                             <input type="checkbox" checked={addDrugForm.requiresPrescription} onChange={(e) => setAddDrugForm({ ...addDrugForm, requiresPrescription: e.target.checked })} />
                             Requires Prescription
                           </label>
@@ -1033,7 +1033,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                           <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={addDrug}
                             style={btnCopper}>Add To Catalog</motion.button>
                           <button onClick={() => setShowAddDrug(false)}
-                            style={{ padding: "10px 20px", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8", fontWeight: 700, fontSize: 12 }}>Cancel</button>
+                            style={{ padding: "10px 20px", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: theme.textSecondary, fontWeight: 700, fontSize: 12 }}>Cancel</button>
                         </div>
                       </div>
                     </motion.div>
@@ -1052,9 +1052,9 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                       style={{ background: "rgba(12,8,18,0.95)", border: `1px solid ${COPPER}30`, borderRadius: 20, padding: 24, width: 400, boxShadow: `0 24px 80px rgba(0,0,0,0.5)` }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
                         <span style={{ fontSize: 16 }}>📦</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#D4956B", fontFamily: fontFamily.mono }}>Custom Drug Category</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: theme.copperText, fontFamily: fontFamily.mono }}>Custom Drug Category</span>
                       </div>
-                      <p style={{ fontSize: 12, color: "#94A3B8", marginBottom: 14 }}>Enter The Name Of The Drug Category Not Listed In The Dropdown.</p>
+                      <p style={{ fontSize: 12, color: theme.textSecondary, marginBottom: 14 }}>Enter The Name Of The Drug Category Not Listed In The Dropdown.</p>
                       <DInput label="Category Name" placeholder="e.g. ANTIFUNGAL, ANTIRETROVIRAL, STEROID..."
                         value={customCategoryName}
                         onChange={(e) => setCustomCategoryName(e.target.value.toUpperCase())}
@@ -1068,7 +1068,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                       />
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
                         <button onClick={() => setShowCustomCategory(false)}
-                          style={{ padding: "8px 16px", borderRadius: 10, fontSize: 12, color: "#94A3B8", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
+                          style={{ padding: "8px 16px", borderRadius: 10, fontSize: 12, color: theme.textSecondary, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
                           Cancel
                         </button>
                         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
@@ -1112,7 +1112,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                           <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={receiveStock}
                             style={{ ...btnCopper, background: `linear-gradient(135deg, ${BLUE}, #38BDF8)` }}>Receive Stock</motion.button>
                           <button onClick={() => setShowReceiveStock(false)}
-                            style={{ padding: "10px 20px", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8", fontWeight: 700, fontSize: 12 }}>Cancel</button>
+                            style={{ padding: "10px 20px", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: theme.textSecondary, fontWeight: 700, fontSize: 12 }}>Cancel</button>
                         </div>
                       </div>
                     </motion.div>
@@ -1138,7 +1138,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                   <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
                     style={{ padding: 20, borderRadius: 16, background: theme.cardBg, border: `1px solid ${stat.color}20`, backdropFilter: "blur(12px)" }}>
                     <p style={{ fontSize: 22, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
-                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94A3B8", marginTop: 6 }}>{stat.label}</p>
+                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: theme.textSecondary, marginTop: 6 }}>{stat.label}</p>
                   </motion.div>
                 ))}
               </div>
@@ -1147,7 +1147,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
                 <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: COPPER_LIGHT }}>Sales By Category</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569" }}>Display</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: theme.textMuted }}>Display</span>
                   {(["workshop", "list"] as const).map((v) => (
                     <button key={v} onClick={() => setReportView(v)} style={{ padding: "5px 10px", borderRadius: 7, fontSize: 10, fontWeight: 700, cursor: "pointer", background: reportView === v ? `${COPPER}15` : "transparent", border: `1px solid ${reportView === v ? COPPER + "30" : "rgba(255,255,255,0.05)"}`, color: reportView === v ? COPPER_LIGHT : "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                       {v === "workshop" ? "Cards" : "List"}
@@ -1192,26 +1192,26 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
                               <div>
                                 <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, transition: "color 0.4s ease" }}>{cat}</div>
-                                <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>{data.drugs.length} Medications{lowCount > 0 ? ` — ${lowCount} Low/Out` : ""}</div>
+                                <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 2 }}>{data.drugs.length} Medications{lowCount > 0 ? ` — ${lowCount} Low/Out` : ""}</div>
                               </div>
                               <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} style={{ fontSize: 14, color: COPPER_LIGHT }}>▾</motion.span>
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16 }}>
                               <div>
                                 <div style={{ fontSize: 20, fontWeight: 800, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>{data.stock}</div>
-                                <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>Total Units</div>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>Total Units</div>
                               </div>
                               <div>
                                 <div style={{ fontSize: 20, fontWeight: 800, color: theme.textPrimary, fontFamily: fontFamily.mono, transition: "color 0.4s ease" }}>GHS {data.value.toFixed(0)}</div>
-                                <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>Stock Value</div>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>Stock Value</div>
                               </div>
                               <div>
                                 <div style={{ fontSize: 20, fontWeight: 800, color: "#22C55E", fontFamily: fontFamily.mono }}>GHS {data.retailSold.toFixed(0)}</div>
-                                <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>Retail Sales</div>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>Retail Sales</div>
                               </div>
                               <div>
                                 <div style={{ fontSize: 20, fontWeight: 800, color: lowCount > 0 ? "#F59E0B" : "#22C55E", fontFamily: fontFamily.mono }}>{data.drugs.length - lowCount}/{data.drugs.length}</div>
-                                <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>In Stock</div>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>In Stock</div>
                               </div>
                             </div>
                           </motion.div>
@@ -1233,15 +1233,15 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
                                         <div>
                                           <div style={{ fontSize: 15, fontWeight: 800, color: stockColor(drug.stockStatus), fontFamily: fontFamily.mono }}>{drug.totalStock}</div>
-                                          <div style={{ fontSize: 8, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Stock</div>
+                                          <div style={{ fontSize: 8, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Stock</div>
                                         </div>
                                         <div>
                                           <div style={{ fontSize: 13, fontWeight: 700, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>GHS {drug.defaultPrice.toFixed(2)}</div>
-                                          <div style={{ fontSize: 8, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Price</div>
+                                          <div style={{ fontSize: 8, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Price</div>
                                         </div>
                                         <div>
                                           <div style={{ fontSize: 13, fontWeight: 700, color: expiryColor(drug.daysToExpiry), fontFamily: fontFamily.mono }}>{drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}</div>
-                                          <div style={{ fontSize: 8, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em" }}>Expiry</div>
+                                          <div style={{ fontSize: 8, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Expiry</div>
                                         </div>
                                       </div>
                                     </motion.div>
@@ -1285,9 +1285,9 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                             style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto", gap: 12, padding: "14px 16px", alignItems: "center", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.04)", borderRadius: isExpanded ? "12px 12px 0 0" : 0, background: isExpanded ? `${COPPER}06` : "transparent", transition: "background 0.2s" }}>
                             <div>
                               <span style={{ fontSize: 14, fontWeight: 800, color: theme.textPrimary, transition: "color 0.4s ease" }}>{cat}</span>
-                              <span style={{ fontSize: 11, color: "#64748B", marginLeft: 8 }}>{data.drugs.length} drugs</span>
+                              <span style={{ fontSize: 11, color: theme.textMuted, marginLeft: 8 }}>{data.drugs.length} drugs</span>
                             </div>
-                            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: fontFamily.mono, color: "#94A3B8" }}>{data.stock} units</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: fontFamily.mono, color: theme.textSecondary }}>{data.stock} units</span>
                             <span style={{ fontSize: 13, fontWeight: 700, fontFamily: fontFamily.mono, color: COPPER_LIGHT }}>GHS {data.value.toFixed(0)}</span>
                             <span style={{ fontSize: 13, fontWeight: 700, fontFamily: fontFamily.mono, color: "#22C55E" }}>GHS {data.retailSold.toFixed(0)}</span>
                             <div>
@@ -1305,18 +1305,18 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                             {isExpanded && (
                               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
                                 {/* Sub-header */}
-                                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 80px", gap: 12, padding: "6px 16px 6px 32px", fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", background: `${COPPER}04` }}>
+                                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 80px", gap: 12, padding: "6px 16px 6px 32px", fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", background: `${COPPER}04` }}>
                                   <span>Drug</span><span>Stock</span><span>Price</span><span>Value</span><span>Expiry</span><span>Status</span>
                                 </div>
                                 {data.drugs.sort((a, b) => b.totalStock - a.totalStock).map((drug) => (
                                   <div key={drug.id} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 80px", gap: 12, padding: "10px 16px 10px 32px", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.02)", background: `${COPPER}02` }}>
                                     <div>
                                       <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary, transition: "color 0.4s ease" }}>{drug.name}</span>
-                                      {drug.genericName && <span style={{ fontSize: 10, color: "#64748B", marginLeft: 6, fontStyle: "italic" }}>{drug.genericName}</span>}
+                                      {drug.genericName && <span style={{ fontSize: 10, color: theme.textMuted, marginLeft: 6, fontStyle: "italic" }}>{drug.genericName}</span>}
                                     </div>
                                     <span style={{ fontSize: 13, fontWeight: 700, fontFamily: fontFamily.mono, color: stockColor(drug.stockStatus) }}>{drug.totalStock}</span>
                                     <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: COPPER_LIGHT }}>GHS {drug.defaultPrice.toFixed(2)}</span>
-                                    <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: "#94A3B8" }}>GHS {(drug.totalStock * drug.defaultPrice).toFixed(0)}</span>
+                                    <span style={{ fontSize: 12, fontFamily: fontFamily.mono, color: theme.textSecondary }}>GHS {(drug.totalStock * drug.defaultPrice).toFixed(0)}</span>
                                     <span style={{ fontSize: 11, fontWeight: 600, color: expiryColor(drug.daysToExpiry) }}>{drug.daysToExpiry !== null ? `${drug.daysToExpiry}d` : "—"}</span>
                                     <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: `${stockColor(drug.stockStatus)}12`, color: stockColor(drug.stockStatus), textTransform: "uppercase", textAlign: "center" }}>{drug.stockStatus}</span>
                                   </div>
@@ -1330,7 +1330,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                   })()}
                   {/* Column header */}
                   {catalog.length > 0 && (
-                    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto", gap: 12, padding: "8px 16px", fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "1px solid rgba(255,255,255,0.05)", order: -1, position: "sticky", top: 0 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto", gap: 12, padding: "8px 16px", fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "1px solid rgba(255,255,255,0.05)", order: -1, position: "sticky", top: 0 }}>
                       <span>Category</span><span>Units</span><span>Value</span><span>Revenue</span><span>Alerts</span><span />
                     </div>
                   )}
@@ -1350,11 +1350,11 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                           <div style={{ width: 8, height: 8, borderRadius: "50%", background: stockColor(d.stockStatus), boxShadow: `0 0 6px ${stockColor(d.stockStatus)}` }} />
                           <div>
                             <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary, transition: "color 0.4s ease" }}>{d.name}</span>
-                            <div style={{ fontSize: 10, color: "#64748B" }}>{d.category}</div>
+                            <div style={{ fontSize: 10, color: theme.textMuted }}>{d.category}</div>
                           </div>
                         </div>
                         <span style={{ fontSize: 14, fontWeight: 800, fontFamily: fontFamily.mono, color: stockColor(d.stockStatus) }}>
-                          {d.totalStock} <span style={{ fontSize: 10, fontWeight: 500, color: "#475569" }}>/ {d.minStockThreshold} min</span>
+                          {d.totalStock} <span style={{ fontSize: 10, fontWeight: 500, color: theme.textMuted }}>/ {d.minStockThreshold} min</span>
                         </span>
                       </div>
                     ))}

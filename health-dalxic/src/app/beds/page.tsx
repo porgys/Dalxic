@@ -235,13 +235,13 @@ function BedManagementContent() {
       {/* Header */}
       <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, padding: "16px 36px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(184,115,51,0.08)", background: "rgba(3,5,15,0.3)", backdropFilter: "blur(12px)" }}>
         <div onClick={() => window.location.href = "/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh"} style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
-          <span style={{ fontWeight: 300, fontSize: 13, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase" }}>Dalxic</span>
+          <span style={{ fontWeight: 300, fontSize: 13, color: theme.textSecondary, letterSpacing: "0.08em", textTransform: "uppercase" }}>Dalxic</span>
           <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Health</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#D4956B" }}>Bed Management</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: theme.copperText }}>Bed Management</span>
           <div style={{ width: 1, height: 16, background: "rgba(184,115,51,0.15)" }} />
-          <span style={{ fontSize: 13, color: "#94A3B8" }}>{HOSPITAL_NAME}</span>
+          <span style={{ fontSize: 13, color: theme.textSecondary }}>{HOSPITAL_NAME}</span>
           <div style={{ width: 1, height: 16, background: "rgba(184,115,51,0.15)" }} />
           <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: COPPER }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
@@ -279,7 +279,7 @@ function BedManagementContent() {
                 ].map((stat, i) => (
                   <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                     style={{ padding: 20, borderRadius: 14, background: "rgba(255,255,255,0.025)", border: "1px solid rgba(184,115,51,0.1)", backdropFilter: "blur(12px)" }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{stat.label}</p>
+                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: theme.textMuted, marginBottom: 8 }}>{stat.label}</p>
                     <p style={{ fontSize: 32, fontWeight: 800, fontFamily: fontFamily.mono, color: stat.color }}>{stat.value}</p>
                   </motion.div>
                 ))}
@@ -297,8 +297,8 @@ function BedManagementContent() {
                         <div style={{ display: "flex", alignItems: "center" }}>
                           <span style={{ fontSize: 20 }}>{typeInfo?.icon || "🏥"}</span>
                           <div>
-                            <p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{ward.name}</p>
-                            <p style={{ fontSize: 10, fontWeight: 500, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.5px" }}>Floor {ward.floor} — {typeInfo?.label || ward.type}</p>
+                            <p style={{ fontSize: 14, fontWeight: 700, color: theme.textPrimary }}>{ward.name}</p>
+                            <p style={{ fontSize: 10, fontWeight: 500, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.5px" }}>Floor {ward.floor} — {typeInfo?.label || ward.type}</p>
                           </div>
                         </div>
                         <span style={{ fontSize: 24, fontWeight: 800, fontFamily: fontFamily.mono, color: COPPER }}>{ward.counts.total}</span>
@@ -327,9 +327,9 @@ function BedManagementContent() {
                 })}
                 {wards.length === 0 && (
                   <WorkshopBox title="No Wards Yet" icon="🏥" className="col-span-2">
-                    <p style={{ fontSize: 13, color: "#64748B", marginBottom: 12 }}>Add Your First Ward To Get Started With Bed Management.</p>
+                    <p style={{ fontSize: 13, color: theme.textMuted, marginBottom: 12 }}>Add Your First Ward To Get Started With Bed Management.</p>
                     <button type="button" onClick={() => { setActiveNav("manage"); setAddingWard(true); }}
-                      style={{ fontSize: 12, fontWeight: 600, padding: "8px 16px", borderRadius: 8, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, color: "white", border: "none", cursor: "pointer" }}>
+                      style={{ fontSize: 12, fontWeight: 600, padding: "8px 16px", borderRadius: 8, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, color: theme.textPrimary, border: "none", cursor: "pointer" }}>
                       + Create Ward
                     </button>
                   </WorkshopBox>
@@ -343,9 +343,9 @@ function BedManagementContent() {
             <motion.div key="manage" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {/* Add ward button */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: "#94A3B8" }}>{wards.length} Ward{wards.length !== 1 ? "s" : ""}</p>
+                <p style={{ fontSize: 12, fontWeight: 600, color: theme.textSecondary }}>{wards.length} Ward{wards.length !== 1 ? "s" : ""}</p>
                 <button type="button" onClick={() => setAddingWard(!addingWard)}
-                  style={{ fontSize: 11, fontWeight: 600, padding: "6px 14px", borderRadius: 8, background: "rgba(184,115,51,0.08)", border: `1px solid ${COPPER}25`, color: "#D4956B", cursor: "pointer" }}>
+                  style={{ fontSize: 11, fontWeight: 600, padding: "6px 14px", borderRadius: 8, background: "rgba(184,115,51,0.08)", border: `1px solid ${COPPER}25`, color: theme.copperText, cursor: "pointer" }}>
                   + Add Ward
                 </button>
               </div>
@@ -360,7 +360,7 @@ function BedManagementContent() {
                         <DSelect label="Type" value={newWardForm.type} onChange={(e) => setNewWardForm({ ...newWardForm, type: e.target.value })} options={WARD_TYPES.map(t => ({ value: t.value, label: `${t.icon} ${t.label}` }))} />
                         <DInput label="Floor" type="number" min={1} value={newWardForm.floor} onChange={(e) => setNewWardForm({ ...newWardForm, floor: parseInt(e.target.value) || 1 })} />
                         <button type="button" onClick={createWard}
-                          style={{ fontSize: 12, fontWeight: 600, padding: "8px 20px", borderRadius: 8, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, color: "white", border: "none", cursor: "pointer" }}>
+                          style={{ fontSize: 12, fontWeight: 600, padding: "8px 20px", borderRadius: 8, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, color: theme.textPrimary, border: "none", cursor: "pointer" }}>
                           Create
                         </button>
                       </div>
@@ -376,9 +376,9 @@ function BedManagementContent() {
                     {ward.rooms.map((room) => (
                       <div key={room.id} style={{ marginBottom: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: "#94A3B8" }}>{room.name}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary }}>{room.name}</span>
                           <button type="button" onClick={() => { setAddingBed(addingBed === room.id ? null : room.id); setNewBedLabel(""); }}
-                            style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", color: "#64748B", cursor: "pointer" }}>
+                            style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", color: theme.textMuted, cursor: "pointer" }}>
                             + Bed
                           </button>
                         </div>
@@ -394,7 +394,7 @@ function BedManagementContent() {
                                 position: "relative",
                               }}>
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: "white" }}>{bed.label}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: theme.textPrimary }}>{bed.label}</span>
                                   <span style={{ fontSize: 10, fontWeight: 700, color: style.text }}>{style.icon}</span>
                                 </div>
                                 <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: style.text, marginBottom: 6 }}>{bed.status}</p>
@@ -422,7 +422,7 @@ function BedManagementContent() {
                                   onKeyDown={(e) => { if (e.key === "Enter") createBed(room.id); }} />
                               </div>
                               <button type="button" onClick={() => createBed(room.id)}
-                                style={{ fontSize: 11, fontWeight: 600, padding: "6px 12px", borderRadius: 6, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, color: "white", border: "none", cursor: "pointer" }}>
+                                style={{ fontSize: 11, fontWeight: 600, padding: "6px 12px", borderRadius: 6, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, color: theme.textPrimary, border: "none", cursor: "pointer" }}>
                                 Add
                               </button>
                             </motion.div>
@@ -439,13 +439,13 @@ function BedManagementContent() {
                             onKeyDown={(e) => { if (e.key === "Enter") createRoom(ward.id); }} />
                         </div>
                         <button type="button" onClick={() => createRoom(ward.id)}
-                          style={{ fontSize: 11, fontWeight: 600, padding: "6px 12px", borderRadius: 6, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, color: "white", border: "none", cursor: "pointer" }}>
+                          style={{ fontSize: 11, fontWeight: 600, padding: "6px 12px", borderRadius: 6, background: `linear-gradient(135deg, ${COPPER}, #D4956B)`, color: theme.textPrimary, border: "none", cursor: "pointer" }}>
                           Add Room
                         </button>
                       </div>
                     ) : (
                       <button type="button" onClick={() => { setAddingRoom(ward.id); setNewRoomName(""); }}
-                        style={{ fontSize: 10, fontWeight: 600, padding: "5px 12px", borderRadius: 6, background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(184,115,51,0.15)", color: "#D4956B", cursor: "pointer", marginTop: 8 }}>
+                        style={{ fontSize: 10, fontWeight: 600, padding: "5px 12px", borderRadius: 6, background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(184,115,51,0.15)", color: theme.copperText, cursor: "pointer", marginTop: 8 }}>
                         + Add Room
                       </button>
                     )}
@@ -459,7 +459,7 @@ function BedManagementContent() {
           {activeNav === "transitions" && (
             <motion.div key="transitions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <WorkshopBox title="Bed Transition Log" icon="📋">
-                <p style={{ fontSize: 13, color: "#64748B", textAlign: "center", padding: 32 }}>
+                <p style={{ fontSize: 13, color: theme.textMuted, textAlign: "center", padding: 32 }}>
                   Transitions Will Appear Here As Bed Statuses Change.
                   <br />
                   <span style={{ fontSize: 11, color: "#3D4D78" }}>Each Status Change Is Logged With Timestamp, Actor, And Patient Info.</span>

@@ -425,7 +425,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
 
                     {/* Patient Info */}
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "#E2E8F0" }}>{p.name}</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: theme.textPrimary }}>{p.name}</div>
                       <div style={{ fontSize: 10, color: theme.textMuted, display: "flex", gap: 12, marginTop: 2 }}>
                         {p.phone && <span>📱 {p.phone}</span>}
                         {p.gender && <span>{p.gender === "male" ? "♂" : p.gender === "female" ? "♀" : "⚧"} {p.gender}</span>}
@@ -497,7 +497,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
             <WorkshopBox title="Patient Profile" icon="👤" delay={0}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
                 <div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: "#E2E8F0" }}>{selectedPatient.patient.name || "Unknown"}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: theme.textPrimary }}>{selectedPatient.patient.name || "Unknown"}</div>
                   <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4, display: "flex", flexDirection: "column", gap: 2 }}>
                     {selectedPatient.patient.phone && <span>📱 {selectedPatient.patient.phone}</span>}
                     {selectedPatient.patient.gender && <span>{selectedPatient.patient.gender === "male" ? "♂ Male" : selectedPatient.patient.gender === "female" ? "♀ Female" : selectedPatient.patient.gender}</span>}
@@ -560,14 +560,14 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
 
                       {/* Clinical Details */}
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#E2E8F0", marginBottom: 4 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary, marginBottom: 4 }}>
                           {v.primaryDiagnosis || v.chiefComplaint || "No Diagnosis"}
                         </div>
                         {v.chiefComplaint && v.primaryDiagnosis && (
                           <div style={{ fontSize: 10, color: theme.textMuted }}>Complaint: {v.chiefComplaint}</div>
                         )}
                         {v.notes && (
-                          <div style={{ fontSize: 10, color: "#64748B", marginTop: 4, lineHeight: 1.4, maxHeight: 60, overflow: "hidden" }}>
+                          <div style={{ fontSize: 10, color: theme.textMuted, marginTop: 4, lineHeight: 1.4, maxHeight: 60, overflow: "hidden" }}>
                             {v.notes}
                           </div>
                         )}
@@ -637,7 +637,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                       return (
                         <div key={i}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: "#E2E8F0" }}>{b.label}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: theme.textPrimary }}>{b.label}</span>
                             <span style={{ fontSize: 11, fontWeight: 700, color: BLUE, fontFamily: fontFamily.mono }}>
                               {b.patients} Patients
                             </span>
@@ -665,7 +665,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                       return (
                         <div key={i}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                            <span style={{ fontSize: 11, fontWeight: 600, color: "#E2E8F0", maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: theme.textPrimary, maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {d.diagnosis}
                             </span>
                             <span style={{ fontSize: 11, fontWeight: 800, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>
@@ -699,7 +699,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                           <div style={{ flex: 1, height: 20, borderRadius: 6, background: "rgba(255,255,255,0.03)", overflow: "hidden", position: "relative" }}>
                             <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.5, delay: i * 0.04 }}
                               style={{ height: "100%", borderRadius: 6, background: "linear-gradient(90deg, #22C55E, #4ADE80)" }} />
-                            <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 9, fontWeight: 700, color: "#E2E8F0", fontFamily: fontFamily.mono }}>
+                            <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 9, fontWeight: 700, color: theme.textPrimary, fontFamily: fontFamily.mono }}>
                               {fmt(b.revenue)}
                             </span>
                           </div>
@@ -746,7 +746,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                       return (
                         <div key={method}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: "#E2E8F0" }}>{method.replace(/_/g, " ")}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: theme.textPrimary }}>{method.replace(/_/g, " ")}</span>
                             <span style={{ fontSize: 11, fontWeight: 700, color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>{fmt(amount)}</span>
                           </div>
                           <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.04)" }}>
@@ -770,7 +770,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                       return (
                         <div key={d.serviceType}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: "#E2E8F0" }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: theme.textPrimary }}>
                               {SERVICE_ICONS[d.serviceType] || "📦"} {SERVICE_LABELS[d.serviceType] || d.serviceType}
                             </span>
                             <span style={{ fontSize: 11, fontWeight: 700, color: BLUE, fontFamily: fontFamily.mono }}>{fmt(d.total)}</span>
@@ -833,7 +833,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                             transition={{ duration: 0.6, delay: i * 0.03 }}
                             style={{ height: "100%", borderRadius: 6, background: `linear-gradient(90deg, #22C55E, #4ADE80)` }}
                           />
-                          <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 700, color: "#E2E8F0", fontFamily: fontFamily.mono }}>
+                          <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 700, color: theme.textPrimary, fontFamily: fontFamily.mono }}>
                             {fmt(day.revenue)} ({day.count})
                           </span>
                         </div>
@@ -868,7 +868,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                           <span style={{ fontSize: 20 }}>{SERVICE_ICONS[d.serviceType] || "📦"}</span>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: "#E2E8F0" }}>{SERVICE_LABELS[d.serviceType] || d.serviceType}</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: theme.textPrimary }}>{SERVICE_LABELS[d.serviceType] || d.serviceType}</span>
                         </div>
                         <div style={{ fontSize: 22, fontWeight: 800, color: BLUE, fontFamily: fontFamily.mono }}>
                           {fmt(d.total)}
@@ -926,7 +926,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                       background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}08`,
                     }}>
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#E2E8F0", fontFamily: fontFamily.mono }}>{b.billNumber}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: theme.textPrimary, fontFamily: fontFamily.mono }}>{b.billNumber}</div>
                         <div style={{ fontSize: 10, color: theme.textMuted }}>{b.ageDays} Days Old</div>
                       </div>
                       <div style={{ textAlign: "right" }}>
@@ -983,7 +983,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
                       background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}08`,
                     }}>
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#E2E8F0", fontFamily: fontFamily.mono }}>{c.billNumber}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: theme.textPrimary, fontFamily: fontFamily.mono }}>{c.billNumber}</div>
                         <div style={{ fontSize: 10, color: theme.textMuted }}>
                           {c.paymentMethod === "NHIS" ? "🇬🇭 NHIS" : "🏛️ Insurance"} — {c.itemCount} Items
                         </div>
