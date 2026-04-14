@@ -38,6 +38,7 @@ model Hospital {
   maxDevices      Int      @default(6) @map("max_devices")
   whatsappBundle  Int      @default(500) @map("whatsapp_bundle")
   active          Boolean  @default(true)
+  settings        Json?    // { pricing: { defaults, doctors, wards, services } }
   createdAt       DateTime @default(now()) @map("created_at")
 
   // Multi-branch group (nullable — standalone hospitals have no group)
@@ -274,25 +275,34 @@ model HospitalEmergencyContact {
 // ─── Billing System ───
 
 model BillableItem {
-  id          String   @id @default(cuid())
-  hospitalId  String   @map("hospital_id")
-  patientId   String   @map("patient_id")
-  bookId      String   @map("book_id")
-  serviceType String   @map("service_type") // CONSULTATION | LAB | IMAGING | DRUG | WARD_DAY | PROCEDURE | EMERGENCY | ICU_DAY
-  description String
-  unitCost    Float    @map("unit_cost")
-  quantity    Int      @default(1)
-  totalCost   Float    @map("total_cost")
-  renderedAt  DateTime @default(now()) @map("rendered_at")
-  renderedBy  String   @map("rendered_by")
-  isBilled    Boolean  @default(false) @map("is_billed")
-  billId      String?  @map("bill_id")
+  id             String   @id @default(cuid())
+  hospitalId     String   @map("hospital_id")
+  patientId      String   @map("patient_id")
+  bookId         String   @map("book_id")
+  serviceType    String   @map("service_type") // CONSULTATION | LAB | IMAGING | DRUG | WARD_DAY | PROCEDURE | EMERGENCY | ICU_DAY
+  description    String
+  unitCost       Float    @map("unit_cost")
+  quantity       Int      @default(1)
+  totalCost      Float    @map("total_cost")
+  renderedAt     DateTime @default(now()) @map("rendered_at")
+  renderedBy     String   @map("rendered_by")
+  doctorId       String?  @map("doctor_id")       // attribution FK — nullable for legacy rows & non-doctor services
+  departmentId   String?  @map("department_id")   // freeform dept code: lab | imaging | pharmacy | nursing | ward | icu
+  shiftId        String?  @map("shift_id")        // auto-attached from doctor's active DoctorShift at insert time
+  commissionPct  Float?   @map("commission_pct")  // snapshot at render time so rate changes don't rewrite history
+  staffCutCost   Float?   @map("staff_cut_cost")  // totalCost × commissionPct / 100 — precomputed for fast payout math
+  isBilled       Boolean  @default(false) @map("is_billed")
+  billId         String?  @map("bill_id")
 
-  hospital Hospital @relation(fields: [hospitalId], references: [id])
-  bill     Bill?    @relation(fields: [billId], references: [id])
+  hospital Hospital      @relation(fields: [hospitalId], references: [id])
+  bill     Bill?         @relation(fields: [billId], references: [id])
+  shift    DoctorShift?  @relation(fields: [shiftId], references: [id])
 
   @@index([hospitalId, patientId])
   @@index([hospitalId, isBilled])
+  @@index([hospitalId, doctorId, renderedAt])
+  @@index([hospitalId, departmentId, renderedAt])
+  @@index([hospitalId, shiftId])
   @@map("billable_items")
 }
 
@@ -348,6 +358,9 @@ model Doctor {
   role                  String   @default("attending") // attending | resident | intern
   shiftStart            String?  @map("shift_start") // e.g. "08:00"
   shiftEnd              String?  @map("shift_end")   // e.g. "17:00"
+  consultationFee       Float?   @map("consultation_fee")   // per-doctor override for CONSULTATION billables
+  commissionRate        Float?   @default(0) @map("commission_rate") // 0-100 percent of gross paid to doctor
+  department            String?  // groups doctors for department revenue views
   meta                  Json?    // break history, handover notes, etc.
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @updatedAt @map("updated_at")
@@ -358,6 +371,8 @@ model Doctor {
 
   handoversOut ShiftHandover[] @relation("HandoverOutgoing")
   handoversIn  ShiftHandover[] @relation("HandoverIncoming")
+  shifts       DoctorShift[]
+  payouts      StaffPayout[]
 
   @@index([hospitalId, specialty])
   @@index([hospitalId, status])
@@ -649,4 +664,53 @@ model AuditLog {
   @@index([hospitalId, timestamp])
   @@index([actorType, actorId])
   @@map("audit_log")
+}
+
+// ─── Revenue Attribution: Shifts + Payouts ───
+
+model DoctorShift {
+  id            String    @id @default(cuid())
+  hospitalId    String    @map("hospital_id")
+  doctorId      String    @map("doctor_id")
+  shiftType     String    @map("shift_type") // morning | afternoon | evening | night | custom
+  clockInAt     DateTime  @default(now()) @map("clock_in_at")
+  clockOutAt    DateTime? @map("clock_out_at")
+  notes         String?
+  grossRevenue  Float     @default(0) @map("gross_revenue")   // rolled up on clock-out
+  patientCount  Int       @default(0) @map("patient_count")   // rolled up on clock-out
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  doctor        Doctor         @relation(fields: [doctorId], references: [id])
+  billableItems BillableItem[]
+
+  @@index([hospitalId, doctorId, clockInAt])
+  @@index([hospitalId, clockInAt])
+  @@map("doctor_shifts")
+}
+
+model StaffPayout {
+  id              String    @id @default(cuid())
+  hospitalId      String    @map("hospital_id")
+  doctorId        String    @map("doctor_id")
+  periodStart     DateTime  @map("period_start")
+  periodEnd       DateTime  @map("period_end")
+  grossRevenue    Float     @map("gross_revenue")
+  commissionRate  Float     @map("commission_rate")
+  amountDue       Float     @map("amount_due")
+  status          String    @default("PENDING") // PENDING | PAID | CANCELLED
+  paidAt          DateTime? @map("paid_at")
+  paidBy          String?   @map("paid_by")
+  paymentMethod   String?   @map("payment_method") // CASH | MOMO | BANK
+  paymentRef      String?   @map("payment_ref")
+  notes           String?
+  createdBy       String    @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
+
+  @@index([hospitalId, doctorId, status])
+  @@index([hospitalId, periodStart, periodEnd])
+  @@map("staff_payouts")
 }

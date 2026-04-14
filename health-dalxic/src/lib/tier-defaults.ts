@@ -176,6 +176,8 @@ export const ALL_WORKSTATIONS = [
 export const UTILITY_STATIONS = [
   { key: "admin", href: ROUTE_MAP.admin, icon: "⚙️", title: "Hospital Admin", desc: "Device & Book Management", role: "Hospital Admin" },
   { key: "beds", href: ROUTE_MAP.beds, icon: "🛏️", title: "Bed Management", desc: "Ward & Bed Status Tracking", role: "Ward Manager" },
+  { key: "finance", href: "/finance", icon: "💰", title: "Finance", desc: "Revenue, Payouts & Shifts", role: "Finance Officer" },
+  { key: "rates", href: "/rates", icon: "💲", title: "Pricing Control", desc: "Doctor, Ward & Service Rates", role: "Finance Officer" },
 ] as const;
 
 /** Get tier defaults for a tier key */
