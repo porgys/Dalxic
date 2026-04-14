@@ -375,8 +375,20 @@ function QueueDisplay() {
                   fontFamily: "monospace", letterSpacing: "4px",
                   background: serving.token.startsWith("ER") ? "linear-gradient(135deg, #EF4444, #F87171)" : "linear-gradient(135deg, #B87333, #D4956B, #B87333)",
                   WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                  whiteSpace: "nowrap",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: "0.08em",
                 }}>
-                  {serving.token}
+                  {(() => {
+                    const i = serving.token.indexOf("-");
+                    const prefix = i >= 0 ? serving.token.slice(0, i + 1) : serving.token;
+                    const rest = i >= 0 ? serving.token.slice(i + 1) : "";
+                    return (
+                      <>
+                        <span style={{ whiteSpace: "nowrap" }}>{prefix}</span>
+                        {rest && <span style={{ whiteSpace: "nowrap" }}>{rest}</span>}
+                      </>
+                    );
+                  })()}
                 </div>
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                   <p style={{ fontSize: 22, fontWeight: 700, marginTop: 16, color: theme.textPrimary }}>{serving.patientName}</p>
