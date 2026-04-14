@@ -35,12 +35,10 @@ export function speakCallout(options: CalloutOptions): Promise<void> {
       return;
     }
 
+    const synth = window.speechSynthesis;
     const { token, room, department, lang = "en-GB", volume = 1, rate = 0.9 } = options;
 
-    // Extract number from token — "#042" → "42", "ER-KBH-001" → "E R 1"
     const numberText = formatTokenForSpeech(token);
-
-    // Build sentence
     let sentence = `Number ${numberText}`;
     if (room) {
       sentence += `, please proceed to ${room}`;
@@ -48,33 +46,43 @@ export function speakCallout(options: CalloutOptions): Promise<void> {
       sentence += `, please proceed to ${department} department`;
     }
 
-    const utterance = new SpeechSynthesisUtterance(sentence);
-    utterance.lang = lang;
-    utterance.volume = volume;
-    utterance.rate = rate;
-    utterance.pitch = 1;
+    const speak = () => {
+      // Chrome bug: cancel + immediate speak = silent. Full reset first.
+      synth.cancel();
 
-    utterance.onend = () => resolve();
-    utterance.onerror = (e) => reject(e);
+      const utterance = new SpeechSynthesisUtterance(sentence);
+      utterance.lang = lang;
+      utterance.volume = volume;
+      utterance.rate = rate;
+      utterance.pitch = 1;
 
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-
-    // Ensure voices are loaded (Chrome loads them async)
-    const ensureVoices = () => {
-      const voices = window.speechSynthesis.getVoices();
+      // Pick an English voice if available
+      const voices = synth.getVoices();
       if (voices.length > 0) {
-        const enVoice = voices.find(v => v.lang.startsWith("en")) || voices[0];
+        const enVoice = voices.find(v => v.lang.startsWith("en-")) || voices[0];
         utterance.voice = enVoice;
       }
-    };
-    ensureVoices();
-    window.speechSynthesis.onvoiceschanged = ensureVoices;
 
-    // Small delay to ensure cancel completes
-    setTimeout(() => {
-      window.speechSynthesis.speak(utterance);
-    }, 150);
+      utterance.onend = () => resolve();
+      utterance.onerror = () => resolve(); // Don't block queue on error
+
+      // Chrome bug: speech can get "stuck" — force-resolve after 10s
+      const safety = setTimeout(() => { synth.cancel(); resolve(); }, 10000);
+      utterance.onend = () => { clearTimeout(safety); resolve(); };
+
+      // Delay after cancel to let Chrome fully reset
+      setTimeout(() => synth.speak(utterance), 250);
+    };
+
+    // Chrome loads voices async — wait if needed
+    const voices = synth.getVoices();
+    if (voices.length > 0) {
+      speak();
+    } else {
+      synth.onvoiceschanged = () => { synth.onvoiceschanged = null; speak(); };
+      // Fallback if onvoiceschanged never fires (Firefox)
+      setTimeout(speak, 500);
+    }
   });
 }
 
