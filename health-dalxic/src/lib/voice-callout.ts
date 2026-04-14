@@ -60,10 +60,21 @@ export function speakCallout(options: CalloutOptions): Promise<void> {
     // Cancel any ongoing speech
     window.speechSynthesis.cancel();
 
+    // Ensure voices are loaded (Chrome loads them async)
+    const ensureVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        const enVoice = voices.find(v => v.lang.startsWith("en")) || voices[0];
+        utterance.voice = enVoice;
+      }
+    };
+    ensureVoices();
+    window.speechSynthesis.onvoiceschanged = ensureVoices;
+
     // Small delay to ensure cancel completes
     setTimeout(() => {
       window.speechSynthesis.speak(utterance);
-    }, 100);
+    }, 150);
   });
 }
 
@@ -129,17 +140,37 @@ export async function calloutNumber(options: CalloutOptions): Promise<void> {
 
 // ─── Helpers ───
 
+// Department prefix → spoken name
+const DEPT_NAMES: Record<string, string> = {
+  GR: "General Medicine", CD: "Cardiology", NR: "Neurology", ON: "Oncology",
+  PD: "Paediatrics", OB: "Obstetrics", SG: "Surgery", OR: "Orthopaedics",
+  DN: "Dental", EY: "Eye Clinic", EN: "E N T", DM: "Dermatology",
+  GI: "Gastro", ED: "Endocrine", NP: "Nephrology", PL: "Pulmonology",
+  UR: "Urology", PY: "Psychiatry", HM: "Haematology", GT: "Genetics",
+  RH: "Rheumatology", NS: "Neurosurgery", PS: "Plastic Surgery",
+  CT: "Cardiothoracic", ER: "Emergency",
+};
+
 function formatTokenForSpeech(token: string): string {
   // "#042" → "42"
   if (token.startsWith("#")) {
     const num = parseInt(token.slice(1), 10);
     return isNaN(num) ? token : String(num);
   }
-  // "ER-KBH-001" → "E R 1"
-  if (token.startsWith("ER-")) {
-    const parts = token.split("-");
+  // "GR-KBH-001" → "General Medicine, 1" / "ER-KBH-003" → "Emergency, 3"
+  const parts = token.split("-");
+  if (parts.length >= 3) {
+    const prefix = parts[0];
     const num = parseInt(parts[parts.length - 1], 10);
-    return `E R ${isNaN(num) ? parts[parts.length - 1] : num}`;
+    const deptName = DEPT_NAMES[prefix] || prefix;
+    return `${deptName}, ${isNaN(num) ? parts[parts.length - 1] : num}`;
+  }
+  // "ER-001" style (no hospital code)
+  if (parts.length === 2) {
+    const prefix = parts[0];
+    const num = parseInt(parts[1], 10);
+    const deptName = DEPT_NAMES[prefix] || prefix;
+    return `${deptName}, ${isNaN(num) ? parts[1] : num}`;
   }
   return token;
 }
