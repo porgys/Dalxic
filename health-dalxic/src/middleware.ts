@@ -9,7 +9,7 @@ const BLOCKED_PATHS = [
   "/front-desk", "/waiting-room", "/doctor", "/pharmacy", "/billing",
   "/lab", "/injection-room", "/nurse-station", "/radiology", "/ward",
   "/ultrasound", "/emergency-triage", "/icu", "/maternity", "/blood-bank",
-  "/admin", "/beds", "/display", "/platform", "/kiosk", "/ops",
+  "/admin", "/beds", "/platform", "/kiosk", "/ops",
   "/bookkeeping",
   "/emergency-override", "/print/ticket",
 ]

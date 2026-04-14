@@ -3,6 +3,30 @@ import { logAudit, getClientIP } from "@/lib/audit";
 import { getPusher, hospitalChannel } from "@/lib/pusher-server";
 import { notifyPatient } from "@/lib/whatsapp";
 import { rateLimit } from "@/lib/rate-limit";
+import { createBillableItem } from "@/lib/billing";
+import { transitionVisitState, InvalidVisitTransitionError, type VisitState } from "@/lib/visit-state";
+
+/** Wrap a transition so invalid moves return 409 instead of throwing. */
+function guardTransition(from: unknown, to: VisitState): { ok: true; next: VisitState } | { ok: false; response: Response } {
+  try {
+    const next = transitionVisitState((from as string) || "active", to);
+    return { ok: true, next };
+  } catch (err) {
+    if (err instanceof InvalidVisitTransitionError) {
+      return {
+        ok: false,
+        response: Response.json(
+          { error: `Invalid visit transition: ${err.from} → ${err.to}` },
+          { status: 409 },
+        ),
+      };
+    }
+    return {
+      ok: false,
+      response: Response.json({ error: "Invalid visit state" }, { status: 400 }),
+    };
+  }
+}
 /**
  * Visit lifecycle management.
  *
@@ -105,7 +129,9 @@ export async function POST(request: Request) {
     if (!record) return Response.json({ error: "Record not found" }, { status: 404 });
 
     const visit = record.visit as Record<string, unknown>;
-    visit.visitStatus = "paused_for_lab";
+    const guard = guardTransition(visit.visitStatus, "paused_for_lab");
+    if (!guard.ok) return guard.response;
+    visit.visitStatus = guard.next;
     visit.pausedForLabAt = new Date().toISOString();
     visit.pausedByDoctor = doctorId || "doctor";
     visit.returnToDoctorId = doctorId || null; // Track which doctor to re-queue to
@@ -146,11 +172,9 @@ export async function POST(request: Request) {
     if (!record) return Response.json({ error: "Record not found" }, { status: 404 });
 
     const visit = record.visit as Record<string, unknown>;
-    if (visit.visitStatus !== "paused_for_lab") {
-      return Response.json({ error: "Patient is not paused for lab" }, { status: 400 });
-    }
-
-    visit.visitStatus = "lab_results_ready";
+    const guard = guardTransition(visit.visitStatus, "lab_results_ready");
+    if (!guard.ok) return guard.response;
+    visit.visitStatus = guard.next;
     visit.labResultsReadyAt = new Date().toISOString();
     visit.priorityReturn = true; // Flag for priority queue placement
 
@@ -195,8 +219,11 @@ export async function POST(request: Request) {
     if (!record) return Response.json({ error: "Record not found" }, { status: 404 });
 
     const visit = record.visit as Record<string, unknown>;
-    const nextStatus = hasPrescriptions ? "paused_for_pharmacy" : "awaiting_close";
-    visit.visitStatus = nextStatus;
+    const nextStatus: VisitState = hasPrescriptions ? "paused_for_pharmacy" : "awaiting_close";
+    const guard = guardTransition(visit.visitStatus, nextStatus);
+    if (!guard.ok) return guard.response;
+    const alreadyBilled = visit.consultationBilled === true;
+    visit.visitStatus = guard.next;
     visit.consultationCompletedAt = new Date().toISOString();
     visit.consultationCompletedBy = docId || "doctor";
 
@@ -205,6 +232,23 @@ export async function POST(request: Request) {
     if (!services.includes("consultation")) services.push("consultation");
     visit.services = services;
 
+    // Emit CONSULTATION billable once — fee resolved by doctor.consultationFee → ServicePrice → fallback
+    if (!alreadyBilled) {
+      const doc = docId ? await db.doctor.findUnique({ where: { id: docId } }) : null;
+      await createBillableItem({
+        hospitalId: hospital.id,
+        patientId: recordId,
+        bookId: record.bookId,
+        serviceType: "CONSULTATION",
+        description: doc ? `Consultation — ${doc.name} (${doc.specialty})` : "Consultation",
+        unitCost: 50, // fallback only — resolver prefers doctor.consultationFee or ServicePrice
+        renderedBy: doc?.name || docId || "doctor",
+        doctorId: doc?.id,
+        departmentId: doc?.department || "consultation",
+      });
+      visit.consultationBilled = true;
+    }
+
     await db.patientRecord.update({
       where: { id: recordId },
       data: { visit: JSON.parse(JSON.stringify(visit)) },
@@ -212,7 +256,7 @@ export async function POST(request: Request) {
 
     await logAudit({
       actorType: "doctor", actorId: docId || "doctor", hospitalId: hospital.id,
-      action: "visit.consultation_completed", metadata: { recordId, nextStatus },
+      action: "visit.consultation_completed", metadata: { recordId, nextStatus, billed: !alreadyBilled },
       ipAddress: getClientIP(request),
     });
 
@@ -228,7 +272,9 @@ export async function POST(request: Request) {
     if (!record) return Response.json({ error: "Record not found" }, { status: 404 });
 
     const visit = record.visit as Record<string, unknown>;
-    visit.visitStatus = "awaiting_close";
+    const guard = guardTransition(visit.visitStatus, "awaiting_close");
+    if (!guard.ok) return guard.response;
+    visit.visitStatus = guard.next;
     visit.pharmacyCompletedAt = new Date().toISOString();
 
     const services = (visit.services as string[]) || [];
@@ -263,6 +309,9 @@ export async function POST(request: Request) {
       return Response.json({ error: "Incorrect checkout code. Ask the patient for the code from their ticket or WhatsApp message." }, { status: 403 });
     }
 
+    const guard = guardTransition(visit.visitStatus, "closed");
+    if (!guard.ok) return guard.response;
+
     const now = new Date();
 
     // Build visit summary
@@ -274,7 +323,7 @@ export async function POST(request: Request) {
     const treatment = record.treatment as { prescriptions?: unknown[] };
     const services = (visit.services as string[]) || [];
 
-    visit.visitStatus = "closed";
+    visit.visitStatus = guard.next;
     visit.closedAt = now.toISOString();
     visit.closedBy = closedBy || "front_desk";
     visit.closePin = pin; // Audit trail — who entered the PIN
@@ -330,7 +379,9 @@ export async function POST(request: Request) {
     if (!record) return Response.json({ error: "Record not found" }, { status: 404 });
 
     const visit = record.visit as Record<string, unknown>;
-    visit.visitStatus = "lwbs";
+    const guard = guardTransition(visit.visitStatus, "lwbs");
+    if (!guard.ok) return guard.response;
+    visit.visitStatus = guard.next;
     visit.lwbsAt = new Date().toISOString();
     visit.lwbsBy = markedBy || "front_desk";
 
@@ -363,7 +414,9 @@ export async function POST(request: Request) {
     if (!record) return Response.json({ error: "Record not found" }, { status: 404 });
 
     const visit = record.visit as Record<string, unknown>;
-    visit.visitStatus = "deceased";
+    const guard = guardTransition(visit.visitStatus, "deceased");
+    if (!guard.ok) return guard.response;
+    visit.visitStatus = guard.next;
     visit.timeOfDeath = timeOfDeath || new Date().toISOString();
     visit.causeOfDeath = causeOfDeath;
     visit.deathRecordedBy = recordedBy;

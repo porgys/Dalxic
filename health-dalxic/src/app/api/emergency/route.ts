@@ -2,6 +2,37 @@ import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { createHash } from "crypto";
 import { rateLimit } from "@/lib/rate-limit";
+/** Max session lifetime before auto-close. Matches the GET handler's expiry check. */
+const SESSION_MAX_MS = 4 * 60 * 60 * 1000;
+
+/**
+ * Sweep dangling sessions: any session for this hospital whose triggeredAt is
+ * older than SESSION_MAX_MS AND endedAt is null gets closed. Prevents sessions
+ * from staying "open" forever when no GET access happens after expiry.
+ */
+async function sweepExpiredSessions(hospitalId: string) {
+  const cutoff = new Date(Date.now() - SESSION_MAX_MS);
+  const stale = await db.emergencyOverrideSession.findMany({
+    where: { hospitalId, endedAt: null, triggeredAt: { lt: cutoff } },
+    select: { id: true, triggeredBy: true },
+  });
+  if (stale.length === 0) return;
+  await db.emergencyOverrideSession.updateMany({
+    where: { id: { in: stale.map((s) => s.id) } },
+    data: { endedAt: new Date(), endReason: "auto_expired" },
+  });
+  for (const s of stale) {
+    await logAudit({
+      actorType: "emergency_override",
+      actorId: s.triggeredBy,
+      hospitalId,
+      action: "emergency.session_auto_expired",
+      metadata: { sessionId: s.id, EMERGENCY_OVERRIDE: true },
+      ipAddress: "system",
+    });
+  }
+}
+
 // POST: Trigger emergency override session
 export async function POST(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
@@ -10,6 +41,9 @@ export async function POST(request: Request) {
   if (!hospitalId || !userId || !pin || !reason?.trim()) {
     return Response.json({ error: "All fields required. Reason cannot be blank." }, { status: 400 });
   }
+
+  // Close any dangling sessions for this hospital before opening a new one.
+  await sweepExpiredSessions(hospitalId);
 
   const contact = await db.hospitalEmergencyContact.findFirst({
     where: { hospitalId, userId, isActive: true },

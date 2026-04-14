@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { OperatorSession } from "@/types";
 import { useOperator } from "@/hooks/use-operator";
 import { ChatPanel } from "@/components/chat-panel";
+import { getPusherClient } from "@/lib/pusher-client";
 
 const COPPER = "#B87333";
 
@@ -54,7 +55,8 @@ export function StationGate({ hospitalCode, stationName, stationIcon, allowedRol
 
   const resolvedModule = moduleKey || STATION_TO_MODULE[stationName] || stationName.toLowerCase().replace(/[\s/]+/g, "_");
 
-  // Check if this module is active for the hospital — on mount + every 30s
+  // Check if this module is active for the hospital — initial fetch, then Pusher for live updates.
+  // Poll interval drops to 60s as fallback in case Pusher is not configured.
   useEffect(() => {
     let cancelled = false;
     const check = async () => {
@@ -72,8 +74,25 @@ export function StationGate({ hospitalCode, stationName, stationIcon, allowedRol
       } catch { if (!cancelled) setModuleCheckDone(true); }
     };
     check();
-    const interval = setInterval(check, 30_000);
-    return () => { cancelled = true; clearInterval(interval); };
+
+    // Pusher subscription — fires instantly when ops toggles this hospital's modules.
+    const pusher = getPusherClient();
+    const channel = pusher?.subscribe(`hospital-${hospitalCode}-modules`);
+    const handler = (payload: { module: string; isActive: boolean; activeModules: string[] }) => {
+      if (cancelled) return;
+      // Use the broadcast's authoritative activeModules list — don't trust the single-field flag
+      // in case multiple toggles race.
+      setModuleLocked(!payload.activeModules.includes(resolvedModule));
+    };
+    channel?.bind("module-toggled", handler);
+
+    const interval = setInterval(check, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      channel?.unbind("module-toggled", handler);
+      pusher?.unsubscribe(`hospital-${hospitalCode}-modules`);
+    };
   }, [hospitalCode, resolvedModule]);
 
   // Auto-lock on idle — resets on mouse, keyboard, touch activity
@@ -98,11 +117,6 @@ export function StationGate({ hospitalCode, stationName, stationIcon, allowedRol
 
   if (loading || !moduleCheckDone) {
     return <GateLoading stationName={stationName} stationIcon={stationIcon} />;
-  }
-
-  // Module disabled by admin — block everything
-  if (moduleLocked) {
-    return <ModuleLocked stationName={stationName} stationIcon={stationIcon} />;
   }
 
   if (!isAuthenticated || !session) {
@@ -131,8 +145,22 @@ export function StationGate({ hospitalCode, stationName, stationIcon, allowedRol
     );
   }
 
+  // Module disabled — Super Admin sees a preview banner + full UI; everyone else is locked out.
+  if (moduleLocked && session.operatorRole !== "super_admin") {
+    return <ModuleLocked stationName={stationName} stationIcon={stationIcon} />;
+  }
+
   return (
     <>
+      {moduleLocked && session.operatorRole === "super_admin" && (
+        <SuperAdminPreviewBanner
+          hospitalCode={hospitalCode}
+          moduleKey={resolvedModule}
+          stationName={stationName}
+          actorId={session.operatorId}
+          onActivated={() => setModuleLocked(false)}
+        />
+      )}
       {children(session)}
       <ChatPanel
         hospitalCode={hospitalCode}
@@ -141,6 +169,80 @@ export function StationGate({ hospitalCode, stationName, stationIcon, allowedRol
         operatorName={session.operatorName}
       />
     </>
+  );
+}
+
+/**
+ * SuperAdminPreviewBanner — shown at the top of any locked module when a
+ * super_admin is viewing it. One-click activate pipes through the standard
+ * /api/hospitals toggleModule endpoint.
+ */
+export function SuperAdminPreviewBanner({
+  hospitalCode,
+  moduleKey,
+  stationName,
+  actorId,
+  onActivated,
+}: {
+  hospitalCode: string;
+  moduleKey: string;
+  stationName: string;
+  actorId: string;
+  onActivated: () => void;
+}) {
+  const [activating, setActivating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function activate() {
+    setActivating(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/hospitals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hospitalCode, toggleModule: moduleKey, actorId }),
+      });
+      if (res.ok) onActivated();
+      else setError("Activation failed");
+    } catch {
+      setError("Network error");
+    } finally {
+      setActivating(false);
+    }
+  }
+
+  return (
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, zIndex: 60,
+      padding: "10px 20px",
+      background: `linear-gradient(135deg, ${COPPER}22, ${COPPER}0d)`,
+      borderBottom: `1px solid ${COPPER}55`,
+      backdropFilter: "blur(12px)",
+      display: "flex", alignItems: "center", justifyContent: "center", gap: 16,
+    }}>
+      <span style={{ fontSize: 14 }}>🔓</span>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: "#F5E9DA", letterSpacing: "1px", textTransform: "uppercase" }}>
+          Super Admin Preview
+        </span>
+        <span style={{ fontSize: 11, color: "rgba(245,245,240,0.6)" }}>
+          {stationName} is not active for this hospital. Staff cannot see this page.
+        </span>
+      </div>
+      {error && <span style={{ fontSize: 11, color: "#EF4444", fontWeight: 600 }}>{error}</span>}
+      <button
+        onClick={activate}
+        disabled={activating}
+        style={{
+          padding: "6px 14px", borderRadius: 8, fontSize: 11, fontWeight: 800,
+          background: activating ? "rgba(184,115,51,0.3)" : COPPER,
+          border: "none", color: "#0D0A07", cursor: activating ? "wait" : "pointer",
+          textTransform: "uppercase", letterSpacing: "0.5px",
+        }}
+      >
+        {activating ? "Activating…" : "Activate Module"}
+      </button>
+    </div>
   );
 }
 

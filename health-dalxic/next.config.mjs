@@ -7,6 +7,9 @@ const nextConfig = withPWA({
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
 })({
+  experimental: {
+    serverComponentsExternalPackages: ["pdfkit"],
+  },
   async rewrites() {
     return [
       // Workstations — obfuscated routes → real page directories
@@ -26,10 +29,10 @@ const nextConfig = withPWA({
       { source: "/w/Xd7_yR1nXf5T~vK3bJ8mAw0cPs", destination: "/maternity" },
       { source: "/w/kQ5~hW9sZr2P-tB6nF3dYm8jLv", destination: "/blood-bank" },
       { source: "/w/Gn4~rL8kZv2W-mB5xJ1nYt9hQs", destination: "/bookkeeping" },
+      { source: "/w/Pq3_hM8sZj5W~dV1rK9nYt2bFc", destination: "/cards-bookings" },
       // Utility
       { source: "/w/Vt8_mA4bXk1R~wN7rJ0nDs3hFy", destination: "/admin" },
       { source: "/w/nF3~jK7dZs9W-yR2vH5mBt1xQa", destination: "/beds" },
-      { source: "/w/Hp6_wB0nXr4T~kF8dJ3mYv5tLs", destination: "/display" },
       { source: "/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh", destination: "/platform" },
       { source: "/w/Ys9_dF2bXh6R~mK0rV3nJt7wLp", destination: "/kiosk" },
       { source: "/s/ZXJ2LkQ9Mnx0V3hCYTVrUw.aGVhbHRo", destination: "/ops" },

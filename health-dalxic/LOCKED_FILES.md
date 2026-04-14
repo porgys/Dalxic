@@ -133,3 +133,18 @@
 - src/app/not-found.tsx
 - src/app/robots.ts
 - src/app/sitemap.ts
+
+## LOCKED — v1.1 additions (new since v1.0 baseline)
+- src/app/emergency-triage/page.tsx
+- src/app/cards-bookings/page.tsx
+- src/app/finance/page.tsx
+- src/app/rates/page.tsx
+- src/app/api/shifts/route.ts
+- src/app/api/payouts/route.ts
+- src/app/api/finance/revenue/route.ts
+- src/app/api/pricing/route.ts
+- src/lib/shifts.ts
+- src/lib/payouts.ts
+- src/lib/visit-state.ts
+- src/types/patient-record.ts
+- scripts/check-routes.ts

@@ -2,6 +2,29 @@ import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { createBillableItem } from "@/lib/billing";
 import { rateLimit } from "@/lib/rate-limit";
+import { z } from "zod";
+
+/**
+ * Runtime validators for imaging order payloads. These match the *legacy*
+ * imaging shape stored in existing PatientRecord rows (ct_radiology modality,
+ * "completed" status, examType field) — distinct from @/types/patient-record
+ * which is the canonical forward-looking schema.
+ */
+const ImagingOrderInputSchema = z.object({
+  modality: z.enum(["ct_radiology", "ultrasound"]),
+  examType: z.string().min(1).max(120),
+  bodyPart: z.string().min(1).max(120),
+  clinicalIndication: z.string().max(2000).optional(),
+  urgency: z.enum(["routine", "urgent", "stat"]).default("routine"),
+  orderedBy: z.string().max(120).optional(),
+});
+
+const ImagingReportInputSchema = z.object({
+  findings: z.string().max(10000).optional(),
+  impression: z.string().max(4000).optional(),
+  imageData: z.string().optional(), // base64, size-gated on the client
+  reportedBy: z.string().max(120).optional(),
+});
 // GET: Get imaging orders (CT/Radiology or Ultrasound)
 export async function GET(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
@@ -83,10 +106,19 @@ export async function POST(request: Request) {
 
   // Doctor orders imaging
   if (action === "order") {
-    const { recordId, modality, examType, bodyPart, clinicalIndication, urgency, orderedBy } = body;
-    if (!recordId || !modality || !examType || !bodyPart) {
-      return Response.json({ error: "recordId, modality, examType, bodyPart required" }, { status: 400 });
+    const { recordId } = body;
+    if (!recordId) {
+      return Response.json({ error: "recordId required" }, { status: 400 });
     }
+
+    const parsed = ImagingOrderInputSchema.safeParse(body);
+    if (!parsed.success) {
+      return Response.json(
+        { error: "Invalid imaging order", issues: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })) },
+        { status: 400 },
+      );
+    }
+    const { modality, examType, bodyPart, clinicalIndication, urgency, orderedBy } = parsed.data;
 
     const record = await db.patientRecord.findUnique({ where: { id: recordId } });
     if (!record) return Response.json({ error: "Record not found" }, { status: 404 });
@@ -95,7 +127,7 @@ export async function POST(request: Request) {
     const orders = treatment.imagingOrders || [];
     const newOrder = {
       id: `IMG-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      modality, // ct_radiology | ultrasound
+      modality,
       examType,
       bodyPart,
       clinicalIndication: clinicalIndication || "",
@@ -126,6 +158,7 @@ export async function POST(request: Request) {
         description: `${modality === "ultrasound" ? "Ultrasound" : "CT/Radiology"}: ${examType} (${bodyPart})`,
         unitCost: modality === "ultrasound" ? 80 : 200,
         renderedBy: orderedBy || "doctor",
+        departmentId: modality === "ultrasound" ? "ultrasound" : "imaging",
       });
     }
 
@@ -143,10 +176,19 @@ export async function POST(request: Request) {
 
   // Radiologist/Sonographer reports findings
   if (action === "report") {
-    const { recordId, imagingId, findings, impression, imageData, reportedBy } = body;
+    const { recordId, imagingId } = body;
     if (!recordId || !imagingId) {
       return Response.json({ error: "recordId and imagingId required" }, { status: 400 });
     }
+
+    const parsed = ImagingReportInputSchema.safeParse(body);
+    if (!parsed.success) {
+      return Response.json(
+        { error: "Invalid imaging report", issues: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })) },
+        { status: 400 },
+      );
+    }
+    const { findings, impression, imageData, reportedBy } = parsed.data;
 
     const record = await db.patientRecord.findUnique({ where: { id: recordId } });
     if (!record) return Response.json({ error: "Record not found" }, { status: 404 });
@@ -159,7 +201,7 @@ export async function POST(request: Request) {
     orders[idx].status = "completed";
     orders[idx].findings = findings || "";
     orders[idx].impression = impression || "";
-    orders[idx].imageData = imageData || null; // base64 image
+    orders[idx].imageData = imageData || undefined; // base64 image
     orders[idx].reportedBy = reportedBy || "radiologist";
     orders[idx].reportedAt = new Date().toISOString();
 

@@ -3,6 +3,7 @@ import { logAudit, getClientIP } from "@/lib/audit";
 import { getTierDefaults } from "@/lib/tier-defaults";
 import { rateLimit } from "@/lib/rate-limit";
 import { canSuspendHospital } from "@/lib/data-protection";
+import { getPusher, hospitalChannel } from "@/lib/pusher-server";
 // GET: List all hospitals or single by code
 export async function GET(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
@@ -112,6 +113,8 @@ export async function PATCH(request: Request) {
     if (editFields.subdomain) data.subdomain = editFields.subdomain;
     if (typeof editFields.active === "boolean") data.active = editFields.active;
     if (editFields.groupCode !== undefined) data.groupCode = editFields.groupCode || null;
+    if (editFields.cardTemplate !== undefined) data.cardTemplate = editFields.cardTemplate;
+    if (editFields.cardTemplateCustom !== undefined) data.cardTemplateCustom = editFields.cardTemplateCustom;
 
     const updated = await db.hospital.update({ where: { code: hospitalCode }, data });
 
@@ -150,6 +153,19 @@ export async function PATCH(request: Request) {
       metadata: { module: toggleModule, activeModules: newModules },
       ipAddress: getClientIP(request),
     });
+
+    // Broadcast so every StationGate on this hospital drops polling and reacts in real-time.
+    try {
+      const pusher = getPusher();
+      await pusher.trigger(hospitalChannel(hospitalCode, "modules"), "module-toggled", {
+        module: toggleModule,
+        isActive: !isActive, // new state after toggle
+        activeModules: newModules,
+        timestamp: new Date().toISOString(),
+      });
+    } catch {
+      // Pusher not configured — clients fall back to their polling interval
+    }
 
     return Response.json(updated);
   }

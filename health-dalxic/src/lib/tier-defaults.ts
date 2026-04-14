@@ -143,9 +143,11 @@ export const ROUTE_MAP = {
   "platform":          "/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh",
   "kiosk":             "/w/Ys9_dF2bXh6R~mK0rV3nJt7wLp",
   "ops":               "/s/ZXJ2LkQ9Mnx0V3hCYTVrUw.aGVhbHRo",
-  "chat":              "/w/Lx3~mT7kZq1W-vN9rF4bDs8hYp",
   "bookkeeping":       "/w/Gn4~rL8kZv2W-mB5xJ1nYt9hQs",
+  "cards_bookings":    "/w/Pq3_hM8sZj5W~dV1rK9nYt2bFc",
   "emergency_override":"/w/Dk7_xQ3nXv0T~sF6bW2mYr8hLa",
+  "finance":           "/finance",
+  "rates":             "/rates",
   "print_ticket":      "/w/fR2~kV6dZt9W-nA1mJ4bXh7cPs",
 } as const;
 
@@ -170,14 +172,16 @@ export const ALL_WORKSTATIONS = [
   { key: "icu", href: ROUTE_MAP.icu, icon: "❤️", title: "ICU", desc: "Intensive Care Management", role: "ICU Nurse" },
   { key: "maternity", href: ROUTE_MAP.maternity, icon: "🤱", title: "Maternity", desc: "Antenatal, Delivery & Postnatal", role: "Midwife" },
   { key: "blood_bank", href: ROUTE_MAP.blood_bank, icon: "🩸", title: "Blood Bank", desc: "Blood Inventory & Transfusions", role: "Blood Bank Officer" },
+  // Add-ons — activation-gated, visible-locked in other modules
+  { key: "cards_bookings", href: ROUTE_MAP.cards_bookings, icon: "💳", title: "Cards & Bookings", desc: "Patient Cards, Printouts & Appointment Scheduling", role: "Cards Officer" },
 ] as const;
 
 /** Utility workstations always visible regardless of tier */
 export const UTILITY_STATIONS = [
   { key: "admin", href: ROUTE_MAP.admin, icon: "⚙️", title: "Hospital Admin", desc: "Device & Book Management", role: "Hospital Admin" },
   { key: "beds", href: ROUTE_MAP.beds, icon: "🛏️", title: "Bed Management", desc: "Ward & Bed Status Tracking", role: "Ward Manager" },
-  { key: "finance", href: "/finance", icon: "💰", title: "Finance", desc: "Revenue, Payouts & Shifts", role: "Finance Officer" },
-  { key: "rates", href: "/rates", icon: "💲", title: "Pricing Control", desc: "Doctor, Ward & Service Rates", role: "Finance Officer" },
+  { key: "finance", href: ROUTE_MAP.finance, icon: "💰", title: "Finance", desc: "Revenue, Payouts & Shifts", role: "Finance Officer" },
+  { key: "rates", href: ROUTE_MAP.rates, icon: "💲", title: "Pricing Control", desc: "Doctor, Ward & Service Rates", role: "Finance Officer" },
 ] as const;
 
 /** Get tier defaults for a tier key */

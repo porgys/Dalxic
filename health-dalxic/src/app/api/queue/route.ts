@@ -5,10 +5,17 @@ import { getPusher, hospitalChannel } from "@/lib/pusher-server";
 import { sendWhatsApp } from "@/lib/whatsapp";
 import type { Patient } from "@/types";
 import { rateLimit } from "@/lib/rate-limit";
+/**
+ * Tighter rate limit for patient intake — covers both kiosk self-service and
+ * front-desk registration. 12 registrations/minute/IP is well above real-world
+ * staff pace and blocks abusive bursts from compromised kiosk tablets.
+ */
+const INTAKE_RATE_LIMIT = { limit: 12, windowSeconds: 60 };
+
 // POST: Register patient and assign queue token
 export async function POST(request: Request) {
-  const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
-  const { hospitalCode, patient, chiefComplaint, department, symptomSeverity, symptomDuration, operatorId } = body as {
+  const blocked = rateLimit(request, INTAKE_RATE_LIMIT); if (blocked) return blocked;  const body = await request.json();
+  const { hospitalCode, patient, chiefComplaint, department, symptomSeverity, symptomDuration, operatorId, entryPoint: requestedEntryPoint } = body as {
     hospitalCode: string;
     patient: Patient;
     chiefComplaint: string;
@@ -16,6 +23,7 @@ export async function POST(request: Request) {
     symptomSeverity?: number;
     symptomDuration?: string;
     operatorId?: string;
+    entryPoint?: string;
   };
 
   if (!hospitalCode || !patient?.fullName || !chiefComplaint) {
@@ -46,10 +54,14 @@ export async function POST(request: Request) {
     return Response.json({ error: "Current month book is closed" }, { status: 409 });
   }
 
-  // Auto-flag emergency for severity >= 8 — also reroutes to emergency department
+  // Direct Treatment: walk-in petty care (no doctor consultation) — routes straight to nurse station
+  const isDirectTreatment = requestedEntryPoint === "direct_treatment" || department === "direct_treatment";
+
+  // Auto-flag emergency for severity >= 8 — also reroutes to emergency department (overrides direct_treatment for safety)
   const severity = symptomSeverity ?? 5;
   const emergencyFlag = severity >= 8;
-  const finalDepartment = emergencyFlag ? "emergency" : department;
+  const finalDepartment = emergencyFlag ? "emergency" : isDirectTreatment ? "direct_treatment" : department;
+  const finalEntryPoint = emergencyFlag ? "front_desk" : isDirectTreatment ? "direct_treatment" : (requestedEntryPoint || "front_desk");
   const queueToken = emergencyFlag
     ? await generateERToken(hospitalCode)
     : await generateQueueToken(hospital.id, book.id, finalDepartment, hospitalCode);
@@ -70,7 +82,7 @@ export async function POST(request: Request) {
         department: finalDepartment,
         assignedDoctor: null,
         queueToken,
-        entryPoint: "front_desk",
+        entryPoint: finalEntryPoint,
         symptomSeverity: severity,
         symptomDuration: symptomDuration || null,
         emergencyFlag,
@@ -79,7 +91,7 @@ export async function POST(request: Request) {
       })),
       diagnosis: JSON.parse(JSON.stringify({ primary: null, secondary: [], icdCodes: [], notes: null })),
       treatment: JSON.parse(JSON.stringify({ prescriptions: [], procedures: [], followUp: null, nextAppointment: null })),
-      entryPoint: "manual",
+      entryPoint: finalEntryPoint === "direct_treatment" ? "direct_treatment" : "manual",
       createdBy: operatorId || "device",
     },
   });

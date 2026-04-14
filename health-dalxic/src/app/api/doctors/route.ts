@@ -90,7 +90,7 @@ export async function POST(request: Request) {
 // PATCH: Update doctor status, patient count, or profile
 export async function PATCH(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
-  const { doctorId, status, activePatientCount, breakReason, meta, specialty } = body;
+  const { doctorId, status, activePatientCount, breakReason, meta, specialty, consultationFee, commissionRate, department } = body;
 
   if (!doctorId) {
     return Response.json({ error: "doctorId required" }, { status: 400 });
@@ -126,6 +126,27 @@ export async function PATCH(request: Request) {
 
   if (specialty) {
     data.specialty = specialty;
+  }
+
+  if (consultationFee !== undefined) {
+    if (consultationFee === null) {
+      data.consultationFee = null;
+    } else if (typeof consultationFee === "number" && Number.isFinite(consultationFee) && consultationFee >= 0) {
+      data.consultationFee = consultationFee;
+    } else {
+      return Response.json({ error: "consultationFee must be a non-negative number or null" }, { status: 400 });
+    }
+  }
+
+  if (commissionRate !== undefined) {
+    if (typeof commissionRate !== "number" || !Number.isFinite(commissionRate) || commissionRate < 0 || commissionRate > 100) {
+      return Response.json({ error: "commissionRate must be a number between 0 and 100" }, { status: 400 });
+    }
+    data.commissionRate = commissionRate;
+  }
+
+  if (typeof department === "string") {
+    data.department = department || null;
   }
 
   if (meta) {
