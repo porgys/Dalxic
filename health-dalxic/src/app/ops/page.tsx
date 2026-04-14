@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TIER_DEFAULTS, ALL_WORKSTATIONS, UTILITY_STATIONS, type TierKey } from "@/lib/tier-defaults";
+import { TIER_DEFAULTS, ALL_WORKSTATIONS, UTILITY_STATIONS, ROUTE_MAP, type TierKey } from "@/lib/tier-defaults";
 import { COPPER, COPPER_LIGHT, BLUE, fontFamily, getStyles } from "@/hooks/use-station-theme";
 
 /* ─── Constants ─── */
@@ -403,6 +403,8 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
   const [detailEditForm, setDetailEditForm] = useState({ name: "", tagline: "", subdomain: "" });
   const [detailEditMsg, setDetailEditMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [changingTier, setChangingTier] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [linkMode, setLinkMode] = useState<"kiosk" | "direct">("kiosk");
   const [detailNewOp, setDetailNewOp] = useState({ name: "", phone: "", pin: "", role: "front_desk" });
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [detailAddingOp, setDetailAddingOp] = useState(false);
@@ -1924,6 +1926,85 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                   );
                 })()}
               </AnimatePresence>
+
+              {/* ═══ SECTION D: DEPLOY LINKS ═══ */}
+              <div style={cardStyle}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+                  <div>
+                    {sectionTitle("Deploy Links")}
+                    <p style={{ fontSize: 12, color: "#64748B", margin: 0 }}>
+                      Kiosk URLs for every active module at <span style={{ color: COPPER_LIGHT, fontFamily: fontFamily.mono }}>{detailHospital.code}</span>. Copy and launch on each device in Chrome kiosk mode.
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => setLinkMode("kiosk")}
+                      style={{ padding: "8px 14px", borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: "pointer", background: linkMode === "kiosk" ? `${COPPER}14` : "rgba(255,255,255,0.02)", border: `1px solid ${linkMode === "kiosk" ? COPPER + "30" : "rgba(255,255,255,0.05)"}`, color: linkMode === "kiosk" ? COPPER_LIGHT : "#64748B", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                      Kiosk (With Boot)
+                    </button>
+                    <button onClick={() => setLinkMode("direct")}
+                      style={{ padding: "8px 14px", borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: "pointer", background: linkMode === "direct" ? `${COPPER}14` : "rgba(255,255,255,0.02)", border: `1px solid ${linkMode === "direct" ? COPPER + "30" : "rgba(255,255,255,0.05)"}`, color: linkMode === "direct" ? COPPER_LIGHT : "#64748B", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                      Direct (No Boot)
+                    </button>
+                  </div>
+                </div>
+
+                {(() => {
+                  const origin = typeof window !== "undefined" ? window.location.origin : "https://health.dalxic.com";
+                  const activeStations = allWs.filter(ws => hospitalModules.includes(ws.key));
+                  const buildUrl = (key: string) => {
+                    if (linkMode === "kiosk") return `${origin}/kiosk?module=${key}&hospital=${detailHospital.code}`;
+                    const r = (ROUTE_MAP as Record<string, string>)[key];
+                    if (!r) return `${origin}/${key}?hospital=${detailHospital.code}`;
+                    const sep = r.includes("?") ? "&" : "?";
+                    return `${origin}${r}${sep}hospital=${detailHospital.code}`;
+                  };
+                  const copyAll = async () => {
+                    const lines = activeStations.map(ws => `${ws.title}\t${buildUrl(ws.key)}`).join("\n");
+                    try { await navigator.clipboard.writeText(lines); setCopiedKey("__all__"); setTimeout(() => setCopiedKey(null), 1500); } catch {}
+                  };
+                  const copyOne = async (key: string) => {
+                    try { await navigator.clipboard.writeText(buildUrl(key)); setCopiedKey(key); setTimeout(() => setCopiedKey(null), 1500); } catch {}
+                  };
+
+                  if (activeStations.length === 0) {
+                    return <div style={{ fontSize: 13, color: "#475569", padding: "20px 0" }}>No active modules. Unlock modules in the section above to generate deploy links.</div>;
+                  }
+
+                  return (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+                        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={copyAll}
+                          style={{ padding: "8px 18px", borderRadius: 10, cursor: "pointer", background: copiedKey === "__all__" ? "rgba(34,197,94,0.12)" : `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`, border: copiedKey === "__all__" ? "1px solid rgba(34,197,94,0.3)" : "none", color: copiedKey === "__all__" ? "#22C55E" : "#fff", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                          {copiedKey === "__all__" ? "Copied All ✓" : `Copy All ${activeStations.length} Links`}
+                        </motion.button>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+                        {activeStations.map(ws => {
+                          const url = buildUrl(ws.key);
+                          const copied = copiedKey === ws.key;
+                          return (
+                            <div key={ws.key} style={{ display: "grid", gridTemplateColumns: "36px 180px 1fr 110px", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${COPPER}10` }}>
+                              <span style={{ fontSize: 20 }}>{ws.icon}</span>
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: "#F0F4FF" }}>{ws.title}</div>
+                                <div style={{ fontSize: 10, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em" }}>{ws.role}</div>
+                              </div>
+                              <code style={{ fontSize: 11, fontFamily: fontFamily.mono, color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "6px 10px", background: "rgba(0,0,0,0.2)", borderRadius: 6 }}>{url}</code>
+                              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={() => copyOne(ws.key)}
+                                style={{ padding: "8px 14px", borderRadius: 8, cursor: "pointer", background: copied ? "rgba(34,197,94,0.12)" : `${COPPER}14`, border: `1px solid ${copied ? "rgba(34,197,94,0.3)" : COPPER + "25"}`, color: copied ? "#22C55E" : COPPER_LIGHT, fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                                {copied ? "Copied ✓" : "Copy Link"}
+                              </motion.button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 10, background: "rgba(14,165,233,0.05)", border: `1px solid ${BLUE}20`, fontSize: 11, color: "#94A3B8", fontFamily: fontFamily.mono }}>
+                        Chrome kiosk launcher: <span style={{ color: COPPER_LIGHT }}>chrome --kiosk --app=&quot;&lt;URL&gt;&quot;</span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
 
               {/* ═══ SECTION E: STATS + TIER INFO ═══ */}
               <div style={cardStyle}>
