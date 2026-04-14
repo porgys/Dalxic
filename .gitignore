@@ -25,6 +25,9 @@ yarn-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Backup files
+*.bak
+
 # Claude / private docs — NEVER push
 .claude/
 CLAUDE.md
