@@ -7,6 +7,7 @@ import { useStationTheme, ThemeToggle } from "@/hooks/use-station-theme";
 import { calloutNumber } from "@/lib/voice-callout";
 import { getPusherClient } from "@/lib/pusher-client";
 import { FloatingDot } from "@/components/ui/motion";
+import { useHospitalName } from "@/hooks/use-hospital-name";
 
 interface CalloutEntry {
   token: string;
@@ -27,9 +28,9 @@ interface QueueItem {
 }
 
 const HOSPITAL_CODE = "KBH";
-const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
 
 function QueueDisplay() {
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const searchParams = useSearchParams();
   const dept = searchParams.get("department");
   const voiceMode = (searchParams.get("voice") || "speech") as "speech" | "audio";

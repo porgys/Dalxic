@@ -4,10 +4,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
+import { useHospitalName } from "@/hooks/use-hospital-name";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
-const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
 
 
 function GalaxyCanvas() {
@@ -153,6 +153,7 @@ export default function WardIPDPage() {
 }
 
 function WardIPDContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const theme = useStationTheme();
   // Ward scoping — nurses see only their assigned ward, admin/super_admin see all
   const isAdmin = ["admin", "super_admin"].includes(operator.operatorRole);

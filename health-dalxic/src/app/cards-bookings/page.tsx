@@ -6,10 +6,11 @@ import { useStationTheme, ThemeToggle, StationThemeProvider, COPPER, fontFamily 
 import { ModuleStrip } from "@/components/ModuleBadge";
 import { MODULE_REGISTRY } from "@/lib/modules";
 import { renderCard, TEMPLATE_LIST, type TemplateKey, type CustomTemplate, type CardData } from "@/lib/card-templates";
+import { useHospitalName } from "@/hooks/use-hospital-name";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
-const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
+const HOSPITAL_NAME_FALLBACK = "Korle Bu Teaching Hospital";
 
 type Card = {
   id: string;
@@ -56,6 +57,7 @@ export default function CardsBookingsPage() {
 
 function CardsBookingsContent({ operator }: { operator: OperatorSession }) {
   const theme = useStationTheme();
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, HOSPITAL_NAME_FALLBACK);
   const [tab, setTab] = useState<"cards" | "bookings" | "templates">("cards");
   const [activeModules, setActiveModules] = useState<string[]>([]);
   const [cardTemplate, setCardTemplate] = useState<TemplateKey>("classic_copper");
@@ -137,6 +139,7 @@ function TabButton({ label, active, onClick, icon }: { label: string; active: bo
 
 // ─── Cards Panel ────────────────────────────────────────────────
 function CardsPanel({ operatorId, template, customTemplate }: { operatorId: string; template: TemplateKey; customTemplate: CustomTemplate | null }) {
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, HOSPITAL_NAME_FALLBACK);
   const [query, setQuery] = useState("");
   const [allCards, setAllCards] = useState<Card[]>([]);
   const [stats, setStats] = useState<CardStats | null>(null);
@@ -465,6 +468,7 @@ function BookingsPanel({ operatorId }: { operatorId: string }) {
 
 // ─── Card Templates Panel ─────────────────────────────────────
 function CardTemplatesPanel({ activeKey, custom, onSaved }: { activeKey: TemplateKey; custom: CustomTemplate | null; onSaved: () => void }) {
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, HOSPITAL_NAME_FALLBACK);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const sample: CardData = {
@@ -604,6 +608,7 @@ function CardTemplatesPanel({ activeKey, custom, onSaved }: { activeKey: Templat
 }
 
 function TemplateThumbnail({ templateKey }: { templateKey: TemplateKey }) {
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, HOSPITAL_NAME_FALLBACK);
   const sample: CardData = {
     cardNumber: "DH-XXXXXX", patientName: "Ama Mensah", phone: "+233 24 555 0199",
     dateOfBirth: "1992-04-18", hospitalName: HOSPITAL_NAME, hospitalCode: HOSPITAL_CODE,

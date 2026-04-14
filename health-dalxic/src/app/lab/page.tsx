@@ -5,10 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
+import { useHospitalName } from "@/hooks/use-hospital-name";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
-const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -175,6 +175,7 @@ export default function LabPage() {
 
 function LabContent({ operator }: { operator: OperatorSession }) {
   const theme = useStationTheme();
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const [activeNav, setActiveNav] = useState("pending");
   const [orders, setOrders] = useState<LabOrderItem[]>([]);
   const [activeOrder, setActiveOrder] = useState<LabOrderItem | null>(null);

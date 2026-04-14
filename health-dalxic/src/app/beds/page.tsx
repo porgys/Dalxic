@@ -4,9 +4,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate } from "@/components/station-gate";
 import { useStationTheme, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
+import { useHospitalName } from "@/hooks/use-hospital-name";
 
 const HOSPITAL_CODE = "KBH";
-const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -162,6 +162,7 @@ export default function BedManagementPage() {
 }
 
 function BedManagementContent() {
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const theme = useStationTheme();
   const [activeNav, setActiveNav] = useState<"dashboard" | "manage" | "transitions">("dashboard");
   const [wards, setWards] = useState<Ward[]>([]);

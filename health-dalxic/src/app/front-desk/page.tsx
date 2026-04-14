@@ -9,10 +9,10 @@ import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, CO
 import { getPusherClient } from "@/lib/pusher-client";
 import { ModuleStrip } from "@/components/ModuleBadge";
 import { MODULE_REGISTRY } from "@/lib/modules";
+import { useHospitalName } from "@/hooks/use-hospital-name";
 import type { ParsedPatientEntry, OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
-const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
 /* ─── Galaxy Canvas (copper, for station pages) ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -298,6 +298,7 @@ export default function FrontDeskPage() {
 }
 
 function FrontDeskContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const theme = useStationTheme();
   const [activeNav, setActiveNav] = useState("register");
   const [recentToken, setRecentToken] = useState<string | null>(null);

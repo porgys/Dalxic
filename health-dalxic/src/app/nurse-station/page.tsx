@@ -5,10 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
+import { useHospitalName } from "@/hooks/use-hospital-name";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
-const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
 const VITALS_PREVIEW_COUNT = 8;
 
 /* ─── Galaxy Canvas ─── */
@@ -222,6 +222,7 @@ export default function NurseStationPage() {
 
 function NurseStationContent({ operator }: { operator: OperatorSession }) {
   const theme = useStationTheme();
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const [activeNav, setActiveNav] = useState<NavId>("overview");
   const [patients, setPatients] = useState<NursePatient[]>([]);
   const [counts, setCounts] = useState({ totalPatients: 0, needsVitals: 0, pendingTasks: 0, pendingInjections: 0 });

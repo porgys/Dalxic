@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, COPPER_LIGHT, BLUE, fontFamily } from "@/hooks/use-station-theme";
+import { useHospitalName } from "@/hooks/use-hospital-name";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
@@ -207,6 +208,7 @@ export default function BookkeepingPage() {
 
 function BookkeepingContent({ operator }: { operator: OperatorSession }) {
   const theme = useStationTheme();
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const [activeNav, setActiveNav] = useState<NavView>("patients");
   const [period, setPeriod] = useState<string>("today");
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -315,6 +317,9 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: COPPER_LIGHT }}>Bookkeeping</span>
+          <div style={{ width: 1, height: 14, background: theme.divider }} />
+          <span style={{ fontSize: 12, color: theme.textSecondary, transition: "color 0.4s ease" }}>{HOSPITAL_NAME}</span>
+          <div style={{ width: 1, height: 14, background: theme.divider }} />
           <OperatorBadge session={operator} onLogout={() => window.location.reload()} />
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
           <span style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, fontFamily: fontFamily.mono }}>

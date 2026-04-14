@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
+import { useHospitalName } from "@/hooks/use-hospital-name";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
-const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
 const CRIMSON = "#EF4444";
 
 type Severity = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
@@ -102,6 +102,7 @@ export default function EmergencyTriagePage() {
 
 function TriageContent({ operator }: { operator: OperatorSession }) {
   const theme = useStationTheme();
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const [patients, setPatients] = useState<TriagePatient[]>(MOCK_PATIENTS);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeNav, setActiveNav] = useState<"incoming" | "active" | "dispatched" | "intake">("active");

@@ -4,10 +4,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
+import { useHospitalName } from "@/hooks/use-hospital-name";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
-const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
 const MODALITY = "ct_radiology";
 const STATION_TITLE = "CT / Radiology";
 
@@ -143,6 +143,7 @@ export default function RadiologyPage() {
 
 function RadiologyContent({ operator }: { operator: OperatorSession }) {
   const theme = useStationTheme();
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const [activeNav, setActiveNav] = useState<"queue" | "report" | "completed">("queue");
   const [orders, setOrders] = useState<ImagingOrder[]>([]);
   const [counts, setCounts] = useState({ pending: 0, in_progress: 0, completed: 0, total: 0 });

@@ -4,10 +4,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
+import { useHospitalName } from "@/hooks/use-hospital-name";
 import type { OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
-const HOSPITAL_NAME = "Korle Bu Teaching Hospital";
 const MODALITY = "ultrasound";
 const STATION_TITLE = "Ultrasound";
 
@@ -128,6 +128,7 @@ export default function UltrasoundPage() {
 }
 
 function UltrasoundContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const theme = useStationTheme();
   const [activeNav, setActiveNav] = useState<"queue" | "report" | "completed">("queue");
   const [orders, setOrders] = useState<ImagingOrder[]>([]);
