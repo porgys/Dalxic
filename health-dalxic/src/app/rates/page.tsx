@@ -36,7 +36,7 @@ export default function RatesPage() {
       stationName="Pricing Control"
       stationIcon="💲"
       moduleKey="admin"
-      allowedRoles={["admin", "billing"]}
+      allowedRoles={["admin", "super_admin", "owner", "hospital_admin", "billing"]}
     >
       {(operator) => <RatesContent operator={operator} />}
     </StationGate>

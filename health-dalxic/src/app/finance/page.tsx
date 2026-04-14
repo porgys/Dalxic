@@ -148,7 +148,7 @@ function RevenueTab() {
   return (
     <div>
       {/* Filter bar */}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 24 }}>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", marginBottom: 24 }}>
         <Filter label="From"><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={inputStyle} /></Filter>
         <Filter label="To"><input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={inputStyle} /></Filter>
         <Filter label="Group By">
@@ -164,6 +164,21 @@ function RevenueTab() {
         </Filter>
         <button onClick={load} disabled={loading} style={btnPrimary}>
           {loading ? "Loading…" : "Refresh"}
+        </button>
+        <button
+          onClick={() => {
+            const params = new URLSearchParams({
+              type: "period",
+              hospitalCode: HOSPITAL_CODE,
+              from: `${from}T00:00:00`,
+              to: `${to}T23:59:59`,
+              groupBy,
+            });
+            window.open(`/api/reports?${params}`);
+          }}
+          style={btnSecondary}
+        >
+          Download PDF
         </button>
       </div>
 

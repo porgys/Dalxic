@@ -1,6 +1,18 @@
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 
+// Canonicalize raw serviceType strings (any case, aliases) to one of the 8
+// friendly buckets the frontend SERVICE_LABELS knows about. Prevents duplicate
+// rows like "consultation"/"CONSULTATION" and merges aliases like MEDICATION→DRUG.
+function canonicalServiceType(raw: string | null | undefined): string {
+  if (!raw) return "OTHER";
+  const u = raw.trim().toUpperCase();
+  if (u === "MEDICATION" || u === "PHARMACY") return "DRUG";
+  if (u === "LABORATORY") return "LAB";
+  if (u === "RADIOLOGY") return "IMAGING";
+  return u;
+}
+
 // GET: Aggregate billing data for bookkeeping dashboards
 export async function GET(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;
@@ -96,9 +108,10 @@ export async function GET(request: Request) {
 
     const byType: Record<string, { count: number; total: number }> = {};
     items.forEach(i => {
-      if (!byType[i.serviceType]) byType[i.serviceType] = { count: 0, total: 0 };
-      byType[i.serviceType].count += 1;
-      byType[i.serviceType].total += i.totalCost;
+      const key = canonicalServiceType(i.serviceType);
+      if (!byType[key]) byType[key] = { count: 0, total: 0 };
+      byType[key].count += 1;
+      byType[key].total += i.totalCost;
     });
 
     return Response.json({

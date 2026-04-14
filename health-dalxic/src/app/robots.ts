@@ -5,8 +5,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/pricing"],
-        disallow: ["/api/", "/w/", "/kiosk"],
+        allow: ["/"],
+        disallow: ["/api/", "/w/", "/kiosk", "/pricing"],
       },
     ],
     sitemap: "https://health.dalxic.com/sitemap.xml",

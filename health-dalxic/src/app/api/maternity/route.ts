@@ -144,7 +144,7 @@ export async function POST(request: Request) {
     const now = new Date();
     const book = await db.monthlyBook.findFirst({ where: { hospitalId: hospital.id, year: now.getFullYear(), month: now.getMonth() + 1, status: "active" } });
     if (book) {
-      await createBillableItem({ hospitalId: hospital.id, patientId: recordId, bookId: book.id, serviceType: "CONSULTATION", description: `Maternity: ${type || "Antenatal Visit"}`, unitCost: 30, renderedBy: recordedBy || "midwife" });
+      await createBillableItem({ hospitalId: hospital.id, patientId: recordId, bookId: book.id, serviceType: "CONSULTATION", description: `Maternity: ${type || "Antenatal Visit"}`, unitCost: 30, renderedBy: recordedBy || "midwife", departmentId: "maternity" });
     }
 
     return Response.json({ success: true, visitsCount: visits.length });
@@ -176,7 +176,7 @@ export async function POST(request: Request) {
     const book = await db.monthlyBook.findFirst({ where: { hospitalId: hospital.id, year: now.getFullYear(), month: now.getMonth() + 1, status: "active" } });
     if (book) {
       const cost = deliveryMode === "caesarean" ? 800 : deliveryMode === "assisted" ? 400 : 200;
-      await createBillableItem({ hospitalId: hospital.id, patientId: recordId, bookId: book.id, serviceType: "PROCEDURE", description: `Delivery: ${deliveryMode}`, unitCost: cost, renderedBy: recordedBy || "midwife" });
+      await createBillableItem({ hospitalId: hospital.id, patientId: recordId, bookId: book.id, serviceType: "PROCEDURE", description: `Delivery: ${deliveryMode}`, unitCost: cost, renderedBy: recordedBy || "midwife", departmentId: "maternity", overrideUnitCost: cost });
     }
 
     await logAudit({ actorType: "device_operator", actorId: recordedBy || "midwife", hospitalId: hospital.id, action: "maternity.delivery", metadata: { recordId, deliveryMode, babyGender, babyWeight }, ipAddress: getClientIP(request) });

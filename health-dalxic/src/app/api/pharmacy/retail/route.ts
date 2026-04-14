@@ -119,6 +119,8 @@ export async function POST(request: Request) {
       unitCost: totalAmount,
       quantity: 1,
       renderedBy: soldBy || "pharmacist",
+      departmentId: "pharmacy",
+      overrideUnitCost: totalAmount,
     });
   }
 

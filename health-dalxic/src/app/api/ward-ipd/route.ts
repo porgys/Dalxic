@@ -234,6 +234,7 @@ export async function POST(request: Request) {
         description: `Ward Day — ${visit.admission.wardName || "General"}`,
         unitCost: 100,
         renderedBy: recordedBy || "ward_nurse",
+        departmentId: "ward",
       });
     }
 

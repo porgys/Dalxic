@@ -39,6 +39,8 @@ model Hospital {
   whatsappBundle  Int      @default(500) @map("whatsapp_bundle")
   active          Boolean  @default(true)
   settings        Json?    // { pricing: { defaults, doctors, wards, services } }
+  cardTemplate       String?  @default("classic_copper") @map("card_template")
+  cardTemplateCustom Json?    @map("card_template_custom")
   createdAt       DateTime @default(now()) @map("created_at")
 
   // Multi-branch group (nullable — standalone hospitals have no group)
@@ -67,6 +69,7 @@ model Hospital {
   drugStock                DrugStock[]
   stockMovements           StockMovement[]
   retailSales              RetailSale[]
+  bookings                 Booking[]
 
   @@map("hospitals")
 }
@@ -633,6 +636,36 @@ model PatientCard {
   @@index([hospitalId])
   @@index([phone])
   @@map("patient_cards")
+}
+
+// ─── Bookings (Cards & Bookings module) ───
+
+model Booking {
+  id             String   @id @default(cuid())
+  hospitalId     String   @map("hospital_id")
+  patientId      String   @map("patient_id")
+  patientName    String   @map("patient_name")
+  patientPhone   String?  @map("patient_phone")
+  doctorId       String?  @map("doctor_id")
+  departmentKey  String?  @map("department_key") // consultation | lab | imaging | procedure | etc
+  scheduledAt    DateTime @map("scheduled_at")
+  durationMins   Int      @default(30) @map("duration_mins")
+  status         String   @default("PENDING") // PENDING | CONFIRMED | CHECKED_IN | COMPLETED | CANCELLED | NO_SHOW
+  fee            Float    @default(0)
+  feePaid        Boolean  @default(false) @map("fee_paid")
+  billableItemId String?  @map("billable_item_id")
+  notes          String?
+  createdBy      String   @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id])
+
+  @@index([hospitalId, scheduledAt])
+  @@index([hospitalId, status])
+  @@index([patientId])
+  @@index([doctorId, scheduledAt])
+  @@map("bookings")
 }
 
 // ─── System Config (key-value store for ops password, master PINs) ───

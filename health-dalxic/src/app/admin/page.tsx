@@ -240,7 +240,17 @@ export default function AdminPage() {
     await fetch("/api/books", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bookId, actorId: "admin" }),
+      body: JSON.stringify({ bookId, actorId: "admin", action: "close" }),
+    });
+    loadData(hospitalId);
+  };
+
+  const handleReopenBook = async (bookId: string) => {
+    if (!confirm("Reopen this book? New patient records will attach to it again.")) return;
+    await fetch("/api/books", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookId, actorId: "admin", action: "reopen" }),
     });
     loadData(hospitalId);
   };
@@ -570,6 +580,20 @@ export default function AdminPage() {
                             }}
                           >
                             Close Book
+                          </motion.button>
+                        )}
+                        {book.status === "closed" && (
+                          <motion.button
+                            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                            onClick={() => handleReopenBook(book.id)}
+                            style={{
+                              padding: "8px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600,
+                              color: "#10B981", cursor: "pointer",
+                              background: "rgba(16,185,129,0.08)",
+                              border: "1px solid rgba(16,185,129,0.25)", transition: "all 0.3s",
+                            }}
+                          >
+                            Reopen Book
                           </motion.button>
                         )}
                         <motion.button

@@ -47,9 +47,10 @@ export async function POST(request: Request) {
         patientId,
         bookId: record.bookId,
         serviceType: "LAB",
-        description: `Lab: ${t.testName}`,
-        unitCost: 25, // Default lab test fee, overridden by ServicePrice if configured
+        description: t.testName,
+        unitCost: 25, // Default lab test fee, overridden by ServicePrice if configured per-test
         renderedBy: orderedBy ?? "doctor",
+        departmentId: "lab",
       })
     )
   );

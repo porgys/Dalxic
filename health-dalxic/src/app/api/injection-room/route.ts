@@ -159,6 +159,7 @@ export async function POST(request: Request) {
         description: `Injection: ${orders[idx].drug}`,
         unitCost: 15, // Default injection fee, overridden by ServicePrice if configured
         renderedBy: administeredBy || "nurse",
+        departmentId: "nursing",
       });
 
       await logAudit({

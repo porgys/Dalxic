@@ -7,6 +7,8 @@ import { BulkPaste } from "@/components/intake/bulk-paste";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
+import { ModuleStrip } from "@/components/ModuleBadge";
+import { MODULE_REGISTRY } from "@/lib/modules";
 import type { ParsedPatientEntry, OperatorSession } from "@/types";
 
 const HOSPITAL_CODE = "KBH";
@@ -227,13 +229,15 @@ function CameraCapture({ onCapture, currentPhoto }: { onCapture: (url: string) =
 }
 
 /* ─── Navigation tabs (mini workstation cards) ─── */
-const NAV_ITEMS = [
+type NavItem = { id: string; icon: string; label: string; moduleKey?: string; externalHref?: string };
+const NAV_ITEMS: NavItem[] = [
   { id: "register", icon: "📋", label: "Patient Registration" },
   { id: "emergency", icon: "🚨", label: "Emergency Admit" },
   { id: "close", icon: "✅", label: "Close Visit" },
   { id: "queue", icon: "👥", label: "Today's Queue" },
   { id: "search", icon: "🔍", label: "Search Records" },
   { id: "bulk", icon: "📄", label: "Bulk Import" },
+  { id: "cards_bookings", icon: "💳", label: "Cards & Bookings", moduleKey: "cards_bookings", externalHref: "/w/Pq3_hM8sZj5W~dV1rK9nYt2bFc" },
 ];
 
 /* ─── Departments as mini cards ─── */
@@ -246,6 +250,7 @@ const DEPARTMENTS = [
   { value: "dental", icon: "🦷", label: "Dental" },
   { value: "eye", icon: "👁", label: "Eye Clinic" },
   { value: "ent", icon: "👂", label: "ENT" },
+  { value: "direct_treatment", icon: "💉", label: "Direct Treatment" },
 ];
 
 const CHRONIC_CONDITIONS = [
@@ -299,6 +304,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
   const [recentPin, setRecentPin] = useState<string | null>(null);
   const [recentEmergency, setRecentEmergency] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [activeModules, setActiveModules] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [erLoading, setErLoading] = useState(false);
   const [erForm, setErForm] = useState({ patientName: "", chiefComplaint: "", arrivalMode: "walk_in" as string });
@@ -340,7 +346,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
   const [crossSearchLoading, setCrossSearchLoading] = useState(false);
   const [crossSearchMeta, setCrossSearchMeta] = useState<{ totalFound: number; branchCount: number } | null>(null);
 
-  // Check if current hospital belongs to a group
+  // Check if current hospital belongs to a group + load active modules
   useEffect(() => {
     (async () => {
       try {
@@ -349,6 +355,9 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
           const data = await res.json();
           if (data.group?.groupCode) {
             setHospitalGroup({ groupCode: data.group.groupCode, name: data.group.name });
+          }
+          if (Array.isArray(data.activeModules)) {
+            setActiveModules(data.activeModules);
           }
         }
       } catch { /* */ }
@@ -381,6 +390,36 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
   });
 
   const update = (field: string, value: unknown) => setForm((p) => ({ ...p, [field]: value }));
+
+  /* ─── Name autocomplete (live search of existing PatientCards) ─── */
+  type NameSuggestion = {
+    cardNumber: string; patientName: string; phone: string | null;
+    dateOfBirth: string | null; gender: string | null; bloodType: string | null;
+    allergies: string | null; insuranceProvider: string | null; insuranceId: string | null;
+    emergencyContact: string | null; emergencyContactPhone: string | null;
+  };
+  const [nameSuggestions, setNameSuggestions] = useState<NameSuggestion[]>([]);
+  const [suggestionOpen, setSuggestionOpen] = useState(false);
+  const [suggestionLoading, setSuggestionLoading] = useState(false);
+  const [attachedCardNumber, setAttachedCardNumber] = useState<string | null>(null);
+  const pickSuggestion = (c: NameSuggestion) => {
+    setForm((p) => ({
+      ...p,
+      fullName: c.patientName || p.fullName,
+      dateOfBirth: c.dateOfBirth || p.dateOfBirth,
+      phone: c.phone || p.phone,
+      gender: c.gender || p.gender,
+      insuranceProvider: c.insuranceProvider || p.insuranceProvider,
+      insuranceId: c.insuranceId || p.insuranceId,
+      emergencyContactName: c.emergencyContact || p.emergencyContactName,
+      emergencyContactPhone: c.emergencyContactPhone || p.emergencyContactPhone,
+      bloodType: c.bloodType || p.bloodType,
+      allergies: c.allergies || p.allergies,
+    }));
+    setAttachedCardNumber(c.cardNumber);
+    setSuggestionOpen(false);
+    setNameSuggestions([]);
+  };
   const toggleCondition = (c: string) => {
     const current = form.chronicConditions;
     update("chronicConditions", current.includes(c) ? current.filter((x) => x !== c) : [...current, c]);
@@ -390,6 +429,26 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  /* Debounce the name field → /api/cards?q= live autocomplete */
+  useEffect(() => {
+    if (attachedCardNumber) return;
+    const q = form.fullName.trim();
+    if (q.length < 2) { setNameSuggestions([]); setSuggestionOpen(false); return; }
+    setSuggestionLoading(true);
+    const h = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/cards?hospitalCode=${HOSPITAL_CODE}&q=${encodeURIComponent(q)}`);
+        if (res.ok) {
+          const cards = await res.json();
+          setNameSuggestions(cards as NameSuggestion[]);
+          setSuggestionOpen(cards.length > 0);
+        }
+      } catch { /* silent */ }
+      finally { setSuggestionLoading(false); }
+    }, 300);
+    return () => clearTimeout(h);
+  }, [form.fullName, attachedCardNumber]);
 
   const handleCardLookup = async (q: string) => {
     setCardLookup(q);
@@ -471,6 +530,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
           },
           chiefComplaint: form.chiefComplaint, department: form.department,
           symptomSeverity: form.symptomSeverity, symptomDuration: form.symptomDuration || undefined,
+          entryPoint: form.department === "direct_treatment" ? "direct_treatment" : "front_desk",
         }),
       });
       if (res.ok) {
@@ -479,10 +539,10 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
         setRecentPin(result.checkoutPin ?? null);
         setRecentEmergency(result.emergencyFlag ?? false);
         // Offer card creation if patient doesn't have one
-        if (!cardFound) { setShowCreateCard(true); setNewCardNumber(null); }
-        setCardLookup(""); setCardFound(null);
-        // Auto-route patient to best-fit doctor
-        if (result.recordId && form.department) {
+        if (!cardFound && !attachedCardNumber) { setShowCreateCard(true); setNewCardNumber(null); }
+        setCardLookup(""); setCardFound(null); setAttachedCardNumber(null);
+        // Auto-route patient to best-fit doctor (skip for Direct Treatment — nurse handles walk-ins)
+        if (result.recordId && form.department && form.department !== "direct_treatment") {
           fetch("/api/doctors/route-patient", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -671,6 +731,8 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
+          <ModuleStrip registry={MODULE_REGISTRY} activeModules={activeModules} />
+          <div style={{ width: 1, height: 16, background: theme.divider }} />
           <OperatorBadge session={operator} onLogout={() => window.location.reload()} />
           <div style={{ width: 1, height: 16, background: theme.divider }} />
           <time suppressHydrationWarning style={{ fontFamily: fontFamily.mono, fontSize: 12, color: theme.copperText, transition: "color 0.4s ease" }}>
@@ -683,33 +745,52 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
       <main style={{ position: "relative", zIndex: 1, maxWidth: 1200, margin: "0 auto", padding: "80px 32px 60px" }}>
 
         {/* Navigation cards (mini workstation subset) */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 32 }}>
-          {NAV_ITEMS.map((n) => (
-            <motion.button
-              key={n.id}
-              type="button"
-              onClick={() => setActiveNav(n.id)}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-body transition-all duration-300"
-              style={{
-                background: activeNav === n.id
-                  ? (n.id === "emergency" ? "rgba(220,38,38,0.1)" : theme.navActiveBg)
-                  : (n.id === "emergency" ? "rgba(220,38,38,0.03)" : theme.navInactiveBg),
-                border: `1px solid ${activeNav === n.id
-                  ? (n.id === "emergency" ? "rgba(220,38,38,0.4)" : theme.navActiveBorder)
-                  : (n.id === "emergency" ? "rgba(220,38,38,0.12)" : theme.navInactiveBorder)}`,
-                color: activeNav === n.id
-                  ? (n.id === "emergency" ? "#F87171" : theme.navActiveText)
-                  : (n.id === "emergency" ? "#DC2626" : theme.navInactiveText),
-                boxShadow: activeNav === n.id ? `0 0 20px ${n.id === "emergency" ? "rgba(220,38,38,0.12)" : COPPER + "12"}` : "none",
-                transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease",
-              }}
-            >
-              <span>{n.icon}</span>
-              {n.label}
-            </motion.button>
-          ))}
+        <div style={{ display: "flex", gap: 10, marginBottom: 32, flexWrap: "wrap" }}>
+          {NAV_ITEMS.map((n) => {
+            const locked = !!n.moduleKey && !activeModules.includes(n.moduleKey);
+            const isActive = activeNav === n.id;
+            const handleClick = () => {
+              if (locked) return;
+              if (n.externalHref) { window.location.href = n.externalHref; return; }
+              setActiveNav(n.id);
+            };
+            return (
+              <motion.button
+                key={n.id}
+                type="button"
+                onClick={handleClick}
+                whileHover={locked ? undefined : { y: -2 }}
+                whileTap={locked ? undefined : { scale: 0.97 }}
+                title={locked ? "Activate Cards & Bookings — card issuance, appointment scheduling, printout management" : undefined}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-body transition-all duration-300"
+                style={{
+                  background: locked
+                    ? (theme.isDayMode ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.015)")
+                    : isActive
+                      ? (n.id === "emergency" ? "rgba(220,38,38,0.1)" : theme.navActiveBg)
+                      : (n.id === "emergency" ? "rgba(220,38,38,0.03)" : theme.navInactiveBg),
+                  border: `1px solid ${locked
+                    ? (theme.isDayMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.05)")
+                    : isActive
+                      ? (n.id === "emergency" ? "rgba(220,38,38,0.4)" : theme.navActiveBorder)
+                      : (n.id === "emergency" ? "rgba(220,38,38,0.12)" : theme.navInactiveBorder)}`,
+                  color: locked
+                    ? theme.textMuted
+                    : isActive
+                      ? (n.id === "emergency" ? "#F87171" : theme.navActiveText)
+                      : (n.id === "emergency" ? "#DC2626" : theme.navInactiveText),
+                  filter: locked ? "grayscale(1) opacity(0.55)" : "none",
+                  cursor: locked ? "not-allowed" : "pointer",
+                  boxShadow: isActive && !locked ? `0 0 20px ${n.id === "emergency" ? "rgba(220,38,38,0.12)" : COPPER + "12"}` : "none",
+                  transition: "background 0.4s ease, border-color 0.4s ease, color 0.4s ease, filter 0.4s ease",
+                }}
+              >
+                <span>{n.icon}</span>
+                {n.label}
+                {locked && <span style={{ fontSize: 9 }}>🔒</span>}
+              </motion.button>
+            );
+          })}
         </div>
 
         {/* Token toast — fixed overlay, no layout shift */}
@@ -819,7 +900,61 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: 16, marginBottom: 16 }}>
                 <WorkshopBox title="Patient Identity" icon="👤" delay={0.05}>
                   <div className="space-y-3">
-                    <DInput label="Full Name" placeholder="First Middle Last" value={form.fullName} onChange={(e) => update("fullName", e.target.value)} required autoFocus />
+                    <div style={{ position: "relative" }}>
+                      <DInput
+                        label="Full Name"
+                        placeholder="First Middle Last"
+                        value={form.fullName}
+                        onChange={(e) => {
+                          update("fullName", e.target.value);
+                          if (attachedCardNumber) setAttachedCardNumber(null);
+                        }}
+                        onFocus={() => { if (nameSuggestions.length > 0) setSuggestionOpen(true); }}
+                        onBlur={() => { setTimeout(() => setSuggestionOpen(false), 180); }}
+                        required
+                        autoFocus
+                      />
+                      {attachedCardNumber && (
+                        <div style={{ position: "absolute", right: 10, top: 32, fontSize: 10, fontFamily: fontFamily.mono, color: theme.copperText, background: theme.copperSubtle, padding: "3px 7px", borderRadius: 6, border: `1px solid ${theme.chipBorder}` }}>
+                          💳 {attachedCardNumber}
+                        </div>
+                      )}
+                      {suggestionOpen && (nameSuggestions.length > 0 || suggestionLoading) && (
+                        <div
+                          style={{
+                            position: "absolute", top: "100%", left: 0, right: 0, marginTop: 6, zIndex: 40,
+                            background: theme.headerBg, border: `1px solid ${theme.cardHoverBorder}`,
+                            borderRadius: 12, backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
+                            boxShadow: "0 12px 32px rgba(0,0,0,0.35)", overflow: "hidden",
+                          }}
+                        >
+                          <div style={{ padding: "8px 12px", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: theme.textMuted, borderBottom: `1px solid ${theme.divider}` }}>
+                            {suggestionLoading ? "Searching…" : `${nameSuggestions.length} Existing Member${nameSuggestions.length !== 1 ? "s" : ""}`}
+                          </div>
+                          {nameSuggestions.map((c) => (
+                            <button
+                              key={c.cardNumber}
+                              type="button"
+                              onMouseDown={(e) => { e.preventDefault(); pickSuggestion(c); }}
+                              style={{
+                                display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between",
+                                padding: "10px 12px", background: "transparent", border: "none",
+                                borderBottom: `1px solid ${theme.divider}`, textAlign: "left", cursor: "pointer",
+                                color: theme.textPrimary, fontFamily: fontFamily.primary,
+                              }}
+                              onMouseOver={(e) => (e.currentTarget.style.background = theme.copperSubtle)}
+                              onMouseOut={(e) => (e.currentTarget.style.background = "transparent")}
+                            >
+                              <span style={{ fontSize: 13, fontWeight: 600 }}>{c.patientName}</span>
+                              <span style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                <span style={{ fontSize: 10, fontFamily: fontFamily.mono, color: theme.copperText }}>{c.cardNumber}</span>
+                                {c.phone && <span style={{ fontSize: 10, color: theme.textMuted }}>{c.phone}</span>}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <div className="grid grid-cols-3 gap-3">
                       <DatePickerTrigger label="Date Of Birth" value={form.dateOfBirth} onClick={() => {
                         const p = form.dateOfBirth ? new Date(form.dateOfBirth + "T00:00:00") : new Date();

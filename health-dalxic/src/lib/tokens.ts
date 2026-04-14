@@ -30,6 +30,7 @@ export const DEPT_PREFIXES: Record<string, string> = {
   radiology: "RD",
   anesthesiology: "AN",
   pathology: "PT",
+  direct_treatment: "DT",
 };
 
 /** Generate department-coded queue token: GR-KBH-001, PD-KBH-002 */

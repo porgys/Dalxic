@@ -125,7 +125,7 @@ export async function POST(request: Request) {
       const now = new Date();
       const book = await db.monthlyBook.findFirst({ where: { hospitalId: hospital.id, year: now.getFullYear(), month: now.getMonth() + 1, status: "active" } });
       if (book) {
-        await createBillableItem({ hospitalId: hospital.id, patientId: recordId, bookId: book.id, serviceType: "ICU_DAY", description: `ICU Day — Bed ${visit.icuAdmission.bedLabel || "ICU"}`, unitCost: 500, renderedBy: recordedBy || "icu_nurse" });
+        await createBillableItem({ hospitalId: hospital.id, patientId: recordId, bookId: book.id, serviceType: "ICU_DAY", description: `ICU Day — Bed ${visit.icuAdmission.bedLabel || "ICU"}`, unitCost: 500, renderedBy: recordedBy || "icu_nurse", departmentId: "icu" });
       }
     }
 

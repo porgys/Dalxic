@@ -21,10 +21,10 @@ export async function GET(request: Request) {
   return Response.json(books);
 }
 
-// POST: Close a book (auto-close or manual)
+// POST: Close or reopen a book
 export async function POST(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const body = await request.json();
-  const { bookId, actorId } = body;
+  const { bookId, actorId, action = "close" } = body;
 
   if (!bookId || !actorId) {
     return Response.json({ error: "bookId and actorId required" }, { status: 400 });
@@ -33,6 +33,25 @@ export async function POST(request: Request) {
   const book = await db.monthlyBook.findUnique({ where: { id: bookId } });
   if (!book) {
     return Response.json({ error: "Book not found" }, { status: 404 });
+  }
+
+  if (action === "reopen") {
+    if (book.status !== "closed") {
+      return Response.json({ error: "Book is not closed" }, { status: 409 });
+    }
+    const reopened = await db.monthlyBook.update({
+      where: { id: bookId },
+      data: { status: "active", closedAt: null },
+    });
+    await logAudit({
+      actorType: "hospital_admin",
+      actorId,
+      hospitalId: book.hospitalId,
+      action: "book.reopened",
+      metadata: { year: book.year, month: book.month },
+      ipAddress: getClientIP(request),
+    });
+    return Response.json(reopened);
   }
 
   if (book.status === "closed") {

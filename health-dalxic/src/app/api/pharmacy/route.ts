@@ -114,6 +114,7 @@ export async function POST(request: Request) {
       unitCost: 15,
       quantity: dispensedCount,
       renderedBy: operator,
+      departmentId: "pharmacy",
     });
   }
 

@@ -172,10 +172,12 @@ const SERVICE_LABELS: Record<string, string> = {
   CONSULTATION: "Consultations", LAB: "Laboratory", IMAGING: "Imaging / Radiology",
   DRUG: "Pharmacy / Drugs", WARD_DAY: "Ward Stay", PROCEDURE: "Procedures",
   EMERGENCY: "Emergency", ICU_DAY: "ICU Stay",
+  CARD_FEE: "Patient Cards", BOOKING_FEE: "Bookings",
 };
 const SERVICE_ICONS: Record<string, string> = {
   CONSULTATION: "🩺", LAB: "🧪", IMAGING: "📷", DRUG: "💊",
   WARD_DAY: "🏥", PROCEDURE: "🔬", EMERGENCY: "🚑", ICU_DAY: "❤️",
+  CARD_FEE: "💳", BOOKING_FEE: "📅",
 };
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: "#94A3B8", ISSUED: "#38BDF8", PART_PAID: "#F59E0B", PAID: "#22C55E", WAIVED: "#A855F7",

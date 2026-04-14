@@ -186,7 +186,7 @@ export async function POST(request: Request) {
     const now = new Date();
     const book = await db.monthlyBook.findFirst({ where: { hospitalId: hospital.id, year: now.getFullYear(), month: now.getMonth() + 1, status: "active" } });
     if (book) {
-      await createBillableItem({ hospitalId: hospital.id, patientId: recordId, bookId: book.id, serviceType: "PROCEDURE", description: `Blood: ${requests[idx].component} (${requests[idx].bloodGroup}) x${requests[idx].units}`, unitCost: 150, quantity: requests[idx].units, renderedBy: issuedBy || "blood_bank_officer" });
+      await createBillableItem({ hospitalId: hospital.id, patientId: recordId, bookId: book.id, serviceType: "PROCEDURE", description: `Blood: ${requests[idx].component} (${requests[idx].bloodGroup}) x${requests[idx].units}`, unitCost: 150, quantity: requests[idx].units, renderedBy: issuedBy || "blood_bank_officer", departmentId: "blood_bank" });
     }
 
     // Decrement inventory

@@ -12,7 +12,9 @@ export type ServiceType =
   | "WARD_DAY"
   | "PROCEDURE"
   | "EMERGENCY"
-  | "ICU_DAY";
+  | "ICU_DAY"
+  | "CARD_FEE"
+  | "BOOKING_FEE";
 
 type PricingBlob = {
   defaults?: {

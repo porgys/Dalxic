@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
+import { createBillableItem } from "@/lib/billing";
 import { rateLimit } from "@/lib/rate-limit";
 // GET: Get patients with nursing tasks for today
 export async function GET(request: Request) {
@@ -49,12 +50,13 @@ export async function GET(request: Request) {
 
   const patients = records.map((r) => {
     const patient = r.patient as { fullName: string; age?: number; gender?: string };
-    const visit = r.visit as { queueToken: string; department: string; assignedDoctor?: string; chiefComplaint?: string };
-    const treatment = r.treatment as { vitals?: VitalEntry[]; nursingTasks?: NursingTask[]; injectionOrders?: unknown[] };
+    const visit = r.visit as { queueToken: string; department: string; assignedDoctor?: string; chiefComplaint?: string; entryPoint?: string };
+    const treatment = r.treatment as { vitals?: VitalEntry[]; nursingTasks?: NursingTask[]; injectionOrders?: unknown[]; nurseSupplies?: unknown[] };
 
     const vitals = treatment.vitals || [];
     const tasks = treatment.nursingTasks || [];
     const injections = (treatment.injectionOrders || []) as Array<{ status: string }>;
+    const supplies = (treatment.nurseSupplies || []) as Array<{ drugName: string; quantity: number; administeredAt: string }>;
 
     return {
       recordId: r.id,
@@ -65,11 +67,14 @@ export async function GET(request: Request) {
       department: visit.department,
       assignedDoctor: visit.assignedDoctor,
       chiefComplaint: visit.chiefComplaint,
+      entryPoint: visit.entryPoint || r.entryPoint || "front_desk",
+      isDirectTreatment: (visit.entryPoint || r.entryPoint) === "direct_treatment",
       latestVitals: vitals.length > 0 ? vitals[vitals.length - 1] : null,
       vitalsCount: vitals.length,
       pendingTasks: tasks.filter((t) => t.status === "pending").length,
       completedTasks: tasks.filter((t) => t.status === "completed").length,
       pendingInjections: injections.filter((i) => i.status === "pending" || i.status === "in_progress").length,
+      suppliesCount: supplies.length,
       tasks,
       createdAt: r.createdAt,
     };
@@ -223,6 +228,132 @@ export async function POST(request: Request) {
     });
 
     return Response.json({ success: true, task: tasks[idx] });
+  }
+
+  // Add supply — nurse administers pharmacy items (syringe, dressing, IV line, injection drug, etc.)
+  // Auto-decrements pharmacy stock via FEFO and creates billableItems (one per supply).
+  if (action === "add_supply") {
+    const { recordId, items, administeredBy } = body as {
+      recordId: string;
+      items: Array<{ drugCatalogId: string; quantity: number; notes?: string }>;
+      administeredBy?: string;
+    };
+
+    if (!recordId || !Array.isArray(items) || items.length === 0) {
+      return Response.json({ error: "recordId and items[] required" }, { status: 400 });
+    }
+
+    const record = await db.patientRecord.findUnique({ where: { id: recordId } });
+    if (!record) return Response.json({ error: "Record not found" }, { status: 404 });
+
+    const now = new Date();
+    const operator = administeredBy || "nurse";
+
+    // Ensure active monthly book exists for billable item attachment
+    const book = await db.monthlyBook.findFirst({
+      where: { hospitalId: hospital.id, year: now.getFullYear(), month: now.getMonth() + 1, status: "active" },
+    });
+    if (!book) return Response.json({ error: "No active monthly book — cannot bill" }, { status: 409 });
+
+    const treatment = record.treatment as { nurseSupplies?: unknown[]; [key: string]: unknown };
+    const supplyLog = (treatment.nurseSupplies || []) as Array<{
+      id: string; drugCatalogId: string; drugName: string; quantity: number;
+      unitCost: number; totalCost: number; batchId: string | null;
+      administeredBy: string; administeredAt: string; notes?: string; billableItemId: string | null;
+    }>;
+
+    const results: Array<{
+      drugCatalogId: string; drugName: string; requestedQty: number; dispensedQty: number;
+      unitCost: number; totalCost: number; success: boolean; reason?: string;
+    }> = [];
+
+    for (const item of items) {
+      const qty = Math.max(1, Math.floor(Number(item.quantity) || 1));
+      const drug = await db.drugCatalog.findFirst({
+        where: { id: item.drugCatalogId, hospitalId: hospital.id, isActive: true },
+      });
+      if (!drug) {
+        results.push({ drugCatalogId: item.drugCatalogId, drugName: "Unknown", requestedQty: qty, dispensedQty: 0, unitCost: 0, totalCost: 0, success: false, reason: "Drug not found" });
+        continue;
+      }
+
+      // FEFO: earliest-expiring batch with stock
+      const batch = await db.drugStock.findFirst({
+        where: { drugCatalogId: drug.id, hospitalId: hospital.id, status: "ACTIVE", quantityRemaining: { gt: 0 } },
+        orderBy: { expiryDate: "asc" },
+      });
+
+      if (!batch) {
+        results.push({ drugCatalogId: drug.id, drugName: drug.name, requestedQty: qty, dispensedQty: 0, unitCost: drug.defaultPrice, totalCost: 0, success: false, reason: "Out of stock" });
+        continue;
+      }
+
+      const deductQty = Math.min(qty, batch.quantityRemaining);
+      const newRemaining = batch.quantityRemaining - deductQty;
+      const unitCost = batch.sellPrice;
+      const totalCost = unitCost * deductQty;
+
+      await db.drugStock.update({
+        where: { id: batch.id },
+        data: { quantityRemaining: newRemaining, status: newRemaining === 0 ? "DEPLETED" : "ACTIVE" },
+      });
+
+      await db.stockMovement.create({
+        data: {
+          hospitalId: hospital.id, drugStockId: batch.id, drugCatalogId: drug.id,
+          type: "DISPENSED_HOSPITAL", quantity: deductQty,
+          balanceBefore: batch.quantityRemaining, balanceAfter: newRemaining,
+          reference: recordId, performedBy: operator,
+          notes: `Nurse supply: ${drug.name} × ${deductQty}${item.notes ? ` — ${item.notes}` : ""}`,
+        },
+      });
+
+      const billable = await createBillableItem({
+        hospitalId: hospital.id,
+        patientId: recordId,
+        bookId: book.id,
+        serviceType: "DRUG",
+        description: `Nurse: ${drug.name} × ${deductQty} ${drug.unit}`,
+        unitCost,
+        quantity: deductQty,
+        renderedBy: operator,
+        departmentId: "nursing",
+        overrideUnitCost: unitCost,
+      });
+
+      supplyLog.push({
+        id: `SUP-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        drugCatalogId: drug.id,
+        drugName: drug.name,
+        quantity: deductQty,
+        unitCost,
+        totalCost,
+        batchId: batch.id,
+        administeredBy: operator,
+        administeredAt: now.toISOString(),
+        notes: item.notes,
+        billableItemId: billable.id,
+      });
+
+      results.push({ drugCatalogId: drug.id, drugName: drug.name, requestedQty: qty, dispensedQty: deductQty, unitCost, totalCost, success: true });
+    }
+
+    await db.patientRecord.update({
+      where: { id: recordId },
+      data: { treatment: JSON.parse(JSON.stringify({ ...treatment, nurseSupplies: supplyLog })) },
+    });
+
+    await logAudit({
+      actorType: "device_operator",
+      actorId: operator,
+      hospitalId: hospital.id,
+      action: "nurse.supply_administered",
+      metadata: { recordId, itemCount: items.length, results },
+      ipAddress: getClientIP(request),
+    });
+
+    const grandTotal = results.filter((r) => r.success).reduce((s, r) => s + r.totalCost, 0);
+    return Response.json({ success: true, results, grandTotal }, { status: 201 });
   }
 
   return Response.json({ error: "Invalid action" }, { status: 400 });

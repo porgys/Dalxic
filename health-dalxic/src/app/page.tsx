@@ -339,7 +339,6 @@ function Nav() {
         {[
           { label: "Workstations", href: "#stations" },
           { label: "Technology", href: "#technology" },
-          { label: "Pricing", href: "/pricing" },
           { label: "Access", href: "#access" },
         ].map(l => (
           <a key={l.label} href={l.href} style={{
@@ -841,7 +840,7 @@ export default function HomePage() {
                   <p style={{ fontSize: 13, color: "var(--nl-txM)", lineHeight: 1.7, marginBottom: 28 }}>
                     Voice callouts, deceased protocols, abnormal value alerts, cross-tab sync, shift handover, and dozens more — see them live with your own hospital data.
                   </p>
-                  <Link href="/pricing" style={{
+                  <a href="#access" style={{
                     display: "inline-block", padding: "14px 40px", borderRadius: 14,
                     fontSize: 14, fontWeight: 700, letterSpacing: "0.06em",
                     background: `linear-gradient(135deg, ${COPPER}, ${COPPER_LIGHT})`,
@@ -849,7 +848,7 @@ export default function HomePage() {
                     boxShadow: `0 8px 32px ${COPPER}30`,
                   }}>
                     Request A Demo
-                  </Link>
+                  </a>
                 </div>
               </div>
             </div>

@@ -113,6 +113,8 @@ export async function POST(request: Request) {
       unitCost: totalDrugCost > 0 ? totalDrugCost : 15,
       quantity: 1,
       renderedBy: operator,
+      departmentId: "pharmacy",
+      overrideUnitCost: totalDrugCost > 0 ? totalDrugCost : undefined,
     });
   }
 
