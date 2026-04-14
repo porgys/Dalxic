@@ -42,7 +42,7 @@ function QueueDisplay() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceUnlocked, setVoiceUnlocked] = useState(false);
   useEffect(() => {
-    if (sessionStorage.getItem("voice_unlocked") === "1") setVoiceUnlocked(true);
+    if (localStorage.getItem("voice_unlocked") === "1") setVoiceUnlocked(true);
   }, []);
   const calloutQueueRef = useRef<CalloutEntry[]>([]);
   const processingRef = useRef(false);
@@ -54,7 +54,7 @@ function QueueDisplay() {
       u.volume = 0;
       window.speechSynthesis.speak(u);
     }
-    sessionStorage.setItem("voice_unlocked", "1");
+    localStorage.setItem("voice_unlocked", "1");
     setVoiceUnlocked(true);
   };
 
