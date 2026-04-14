@@ -9,35 +9,83 @@ function generateCardNumber(): string {
   return `DH-${code}`;
 }
 
-// GET: Search cards by cardNumber, phone, or name
+// GET: two modes.
+//   • q present (min 2 chars) → autocomplete search, returns Card[] (used by front-desk)
+//   • q absent                → inventory mode, returns { cards: Card[] (with activity), stats }
 export async function GET(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;
   const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
   const q = searchParams.get("q");
 
-  if (!hospitalCode || !q || q.length < 2) return Response.json({ error: "hospitalCode and q (min 2 chars) required" }, { status: 400 });
+  if (!hospitalCode) return Response.json({ error: "hospitalCode required" }, { status: 400 });
 
   const hospital = await db.hospital.findUnique({ where: { code: hospitalCode } });
   if (!hospital) return Response.json({ error: "Hospital not found" }, { status: 404 });
 
-  const searchTerm = q.trim();
+  // ── Autocomplete search (back-compat shape) ──
+  if (q && q.length >= 2) {
+    const searchTerm = q.trim();
+    const cards = await db.patientCard.findMany({
+      where: {
+        hospitalId: hospital.id,
+        OR: [
+          { cardNumber: { startsWith: searchTerm.toUpperCase() } },
+          { phone: { contains: searchTerm } },
+          { patientName: { contains: searchTerm, mode: "insensitive" } },
+        ],
+      },
+      take: 10,
+      orderBy: { updatedAt: "desc" },
+    });
+    return Response.json(cards);
+  }
 
-  // Search by card number (exact prefix), phone, or name (contains)
+  // ── Inventory mode: full list + activity + stats ──
   const cards = await db.patientCard.findMany({
-    where: {
-      hospitalId: hospital.id,
-      OR: [
-        { cardNumber: { startsWith: searchTerm.toUpperCase() } },
-        { phone: { contains: searchTerm } },
-        { patientName: { contains: searchTerm, mode: "insensitive" } },
-      ],
-    },
-    take: 10,
-    orderBy: { updatedAt: "desc" },
+    where: { hospitalId: hospital.id },
+    orderBy: { createdAt: "desc" },
   });
 
-  return Response.json(cards);
+  // Activity rolled up by phone (the only link between card + patient_record)
+  const activity = await db.$queryRawUnsafe<Array<{ phone: string; visits: bigint; last_visit: Date }>>(
+    `
+    SELECT patient->>'phone' AS phone,
+           COUNT(*) AS visits,
+           MAX(created_at) AS last_visit
+      FROM patient_records
+     WHERE hospital_id = $1
+       AND patient->>'phone' IS NOT NULL
+  GROUP BY patient->>'phone'
+  `,
+    hospital.id,
+  );
+  const byPhone = new Map(activity.map((a) => [a.phone, a]));
+
+  const enriched = cards.map((c) => {
+    const a = c.phone ? byPhone.get(c.phone) : undefined;
+    return {
+      ...c,
+      totalVisits: a ? Number(a.visits) : 0,
+      lastVisit: a ? a.last_visit.toISOString() : null,
+    };
+  });
+
+  // Stats
+  const now = Date.now();
+  const oneWeekAgo = new Date(now - 7 * 24 * 3600 * 1000);
+  const oneMonthAgo = new Date(now - 30 * 24 * 3600 * 1000);
+  const activeThisMonthPhones = new Set(
+    activity.filter((a) => new Date(a.last_visit) >= oneMonthAgo).map((a) => a.phone),
+  );
+  const stats = {
+    total: cards.length,
+    newThisWeek: cards.filter((c) => new Date(c.createdAt) >= oneWeekAgo).length,
+    activeThisMonth: cards.filter((c) => c.phone && activeThisMonthPhones.has(c.phone)).length,
+    withInsurance: cards.filter((c) => c.insuranceProvider).length,
+  };
+
+  return Response.json({ cards: enriched, stats });
 }
 
 // POST: Create new patient card

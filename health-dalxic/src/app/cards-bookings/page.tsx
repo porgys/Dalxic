@@ -21,6 +21,15 @@ type Card = {
   bloodType: string | null;
   insuranceProvider: string | null;
   createdAt: string;
+  totalVisits?: number;
+  lastVisit?: string | null;
+};
+
+type CardStats = {
+  total: number;
+  newThisWeek: number;
+  activeThisMonth: number;
+  withInsurance: number;
 };
 
 type Booking = {
@@ -129,18 +138,39 @@ function TabButton({ label, active, onClick, icon }: { label: string; active: bo
 // ─── Cards Panel ────────────────────────────────────────────────
 function CardsPanel({ operatorId, template, customTemplate }: { operatorId: string; template: TemplateKey; customTemplate: CustomTemplate | null }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Card[]>([]);
+  const [allCards, setAllCards] = useState<Card[]>([]);
+  const [stats, setStats] = useState<CardStats | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newCard, setNewCard] = useState({ patientName: "", phone: "", dateOfBirth: "", gender: "", bloodType: "", insuranceProvider: "" });
 
-  const search = useCallback(async () => {
-    if (query.trim().length < 2) { setResults([]); return; }
-    const res = await fetch(`/api/cards?hospitalCode=${HOSPITAL_CODE}&q=${encodeURIComponent(query)}`);
-    if (res.ok) setResults(await res.json());
-  }, [query]);
+  const loadInventory = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/cards?hospitalCode=${HOSPITAL_CODE}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAllCards(data.cards ?? []);
+        setStats(data.stats ?? null);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => { const t = setTimeout(search, 240); return () => clearTimeout(t); }, [search]);
+  useEffect(() => { loadInventory(); }, [loadInventory]);
+
+  const filtered = query.trim().length >= 2
+    ? allCards.filter((c) => {
+        const needle = query.trim().toLowerCase();
+        return (
+          c.cardNumber.toLowerCase().includes(needle) ||
+          c.patientName.toLowerCase().includes(needle) ||
+          (c.phone ?? "").toLowerCase().includes(needle)
+        );
+      })
+    : allCards;
 
   async function createCard() {
     if (!newCard.patientName.trim()) return;
@@ -152,10 +182,9 @@ function CardsPanel({ operatorId, template, customTemplate }: { operatorId: stri
         body: JSON.stringify({ hospitalCode: HOSPITAL_CODE, ...newCard, createdBy: operatorId }),
       });
       if (res.ok) {
-        const card = await res.json();
-        setResults([card, ...results]);
         setShowNew(false);
         setNewCard({ patientName: "", phone: "", dateOfBirth: "", gender: "", bloodType: "", insuranceProvider: "" });
+        loadInventory();
       }
     } finally {
       setCreating(false);
@@ -179,6 +208,15 @@ function CardsPanel({ operatorId, template, customTemplate }: { operatorId: stri
 
   return (
     <div>
+      {/* Stats row */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
+        <StatCard label="Total Members" value={stats?.total ?? 0} icon="👥" />
+        <StatCard label="New This Week" value={stats?.newThisWeek ?? 0} icon="🆕" />
+        <StatCard label="Active This Month" value={stats?.activeThisMonth ?? 0} icon="📈" />
+        <StatCard label="With Insurance" value={stats?.withInsurance ?? 0} icon="🛡️" />
+      </div>
+
+      {/* Search + new-card button */}
       <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
         <input
           value={query}
@@ -207,18 +245,80 @@ function CardsPanel({ operatorId, template, customTemplate }: { operatorId: stri
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12, marginTop: 20 }}>
-        {results.map((c) => (
-          <div key={c.id} style={cardItemStyle}>
-            <div style={{ fontFamily: fontFamily.mono, fontSize: 14, fontWeight: 800, color: COPPER }}>{c.cardNumber}</div>
-            <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4 }}>{c.patientName}</div>
-            <div style={{ fontSize: 11, color: "rgba(245,245,240,0.6)", marginTop: 2 }}>{c.phone ?? "—"}</div>
-            <button onClick={() => printCard(c)} style={{ ...btnSmall, marginTop: 10 }}>🖨️ Print</button>
+      {/* Member inventory table */}
+      <div style={{ marginTop: 20, overflow: "hidden", borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={tableHeaderRow}>
+          <div style={{ flex: "0 0 140px" }}>Card #</div>
+          <div style={{ flex: "1 1 auto" }}>Member</div>
+          <div style={{ flex: "0 0 130px" }}>Phone</div>
+          <div style={{ flex: "0 0 90px", textAlign: "center" }}>Visits</div>
+          <div style={{ flex: "0 0 140px" }}>Last Visit</div>
+          <div style={{ flex: "0 0 110px" }}>Insurance</div>
+          <div style={{ flex: "0 0 90px", textAlign: "right" }}></div>
+        </div>
+        {loading && (
+          <div style={{ padding: 24, textAlign: "center", color: "rgba(245,245,240,0.5)", fontSize: 13 }}>Loading members…</div>
+        )}
+        {!loading && filtered.length === 0 && (
+          <div style={{ padding: 24, textAlign: "center", color: "rgba(245,245,240,0.5)", fontSize: 13 }}>
+            {query.length >= 2 ? `No members match "${query}"` : "No members yet. Issue the first card above."}
+          </div>
+        )}
+        {!loading && filtered.map((c, i) => (
+          <div key={c.id} style={{ ...tableRow, background: i % 2 === 0 ? "rgba(255,255,255,0.015)" : "transparent" }}>
+            <div style={{ flex: "0 0 140px", fontFamily: fontFamily.mono, fontWeight: 800, color: COPPER, fontSize: 12 }}>{c.cardNumber}</div>
+            <div style={{ flex: "1 1 auto" }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{c.patientName}</div>
+              <div style={{ fontSize: 10, color: "rgba(245,245,240,0.5)", marginTop: 2 }}>
+                {[c.gender, c.bloodType].filter(Boolean).join(" • ") || "—"}
+              </div>
+            </div>
+            <div style={{ flex: "0 0 130px", fontSize: 12, color: "rgba(245,245,240,0.75)", fontFamily: fontFamily.mono }}>{c.phone ?? "—"}</div>
+            <div style={{ flex: "0 0 90px", textAlign: "center", fontSize: 13, fontWeight: 800, color: (c.totalVisits ?? 0) > 0 ? "#86EFAC" : "rgba(245,245,240,0.4)" }}>
+              {c.totalVisits ?? 0}
+            </div>
+            <div style={{ flex: "0 0 140px", fontSize: 11, color: "rgba(245,245,240,0.6)" }}>
+              {c.lastVisit ? new Date(c.lastVisit).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+            </div>
+            <div style={{ flex: "0 0 110px" }}>
+              {c.insuranceProvider ? (
+                <span style={{ padding: "3px 8px", borderRadius: 5, background: "rgba(34,197,94,0.15)", color: "#86EFAC", fontSize: 10, fontWeight: 700, letterSpacing: 0.4 }}>
+                  {c.insuranceProvider}
+                </span>
+              ) : (
+                <span style={{ fontSize: 10, color: "rgba(245,245,240,0.35)" }}>Self-pay</span>
+              )}
+            </div>
+            <div style={{ flex: "0 0 90px", textAlign: "right" }}>
+              <button onClick={() => printCard(c)} style={btnSmall}>🖨️ Print</button>
+            </div>
           </div>
         ))}
-        {query.length >= 2 && results.length === 0 && (
-          <div style={{ color: "rgba(245,245,240,0.5)", fontSize: 13 }}>No cards match &quot;{query}&quot;</div>
-        )}
+      </div>
+
+      {!loading && filtered.length > 0 && query.length >= 2 && (
+        <div style={{ marginTop: 12, fontSize: 11, color: "rgba(245,245,240,0.5)" }}>
+          Showing {filtered.length} of {allCards.length} members
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatCard({ label, value, icon }: { label: string; value: number; icon: string }) {
+  return (
+    <div style={{
+      padding: "16px 18px", borderRadius: 10,
+      background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
+      display: "flex", alignItems: "center", gap: 14,
+    }}>
+      <div style={{
+        width: 38, height: 38, borderRadius: 10, fontSize: 18,
+        background: `${COPPER}18`, display: "flex", alignItems: "center", justifyContent: "center",
+      }}>{icon}</div>
+      <div>
+        <div style={{ fontSize: 10, color: "rgba(245,245,240,0.55)", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700 }}>{label}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: "#F5F5F0", marginTop: 2 }}>{value.toLocaleString()}</div>
       </div>
     </div>
   );
@@ -580,4 +680,15 @@ const bookingItemStyle = {
   display: "flex", alignItems: "center", gap: 12, padding: "14px 18px",
   borderRadius: 10, background: "rgba(255,255,255,0.03)",
   border: "1px solid rgba(255,255,255,0.06)",
+};
+
+const tableHeaderRow = {
+  display: "flex", alignItems: "center", gap: 14, padding: "10px 16px",
+  background: "rgba(184,115,51,0.08)", borderBottom: "1px solid rgba(184,115,51,0.2)",
+  fontSize: 10, fontWeight: 800, color: COPPER, textTransform: "uppercase" as const, letterSpacing: 1,
+};
+
+const tableRow = {
+  display: "flex", alignItems: "center", gap: 14, padding: "12px 16px",
+  borderBottom: "1px solid rgba(255,255,255,0.04)",
 };
