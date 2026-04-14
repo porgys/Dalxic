@@ -136,7 +136,7 @@ export async function POST(request: Request) {
   return Response.json({ queueToken, recordId: record.id, emergencyFlag, checkoutPin }, { status: 201 });
 }
 
-// GET: Get today's queue for a hospital
+// GET: Get active queue for a hospital (no date filter — patients persist until discharged)
 export async function GET(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const hospitalCode = searchParams.get("hospitalCode");
@@ -150,16 +150,13 @@ export async function GET(request: Request) {
     return Response.json({ error: "Hospital not found" }, { status: 404 });
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const records = await db.patientRecord.findMany({
     where: {
       hospitalId: hospital.id,
-      createdAt: { gte: today },
       entryPoint: { not: "blood_donation" },
     },
     orderBy: { createdAt: "asc" },
+    take: 500,
   });
 
   const queue = records.map((r) => {

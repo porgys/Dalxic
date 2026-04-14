@@ -14,12 +14,10 @@ export async function GET(request: Request) {
   const hospital = await db.hospital.findUnique({ where: { code: hospitalCode } });
   if (!hospital) return Response.json({ error: "Hospital not found" }, { status: 404 });
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const records = await db.patientRecord.findMany({
-    where: { hospitalId: hospital.id, createdAt: { gte: today } },
+    where: { hospitalId: hospital.id },
     orderBy: { createdAt: "desc" },
+    take: 500,
   });
 
   type VitalEntry = {

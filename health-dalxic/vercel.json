@@ -3,10 +3,6 @@
     {
       "path": "/api/heartbeat",
       "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/demo-refresh",
-      "schedule": "5 0 * * *"
     }
   ]
 }

@@ -23,16 +23,13 @@ export async function POST(request: Request) {
     return Response.json({ error: "One or both doctors not found" }, { status: 404 });
   }
 
-  // Get active patients for outgoing doctor (from today's records where assignedDoctorId matches)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
+  // Get active patients for outgoing doctor
   const activeRecords = await db.patientRecord.findMany({
     where: {
       hospitalId: hospital.id,
-      createdAt: { gte: today },
       visit: { path: ["assignedDoctorId"], equals: outgoingDoctorId },
     },
+    take: 500,
   });
 
   const handoverPatientIds = patientIds || activeRecords.map((r) => r.id);

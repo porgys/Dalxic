@@ -54,10 +54,8 @@ export async function POST(request: Request) {
 
   // WhatsApp notification — look up patient phone from today's queue
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     const record = await db.patientRecord.findFirst({
-      where: { hospitalId: hospital.id, createdAt: { gte: today }, visit: { path: ["queueToken"], equals: token } },
+      where: { hospitalId: hospital.id, visit: { path: ["queueToken"], equals: token } },
     });
     if (record) {
       const pat = record.patient as { phone?: string; fullName?: string };
