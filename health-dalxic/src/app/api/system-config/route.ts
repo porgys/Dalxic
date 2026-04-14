@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { rateLimit, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
+import { logAudit, getClientIP } from "@/lib/audit";
 
 /**
  * System Config API — manages ops password hash + master PINs per hospital.
@@ -116,15 +117,25 @@ export async function POST(request: Request) {
     return Response.json({ success: true });
   }
 
-  // ─── Remove Master PIN ───
+  // ─── Remove Master PIN (Owner only — audit logged) ───
   if (action === "remove_master_pin") {
-    const { hospitalId } = body;
+    const { hospitalId, actorId } = body;
     if (!hospitalId) {
       return Response.json({ error: "hospitalId required" }, { status: 400 });
     }
 
     const key = `master_pin:${hospitalId}`;
     await db.systemConfig.deleteMany({ where: { key } });
+
+    await logAudit({
+      actorType: "dalxic_super_admin",
+      actorId: actorId || "owner",
+      hospitalId,
+      action: "system.master_pin_removed",
+      metadata: { hospitalId },
+      ipAddress: getClientIP(request),
+    }).catch(() => {});
+
     return Response.json({ success: true });
   }
 

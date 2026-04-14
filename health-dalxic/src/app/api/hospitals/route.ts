@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { getTierDefaults } from "@/lib/tier-defaults";
 import { rateLimit } from "@/lib/rate-limit";
+import { canSuspendHospital } from "@/lib/data-protection";
 // GET: List all hospitals or single by code
 export async function GET(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
@@ -91,6 +92,19 @@ export async function PATCH(request: Request) {
   // ── Edit hospital details ──
   const { editFields, toggleModule } = body;
   if (editFields) {
+    // ─── DATA PROTECTION: Only Owner can suspend/deactivate a hospital ───
+    if (typeof editFields.active === "boolean" && !editFields.active) {
+      const guard = canSuspendHospital({
+        actorType: (actorId === "owner" || actorId === "dalxic_super_admin") ? "dalxic_super_admin" : "dalxic_staff",
+        actorId: actorId || "unknown",
+        hospitalId: hospital.id,
+        ipAddress: getClientIP(request),
+      });
+      if (!guard.allowed) {
+        return Response.json({ error: guard.reason }, { status: 403 });
+      }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = {};
     if (editFields.name) data.name = editFields.name;
