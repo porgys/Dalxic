@@ -253,7 +253,7 @@ function CardsPanel({ operatorId, template, customTemplate }: { operatorId: stri
           <div style={{ flex: "0 0 130px" }}>Phone</div>
           <div style={{ flex: "0 0 90px", textAlign: "center" }}>Visits</div>
           <div style={{ flex: "0 0 140px" }}>Last Visit</div>
-          <div style={{ flex: "0 0 110px" }}>Insurance</div>
+          <div style={{ flex: "0 0 150px" }}>Insurance</div>
           <div style={{ flex: "0 0 90px", textAlign: "right" }}></div>
         </div>
         {loading && (
@@ -280,13 +280,19 @@ function CardsPanel({ operatorId, template, customTemplate }: { operatorId: stri
             <div style={{ flex: "0 0 140px", fontSize: 11, color: "rgba(245,245,240,0.6)" }}>
               {c.lastVisit ? new Date(c.lastVisit).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
             </div>
-            <div style={{ flex: "0 0 110px" }}>
-              {c.insuranceProvider ? (
-                <span style={{ padding: "3px 8px", borderRadius: 5, background: "rgba(34,197,94,0.15)", color: "#86EFAC", fontSize: 10, fontWeight: 700, letterSpacing: 0.4 }}>
+            <div style={{ flex: "0 0 150px" }}>
+              {c.insuranceProvider && c.insuranceProvider.toLowerCase() !== "none" ? (
+                <span style={{
+                  display: "inline-block", whiteSpace: "nowrap",
+                  maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis",
+                  padding: "3px 8px", borderRadius: 5,
+                  background: "rgba(34,197,94,0.15)", color: "#86EFAC",
+                  fontSize: 10, fontWeight: 700, letterSpacing: 0.4,
+                }}>
                   {c.insuranceProvider}
                 </span>
               ) : (
-                <span style={{ fontSize: 10, color: "rgba(245,245,240,0.35)" }}>Self-pay</span>
+                <span style={{ fontSize: 12, color: "rgba(245,245,240,0.7)", fontWeight: 500 }}>Self-pay</span>
               )}
             </div>
             <div style={{ flex: "0 0 90px", textAlign: "right" }}>
