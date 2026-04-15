@@ -6,9 +6,9 @@ import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 import type { OperatorSession } from "@/types";
 
-const HOSPITAL_CODE = "KBH";
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -311,6 +311,7 @@ function saveCustomTemplates(operatorId: string, templates: SOAPTemplate[]) {
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 
 export default function DoctorPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate hospitalCode={HOSPITAL_CODE} stationName="Doctor Station" stationIcon="🩺" allowedRoles={["doctor", "specialist", "surgeon", "admin", "super_admin"]}>
       {(operator) => <DoctorContent operator={operator} />}
@@ -319,6 +320,7 @@ export default function DoctorPage() {
 }
 
 function DoctorContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const theme = useStationTheme();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const [queue, setQueue] = useState<QueuePatient[]>([]);

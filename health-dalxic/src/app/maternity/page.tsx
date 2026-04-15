@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 import type { OperatorSession } from "@/types";
 
-const HOSPITAL_CODE = "KBH";
 
 
 function GalaxyCanvas() {
@@ -77,6 +77,7 @@ const DELIVERY_MODES = [
 ];
 
 export default function MaternityPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate hospitalCode={HOSPITAL_CODE} stationName="Maternity" stationIcon="👶" allowedRoles={["nurse", "midwife", "doctor", "specialist", "admin", "super_admin"]}>
       {(operator) => <MaternityContent operator={operator} />}
@@ -85,6 +86,7 @@ export default function MaternityPage() {
 }
 
 function MaternityContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const theme = useStationTheme();
   const [activeNav, setActiveNav] = useState<"patients" | "register" | "delivery">("patients");

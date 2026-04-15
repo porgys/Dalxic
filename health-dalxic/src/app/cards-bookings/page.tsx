@@ -7,9 +7,9 @@ import { ModuleStrip } from "@/components/ModuleBadge";
 import { MODULE_REGISTRY } from "@/lib/modules";
 import { renderCard, TEMPLATE_LIST, type TemplateKey, type CustomTemplate, type CardData } from "@/lib/card-templates";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 import type { OperatorSession } from "@/types";
 
-const HOSPITAL_CODE = "KBH";
 const HOSPITAL_NAME_FALLBACK = "Korle Bu Teaching Hospital";
 
 type Card = {
@@ -48,6 +48,7 @@ type Booking = {
 };
 
 export default function CardsBookingsPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate hospitalCode={HOSPITAL_CODE} stationName="Cards & Bookings" stationIcon="💳">
       {(operator) => <CardsBookingsContent operator={operator} />}
@@ -56,6 +57,7 @@ export default function CardsBookingsPage() {
 }
 
 function CardsBookingsContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const theme = useStationTheme();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, HOSPITAL_NAME_FALLBACK);
   const [tab, setTab] = useState<"cards" | "bookings" | "templates">("cards");
@@ -139,6 +141,7 @@ function TabButton({ label, active, onClick, icon }: { label: string; active: bo
 
 // ─── Cards Panel ────────────────────────────────────────────────
 function CardsPanel({ operatorId, template, customTemplate }: { operatorId: string; template: TemplateKey; customTemplate: CustomTemplate | null }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, HOSPITAL_NAME_FALLBACK);
   const [query, setQuery] = useState("");
   const [allCards, setAllCards] = useState<Card[]>([]);
@@ -335,6 +338,7 @@ function StatCard({ label, value, icon }: { label: string; value: number; icon: 
 
 // ─── Bookings Panel ────────────────────────────────────────────
 function BookingsPanel({ operatorId }: { operatorId: string }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [showNew, setShowNew] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -468,6 +472,7 @@ function BookingsPanel({ operatorId }: { operatorId: string }) {
 
 // ─── Card Templates Panel ─────────────────────────────────────
 function CardTemplatesPanel({ activeKey, custom, onSaved }: { activeKey: TemplateKey; custom: CustomTemplate | null; onSaved: () => void }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, HOSPITAL_NAME_FALLBACK);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -608,6 +613,7 @@ function CardTemplatesPanel({ activeKey, custom, onSaved }: { activeKey: Templat
 }
 
 function TemplateThumbnail({ templateKey }: { templateKey: TemplateKey }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, HOSPITAL_NAME_FALLBACK);
   const sample: CardData = {
     cardNumber: "DH-XXXXXX", patientName: "Ama Mensah", phone: "+233 24 555 0199",

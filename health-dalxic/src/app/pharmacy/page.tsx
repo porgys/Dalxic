@@ -7,9 +7,9 @@ import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, CO
 import { getPusherClient } from "@/lib/pusher-client";
 import { calloutNumber } from "@/lib/voice-callout";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 import type { OperatorSession } from "@/types";
 
-const HOSPITAL_CODE = "KBH";
 
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
@@ -252,6 +252,7 @@ const UNITS = ["tablet", "capsule", "bottle", "vial", "tube", "sachet", "ampoule
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 
 export default function PharmacyPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate hospitalCode={HOSPITAL_CODE} stationName="Pharmacy" stationIcon="💊" allowedRoles={["pharmacist", "admin", "super_admin"]}>
       {(operator) => <PharmacyContent operator={operator} />}
@@ -260,6 +261,7 @@ export default function PharmacyPage() {
 }
 
 function PharmacyContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const theme = useStationTheme();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const [activeNav, setActiveNav] = useState("prescriptions");

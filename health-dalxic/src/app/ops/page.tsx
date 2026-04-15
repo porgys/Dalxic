@@ -1950,13 +1950,22 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
 
                 {(() => {
                   const origin = typeof window !== "undefined" ? window.location.origin : "https://health.dalxic.com";
+                  const hasSubdomain = Boolean(detailHospital.subdomain);
+                  const base = hasSubdomain
+                    ? `https://${detailHospital.subdomain}.health.dalxic.com`
+                    : origin;
+                  const suffix = hasSubdomain ? "" : `?hospital=${detailHospital.code}`;
                   const activeStations = allWs.filter(ws => hospitalModules.includes(ws.key));
                   const buildUrl = (key: string) => {
-                    if (linkMode === "kiosk") return `${origin}/kiosk?module=${key}&hospital=${detailHospital.code}`;
+                    if (linkMode === "kiosk") {
+                      const q = hasSubdomain ? `?module=${key}` : `?module=${key}&hospital=${detailHospital.code}`;
+                      return `${base}/kiosk${q}`;
+                    }
                     const r = (ROUTE_MAP as Record<string, string>)[key];
-                    if (!r) return `${origin}/${key}?hospital=${detailHospital.code}`;
+                    if (!r) return `${base}/${key}${suffix}`;
+                    if (hasSubdomain) return `${base}${r}`;
                     const sep = r.includes("?") ? "&" : "?";
-                    return `${origin}${r}${sep}hospital=${detailHospital.code}`;
+                    return `${base}${r}${sep}hospital=${detailHospital.code}`;
                   };
                   const copyAll = async () => {
                     const lines = activeStations.map(ws => `${ws.title}\t${buildUrl(ws.key)}`).join("\n");
@@ -2001,6 +2010,11 @@ function OperatingPlatform({ onLogout, session }: { onLogout: () => void; sessio
                       <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 10, background: "rgba(14,165,233,0.05)", border: `1px solid ${BLUE}20`, fontSize: 11, color: "#94A3B8", fontFamily: fontFamily.mono }}>
                         Chrome kiosk launcher: <span style={{ color: COPPER_LIGHT }}>chrome --kiosk --app=&quot;&lt;URL&gt;&quot;</span>
                       </div>
+                      {!hasSubdomain && (
+                        <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 10, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", fontSize: 11, color: "#FBBF24" }}>
+                          No subdomain set for this hospital. Links use <code style={{ fontFamily: fontFamily.mono }}>?hospital={detailHospital.code}</code> as fallback. Set a subdomain in the Details section above, then ensure <code style={{ fontFamily: fontFamily.mono }}>*.health.dalxic.com</code> wildcard is configured in Vercel + DNS.
+                        </div>
+                      )}
                     </>
                   );
                 })()}

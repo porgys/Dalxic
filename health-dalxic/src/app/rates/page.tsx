@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { StationGate } from "@/components/station-gate";
 import type { OperatorSession } from "@/types";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 
-const HOSPITAL_CODE = "KBH";
 const COPPER = "#B87333";
 const COPPER_SOFT = "rgba(184,115,51,0.14)";
 const COPPER_BORDER = "rgba(184,115,51,0.38)";
@@ -30,6 +30,7 @@ type Pricing = {
 type Bundle = { pricing: Pricing; doctors: Doctor[]; wards: Ward[] };
 
 export default function RatesPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate
       hospitalCode={HOSPITAL_CODE}
@@ -46,6 +47,7 @@ export default function RatesPage() {
 type SectionId = "defaults" | "doctors" | "wards" | "services";
 
 function RatesContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const [section, setSection] = useState<SectionId>("defaults");
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [loading, setLoading] = useState(true);

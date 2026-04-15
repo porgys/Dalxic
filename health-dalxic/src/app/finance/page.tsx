@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { StationGate } from "@/components/station-gate";
 import type { OperatorSession } from "@/types";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 
-const HOSPITAL_CODE = "KBH";
 
 type TabId = "revenue" | "payouts" | "shifts";
 
@@ -43,6 +43,7 @@ type Payout = {
 };
 
 export default function FinancePage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate
       hospitalCode={HOSPITAL_CODE}
@@ -123,6 +124,7 @@ function isoDay(offsetDays: number) {
 }
 
 function RevenueTab() {
+  const HOSPITAL_CODE = useHospitalCode();
   const [from, setFrom] = useState(isoDay(-30));
   const [to, setTo] = useState(isoDay(0));
   const [groupBy, setGroupBy] = useState<"doctor" | "department" | "shift" | "day" | "week" | "month" | "service">("doctor");
@@ -249,6 +251,7 @@ function RevenueTab() {
 // ─── PAYOUTS TAB ──────────────────────────────────────────────
 
 function PayoutsTab({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(false);
@@ -395,6 +398,7 @@ function PayoutsTab({ operator }: { operator: OperatorSession }) {
 // ─── STAFF & SHIFTS TAB ──────────────────────────────────────────────
 
 function ShiftsTab({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(false);

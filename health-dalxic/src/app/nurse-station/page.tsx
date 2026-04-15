@@ -6,9 +6,9 @@ import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { getPusherClient } from "@/lib/pusher-client";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 import type { OperatorSession } from "@/types";
 
-const HOSPITAL_CODE = "KBH";
 const VITALS_PREVIEW_COUNT = 8;
 
 /* ─── Galaxy Canvas ─── */
@@ -213,6 +213,7 @@ type NavId = "overview" | "vitals" | "tasks" | "injections" | "supplies";
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 
 export default function NurseStationPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate hospitalCode={HOSPITAL_CODE} stationName="Nurse Station" stationIcon="👩‍⚕️" allowedRoles={["nurse", "midwife", "admin", "super_admin"]}>
       {(operator) => <NurseStationContent operator={operator} />}
@@ -221,6 +222,7 @@ export default function NurseStationPage() {
 }
 
 function NurseStationContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const theme = useStationTheme();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const [activeNav, setActiveNav] = useState<NavId>("overview");

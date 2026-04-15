@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 import type { OperatorSession } from "@/types";
 
-const HOSPITAL_CODE = "KBH";
 
 
 function GalaxyCanvas() {
@@ -145,6 +145,7 @@ interface WardData {
 }
 
 export default function WardIPDPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate hospitalCode={HOSPITAL_CODE} stationName="Ward / IPD" stationIcon="🏥" allowedRoles={["nurse", "doctor", "specialist", "porter", "admin", "super_admin"]}>
       {(operator) => <WardIPDContent operator={operator} />}
@@ -153,6 +154,7 @@ export default function WardIPDPage() {
 }
 
 function WardIPDContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const theme = useStationTheme();
   // Ward scoping — nurses see only their assigned ward, admin/super_admin see all

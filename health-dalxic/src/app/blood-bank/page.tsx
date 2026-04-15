@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 import type { OperatorSession } from "@/types";
 
-const HOSPITAL_CODE = "KBH";
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -55,6 +55,7 @@ const STATUS_STYLES: Record<string, { bg: string; border: string; text: string }
 };
 
 export default function BloodBankPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate hospitalCode={HOSPITAL_CODE} stationName="Blood Bank" stationIcon="🩸" allowedRoles={["lab_tech", "nurse", "doctor", "admin", "super_admin"]}>
       {(operator) => <BloodBankContent operator={operator} />}
@@ -63,6 +64,7 @@ export default function BloodBankPage() {
 }
 
 function BloodBankContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const theme = useStationTheme();
   const [activeNav, setActiveNav] = useState<"inventory" | "requests" | "history" | "donors">("inventory");

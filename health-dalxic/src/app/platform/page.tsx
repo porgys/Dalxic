@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
 import { ALL_WORKSTATIONS, UTILITY_STATIONS, getTierDefaults } from "@/lib/tier-defaults"
 import { COPPER, fontFamily } from "@/hooks/use-station-theme"
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 
 /* ─── Scroll-triggered reveal ─── */
 function useReveal(threshold = 0.05) {
@@ -190,11 +191,11 @@ function GalaxyCanvas({ isDayMode }: { isDayMode: boolean }) {
   return <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
 }
 
-const HOSPITAL_CODE = "KBH"
 
 const COPPER_GLOW = "rgba(184,115,51,0.5)"
 
 export default function PlatformPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   const [currentTime, setCurrentTime] = useState(new Date())
   const [isDayMode, setIsDayMode] = useState(false)
   const defaultModules = getTierDefaults("T4")

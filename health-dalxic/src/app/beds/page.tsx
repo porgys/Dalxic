@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StationGate } from "@/components/station-gate";
 import { useStationTheme, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 
-const HOSPITAL_CODE = "KBH";
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -154,6 +154,7 @@ const WARD_TYPES = [
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 
 export default function BedManagementPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate hospitalCode={HOSPITAL_CODE} stationName="Bed Management" stationIcon="🛏️" allowedRoles={["nurse", "doctor", "admin", "super_admin"]}>
       {() => <BedManagementContent />}
@@ -162,6 +163,7 @@ export default function BedManagementPage() {
 }
 
 function BedManagementContent() {
+  const HOSPITAL_CODE = useHospitalCode();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const theme = useStationTheme();
   const [activeNav, setActiveNav] = useState<"dashboard" | "manage" | "transitions">("dashboard");

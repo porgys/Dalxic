@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { COPPER, fontFamily } from "@/hooks/use-station-theme";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 
-const HOSPITAL_CODE = "KBH";
 const EMERGENCY_RED = "#DC2626";
 
 /* ─── Galaxy Canvas (red-copper tinted for emergency) ─── */
@@ -139,6 +139,7 @@ interface PatientRow {
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 
 export default function EmergencyOverridePage() {
+  const HOSPITAL_CODE = useHospitalCode();
   const [hospitalId, setHospitalId] = useState("");
   const [userId, setUserId] = useState("");
   const [pin, setPin] = useState("");

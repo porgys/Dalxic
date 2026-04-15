@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 import type { OperatorSession } from "@/types";
 
-const HOSPITAL_CODE = "KBH";
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -157,6 +157,7 @@ const SERVICE_TYPES = [
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 
 export default function BillingStationPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate hospitalCode={HOSPITAL_CODE} stationName="Billing" stationIcon="💰" allowedRoles={["billing", "admin", "super_admin"]}>
       {(operator) => <BillingContent operator={operator} />}
@@ -165,6 +166,7 @@ export default function BillingStationPage() {
 }
 
 function BillingContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const theme = useStationTheme();
   const [activeNav, setActiveNav] = useState<"dashboard" | "patient" | "bills" | "prices">("dashboard");

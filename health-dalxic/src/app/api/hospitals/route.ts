@@ -8,6 +8,7 @@ import { getPusher, hospitalChannel } from "@/lib/pusher-server";
 export async function GET(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
+  const subdomain = searchParams.get("subdomain");
 
   if (code) {
     const hospital = await db.hospital.findUnique({
@@ -16,6 +17,15 @@ export async function GET(request: Request) {
         group: { select: { groupCode: true, name: true, ownerName: true } },
         _count: { select: { devices: true, monthlyBooks: true, patientRecords: true } },
       },
+    });
+    if (!hospital) return Response.json({ error: "Hospital not found" }, { status: 404 });
+    return Response.json(hospital);
+  }
+
+  if (subdomain) {
+    const hospital = await db.hospital.findFirst({
+      where: { subdomain: subdomain.toLowerCase() },
+      select: { id: true, code: true, name: true, subdomain: true, tier: true, active: true },
     });
     if (!hospital) return Response.json({ error: "Hospital not found" }, { status: 404 });
     return Response.json(hospital);

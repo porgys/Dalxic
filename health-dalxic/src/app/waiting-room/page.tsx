@@ -8,6 +8,7 @@ import { calloutNumber } from "@/lib/voice-callout";
 import { getPusherClient } from "@/lib/pusher-client";
 import { FloatingDot } from "@/components/ui/motion";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 
 interface CalloutEntry {
   token: string;
@@ -27,9 +28,9 @@ interface QueueItem {
   visitStatus?: string;
 }
 
-const HOSPITAL_CODE = "KBH";
 
 function QueueDisplay() {
+  const HOSPITAL_CODE = useHospitalCode();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const searchParams = useSearchParams();
   const dept = searchParams.get("department");

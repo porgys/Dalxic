@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 
-const HOSPITAL_CODE = "KBH";
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -175,6 +175,7 @@ const NAV_ITEMS: { id: AdminView; icon: string; label: string }[] = [
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 
 export default function AdminPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const [view, setView] = useState<AdminView>("overview");
   const [devices, setDevices] = useState<DeviceItem[]>([]);

@@ -5,9 +5,9 @@ import { motion } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, COPPER_LIGHT, BLUE, fontFamily } from "@/hooks/use-station-theme";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 import type { OperatorSession } from "@/types";
 
-const HOSPITAL_CODE = "KBH";
 
 /* ─── Galaxy Canvas ─── */
 function GalaxyCanvas() {
@@ -199,6 +199,7 @@ const NAV_ITEMS: { key: NavView; icon: string; label: string }[] = [
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 
 export default function BookkeepingPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate hospitalCode={HOSPITAL_CODE} stationName="Bookkeeping" stationIcon="📊" allowedRoles={["billing", "admin", "super_admin", "accountant"]}>
       {(operator) => <BookkeepingContent operator={operator} />}
@@ -207,6 +208,7 @@ export default function BookkeepingPage() {
 }
 
 function BookkeepingContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const theme = useStationTheme();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const [activeNav, setActiveNav] = useState<NavView>("patients");

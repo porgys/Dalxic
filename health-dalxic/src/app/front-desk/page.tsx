@@ -10,9 +10,9 @@ import { getPusherClient } from "@/lib/pusher-client";
 import { ModuleStrip } from "@/components/ModuleBadge";
 import { MODULE_REGISTRY } from "@/lib/modules";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 import type { ParsedPatientEntry, OperatorSession } from "@/types";
 
-const HOSPITAL_CODE = "KBH";
 /* ─── Galaxy Canvas (copper, for station pages) ─── */
 function GalaxyCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -290,6 +290,7 @@ function DatePickerTrigger({ value, label, onClick }: { value: string; label?: s
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 
 export default function FrontDeskPage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate hospitalCode={HOSPITAL_CODE} stationName="Front Desk" stationIcon="🏥" allowedRoles={["front_desk", "records", "admin", "super_admin"]}>
       {(operator) => <FrontDeskContent operator={operator} />}
@@ -298,6 +299,7 @@ export default function FrontDeskPage() {
 }
 
 function FrontDeskContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const theme = useStationTheme();
   const [activeNav, setActiveNav] = useState("register");

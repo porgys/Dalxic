@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StationGate, OperatorBadge } from "@/components/station-gate";
 import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, COPPER, fontFamily } from "@/hooks/use-station-theme";
 import { useHospitalName } from "@/hooks/use-hospital-name";
+import { useHospitalCode } from "@/hooks/use-hospital-code";
 import type { OperatorSession } from "@/types";
 
-const HOSPITAL_CODE = "KBH";
 const CRIMSON = "#EF4444";
 
 type Severity = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
@@ -93,6 +93,7 @@ function severityColor(s?: Severity): { bg: string; border: string; text: string
 }
 
 export default function EmergencyTriagePage() {
+  const HOSPITAL_CODE = useHospitalCode();
   return (
     <StationGate hospitalCode={HOSPITAL_CODE} stationName="Emergency Triage" stationIcon="🚨" allowedRoles={["nurse", "doctor", "specialist", "admin", "super_admin"]}>
       {(operator) => <TriageContent operator={operator} />}
@@ -101,6 +102,7 @@ export default function EmergencyTriagePage() {
 }
 
 function TriageContent({ operator }: { operator: OperatorSession }) {
+  const HOSPITAL_CODE = useHospitalCode();
   const theme = useStationTheme();
   const HOSPITAL_NAME = useHospitalName(HOSPITAL_CODE, "Korle Bu Teaching Hospital");
   const [patients, setPatients] = useState<TriagePatient[]>(MOCK_PATIENTS);
