@@ -43,7 +43,7 @@ export function Launchpad({ orgName }: { orgName: string }) {
       <div style={{ maxWidth: 1480, margin: "0 auto" }}>
 
         {/* Hero */}
-        <header style={{ marginBottom: 48 }}>
+        <header style={{ marginBottom: 48, textAlign: "center" }}>
           <div style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700, color: T.amber, marginBottom: 12, fontFamily: "'DM Mono', monospace" }}>
             DalxicTrade Workstation
           </div>
@@ -53,12 +53,12 @@ export function Launchpad({ orgName }: { orgName: string }) {
               Every Ledger, One System.
             </span>
           </h1>
-          <p style={{ fontSize: 16, color: T.txM, maxWidth: 720, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 16, color: T.txM, maxWidth: 720, lineHeight: 1.6, margin: "0 auto" }}>
             From the till to the trial balance — DalxicTrade brings retail, accounting,
             payroll and compliance under one classy workstation. Built for {orgName}.
           </p>
 
-          <div style={{ display: "flex", gap: 24, marginTop: 28, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 24, marginTop: 28, flexWrap: "wrap", justifyContent: "center" }}>
             <HeroStat label="Modules Live"     value={live}     accent={T.emerald} />
             <HeroStat label="Modules In Preview" value={preview} accent={T.amber} />
             <HeroStat label="Currency"         value="GHS"      accent={T.tx} />
@@ -68,19 +68,17 @@ export function Launchpad({ orgName }: { orgName: string }) {
 
         {/* Module groups */}
         {grouped.map(({ group, items }) => (
-          <section key={group} style={{ marginBottom: 56 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 20 }}>
-              <div>
-                <h2 style={{ fontSize: 11, fontWeight: 800, color: T.amber, letterSpacing: "0.22em", textTransform: "uppercase", fontFamily: "'DM Mono', monospace" }}>
-                  {group}
-                </h2>
-                <p style={{ fontSize: 13, color: T.txM, marginTop: 4 }}>{GROUP_BLURB[group]}</p>
-              </div>
-              <span style={{ fontSize: 10, color: T.txD, fontFamily: "'DM Mono', monospace" }}>
+          <section key={group} style={{ marginBottom: 56, textAlign: "center" }}>
+            <div style={{ marginBottom: 20 }}>
+              <h2 style={{ fontSize: 11, fontWeight: 800, color: T.amber, letterSpacing: "0.22em", textTransform: "uppercase", fontFamily: "'DM Mono', monospace" }}>
+                {group}
+              </h2>
+              <p style={{ fontSize: 13, color: T.txM, marginTop: 6 }}>{GROUP_BLURB[group]}</p>
+              <div style={{ fontSize: 10, color: T.txD, fontFamily: "'DM Mono', monospace", marginTop: 6, letterSpacing: "0.12em", textTransform: "uppercase" }}>
                 {items.length} modules
-              </span>
+              </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14, textAlign: "left" }}>
               {items.map((m) => <ModuleCard key={m.slug} mod={m} />)}
             </div>
           </section>
