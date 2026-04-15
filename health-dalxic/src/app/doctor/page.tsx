@@ -443,8 +443,11 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
             const r = (s || "general").toLowerCase();
             return LABEL_TO_KEY[r] || r;
           };
-          // Specialties covered by registered specialists (excluding GM — GM is the catch-all)
+          // Specialties covered by specialists ON DUTY (excluding GM — GM is the catch-all).
+          // OFF_DUTY specialists don't count: their patients must fall through to GM,
+          // otherwise they'd sit in an unattended specialist queue with nobody to call them.
           const covered = doctors
+            .filter((d: { status?: string }) => (d.status || "AVAILABLE") !== "OFF_DUTY")
             .map((d: { specialty?: string }) => normalize(d.specialty || "general"))
             .filter((s: string) => s !== "general");
           setCoveredSpecialties(Array.from(new Set(covered)));
