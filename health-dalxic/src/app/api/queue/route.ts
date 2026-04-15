@@ -162,13 +162,20 @@ export async function GET(request: Request) {
     return Response.json({ error: "Hospital not found" }, { status: 404 });
   }
 
+  // Show open visits only — terminal states (closed/admitted/lwbs/deceased) are excluded
+  // so the queue doesn't fill with history and starve new patients when data grows.
   const records = await db.patientRecord.findMany({
     where: {
       hospitalId: hospital.id,
       entryPoint: { not: "blood_donation" },
+      AND: [
+        { NOT: { visit: { path: ["visitStatus"], equals: "closed" } } },
+        { NOT: { visit: { path: ["visitStatus"], equals: "admitted" } } },
+        { NOT: { visit: { path: ["visitStatus"], equals: "lwbs" } } },
+        { NOT: { visit: { path: ["visitStatus"], equals: "deceased" } } },
+      ],
     },
     orderBy: { createdAt: "asc" },
-    take: 500,
   });
 
   const queue = records.map((r) => {
