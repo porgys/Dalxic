@@ -18,6 +18,7 @@
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
+import { DEPT_PREFIXES } from "../src/lib/tokens";
 
 const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
 const db = new PrismaClient({ adapter });
@@ -350,12 +351,15 @@ async function main() {
 
   // Today 630: live mix
   type TodayPlan = { dept: string; flow: string; visitStatus: string; closeOut: boolean; admission?: PatientPlan["admission"]; count: number };
+  // with_doctor count capped at 2× doctor count so board reflects reality
+  const activeConsultSlots = Math.max(2, Math.min(doctors.length * 2, 6));
   const todayMix: TodayPlan[] = [
-    // Live queue
-    { dept: "general", flow: "opd_queue", visitStatus: "queued", closeOut: false, count: 32 },
-    { dept: "general", flow: "opd_with_doctor", visitStatus: "with_doctor", closeOut: false, count: 28 },
-    { dept: "pediatrics", flow: "peds_with_doctor", visitStatus: "with_doctor", closeOut: false, count: 14 },
-    { dept: "obstetrics", flow: "ob_with_doctor", visitStatus: "with_doctor", closeOut: false, count: 8 },
+    // Live queue — main waiting-room body
+    { dept: "general", flow: "opd_queue", visitStatus: "queued", closeOut: false, count: 40 },
+    { dept: "pediatrics", flow: "peds_queue", visitStatus: "queued", closeOut: false, count: 12 },
+    { dept: "obstetrics", flow: "ob_queue", visitStatus: "queued", closeOut: false, count: 6 },
+    // With doctor — CAPPED at actual doctor capacity
+    { dept: "general", flow: "opd_with_doctor", visitStatus: "with_doctor", closeOut: false, count: activeConsultSlots },
     // Awaiting workstations
     { dept: "general", flow: "awaiting_lab", visitStatus: "paused_for_lab", closeOut: false, count: 28 },
     { dept: "general", flow: "awaiting_imaging", visitStatus: "paused_for_imaging", closeOut: false, count: 22 },
@@ -551,14 +555,18 @@ async function seedPatient(
   const female = plan.dept === "obstetrics" || Math.random() > 0.5;
   const first = pick(female ? FIRST_F : FIRST_M);
   const last = pick(LAST);
-  const cohortTag = plan.cohort === "yesterday" ? "Y" : "T";
-  const fullName = `${NAME_PREFIX}-${cohortTag}${String(plan.seq).padStart(3, "0")}-${first} ${last}`;
+  const deptCode = DEPT_PREFIXES[plan.dept] || "GR";
+  const fullName = `${first} ${last}`;
   const age = plan.dept === "pediatrics" ? rnd(1, 14) : plan.dept === "obstetrics" ? rnd(18, 42) : rnd(18, 80);
   const hasIns = chance(0.4);
   const provider = hasIns ? pick(INSURANCE_PROVIDERS) : null;
   const chiefComplaint = pick(CHIEF[plan.dept] ?? CHIEF.general);
-  const token = `${cohortTag}${String(plan.seq).padStart(3, "0")}`;
+  const token = `${deptCode}-${HOSPITAL_CODE}-${String(plan.seq).padStart(3, "0")}`;
 
+  // Queued patients have no doctor assigned yet — they're waiting in the queue
+  const assigned = plan.visitStatus === "queued" || plan.visitStatus === "lwbs"
+    ? { assignedDoctorId: null, assignedDoctorName: null }
+    : { assignedDoctorId: doctor.id, assignedDoctorName: doctor.name };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const visit: any = {
     queueToken: token,
@@ -569,8 +577,7 @@ async function seedPatient(
     symptomSeverity: plan.dept === "emergency" ? rnd(8, 10) : rnd(2, 7),
     emergencyFlag: plan.dept === "emergency",
     checkoutPin: String(rnd(1000, 9999)),
-    assignedDoctorId: doctor.id,
-    assignedDoctorName: doctor.name,
+    ...assigned,
     arrivedAt: plan.createdAt.toISOString(),
   };
 
