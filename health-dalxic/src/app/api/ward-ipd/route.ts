@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
-import { createBillableItem } from "@/lib/billing";
+import { createBillableItem, resolveWardNightly } from "@/lib/billing";
 import { rateLimit } from "@/lib/rate-limit";
 import { isValidVisitState, isValidTransition, type VisitState } from "@/lib/visit-state";
 // GET: Get inpatients for a hospital
@@ -197,6 +197,33 @@ export async function POST(request: Request) {
       where: { id: recordId },
       data: { visit: JSON.parse(JSON.stringify(updatedVisit)) },
     });
+
+    // First-night WARD_DAY charge on admission. daily_round emits additional
+    // WARD_DAY lines each day; without this line, same-day discharges leave no
+    // bed charge at all.
+    const nowAdmit = new Date();
+    const admitBook = await db.monthlyBook.findFirst({
+      where: { hospitalId: hospital.id, year: nowAdmit.getFullYear(), month: nowAdmit.getMonth() + 1, status: "active" },
+    });
+    if (admitBook) {
+      const wardLabel = wardName || "General Ward";
+      const nightly = await resolveWardNightly({
+        hospitalId: hospital.id,
+        wardName: wardLabel,
+        fallback: 100,
+      });
+      await createBillableItem({
+        hospitalId: hospital.id,
+        patientId: recordId,
+        bookId: admitBook.id,
+        serviceType: "WARD_DAY",
+        description: `Admission — ${wardLabel}`,
+        unitCost: nightly,
+        renderedBy: admittedBy || "ward_nurse",
+        departmentId: "ward",
+        overrideUnitCost: nightly,
+      });
+    }
 
     await logAudit({
       actorType: "device_operator",
