@@ -3,7 +3,7 @@ import { logAudit, getClientIP } from "@/lib/audit";
 import { getPusher, hospitalChannel } from "@/lib/pusher-server";
 import { notifyPatient } from "@/lib/whatsapp";
 import { rateLimit } from "@/lib/rate-limit";
-import { createBillableItem } from "@/lib/billing";
+import { createBillableItem, assembleBill } from "@/lib/billing";
 import { transitionVisitState, InvalidVisitTransitionError, type VisitState } from "@/lib/visit-state";
 
 /** Wrap a transition so invalid moves return 409 instead of throwing. */
@@ -366,6 +366,20 @@ export async function POST(request: Request) {
       data: { visit: JSON.parse(JSON.stringify(visit)) },
     });
 
+    // Roll all unbilled billable items into a Bill invoice. Non-blocking — if
+    // assembly fails we still close the visit; front desk can retry via billing
+    // station. Returns null when there are no unbilled items.
+    let bill: Awaited<ReturnType<typeof assembleBill>> = null;
+    try {
+      bill = await assembleBill({
+        hospitalId: hospital.id,
+        hospitalCode,
+        patientId: recordId,
+        bookId: record.bookId,
+        createdBy: closedBy || "front_desk",
+      });
+    } catch { /* bill assembly non-blocking */ }
+
     // WhatsApp discharge notification with full visit summary
     const rxList = treatment.prescriptions?.length
       ? (treatment.prescriptions as { medication: string; dosage: string; frequency: string; duration: string }[])
@@ -388,6 +402,9 @@ export async function POST(request: Request) {
       success: true,
       visitStatus: "closed",
       summary: visit.visitSummary,
+      bill: bill
+        ? { billNumber: bill.billNumber, total: bill.total, subtotal: bill.subtotal, itemCount: bill.items.length }
+        : null,
     });
   }
 
