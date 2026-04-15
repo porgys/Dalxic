@@ -92,15 +92,10 @@ export async function generateERToken(hospitalCode: string): Promise<string> {
   return `ER-${hospitalCode}-${String(maxSuffix(tokens) + 1).padStart(3, "0")}`;
 }
 
-/** Generate lab sub-token: LAB-KBH-001 */
+/** Generate lab sub-token: LAB-KBH-001 (globally unique across all time — labToken has @unique) */
 export async function generateLabToken(hospitalCode: string): Promise<string> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
   const orders = await db.labOrder.findMany({
-    where: {
-      labToken: { startsWith: `LAB-${hospitalCode}-` },
-      orderedAt: { gte: today },
-    },
+    where: { labToken: { startsWith: `LAB-${hospitalCode}-` } },
     select: { labToken: true },
   });
   return `LAB-${hospitalCode}-${String(maxSuffix(orders.map((o) => o.labToken)) + 1).padStart(3, "0")}`;
