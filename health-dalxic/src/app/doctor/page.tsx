@@ -7,6 +7,7 @@ import { useStationTheme, ThemeToggle, StationThemeProvider, useThemeContext, CO
 import { getPusherClient } from "@/lib/pusher-client";
 import { useHospitalName } from "@/hooks/use-hospital-name";
 import { useHospitalCode } from "@/hooks/use-hospital-code";
+import { calloutNumber } from "@/lib/voice-callout";
 import type { OperatorSession } from "@/types";
 
 /* ─── Galaxy Canvas ─── */
@@ -337,6 +338,8 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
   const [doctorStatus, setDoctorStatus] = useState<string>("AVAILABLE");
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [calloutOverlay, setCalloutOverlay] = useState<{ token: string; patientName: string; department: string } | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [doctorSpecialty, setDoctorSpecialty] = useState<string>("general");
   const [coveredSpecialties, setCoveredSpecialties] = useState<string[]>([]);
@@ -689,6 +692,21 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
     setQueue((prev) => prev.slice(1));
     setDoctorStatus("IN_CONSULTATION");
 
+    // Big-number overlay + voice call-out on the doctor screen
+    setCalloutOverlay({ token: next.token, patientName: next.patientName, department: next.department });
+    if (voiceEnabled) {
+      (async () => {
+        setIsSpeaking(true);
+        try {
+          await calloutNumber({ token: next.token, department: next.department, mode: "speech", rate: 0.85, volume: 1 });
+          await new Promise((r) => setTimeout(r, 1200));
+          await calloutNumber({ token: next.token, department: next.department, mode: "speech", rate: 0.85, volume: 1 });
+        } catch { /* speech unavailable */ }
+        setIsSpeaking(false);
+      })();
+    }
+    setTimeout(() => setCalloutOverlay(null), 6000);
+
     // Update patient visit status to in_consultation
     try {
       await fetch("/api/records", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: next.id, hospitalCode: HOSPITAL_CODE, visitStatus: "with_doctor" }) });
@@ -884,7 +902,83 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
       <style>{`
         @keyframes emergencyPulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
         @keyframes emergencyBorder { 0%,100%{border-color:rgba(220,38,38,0.15)} 50%{border-color:rgba(220,38,38,0.35)} }
+        @keyframes pulseGlow { 0%,100% { filter: drop-shadow(0 0 24px rgba(184,115,51,0.45)); } 50% { filter: drop-shadow(0 0 48px rgba(184,115,51,0.85)); } }
+        @keyframes speakPulse { 0%,100% { transform: scaleY(0.6); } 50% { transform: scaleY(1.2); } }
       `}</style>
+      {/* ─── Call-Next Overlay (big number + voice indicator) ─── */}
+      <AnimatePresence>
+        {calloutOverlay && (
+          <motion.div
+            key={calloutOverlay.token}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              position: "fixed", inset: 0, zIndex: 1000,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              background: "rgba(0,0,0,0.82)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+              cursor: "pointer",
+            }}
+            onClick={() => setCalloutOverlay(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.82, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.82, y: -30 }}
+              transition={{ type: "spring", stiffness: 260, damping: 22 }}
+              style={{ textAlign: "center", padding: 40, animation: isSpeaking ? "pulseGlow 2s ease-in-out infinite" : undefined }}
+            >
+              <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: "4px", textTransform: "uppercase", color: "rgba(255,255,255,0.6)", marginBottom: 24 }}>
+                Now Calling
+              </p>
+              <div style={{
+                fontSize: "clamp(88px, 14vw, 180px)", fontWeight: 800, lineHeight: 1,
+                fontFamily: "monospace", letterSpacing: "4px",
+                background: calloutOverlay.token.startsWith("ER")
+                  ? "linear-gradient(135deg, #EF4444, #F87171)"
+                  : "linear-gradient(135deg, #B87333, #D4956B, #B87333)",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: "0.08em",
+              }}>
+                {(() => {
+                  const i = calloutOverlay.token.indexOf("-");
+                  const prefix = i >= 0 ? calloutOverlay.token.slice(0, i + 1) : calloutOverlay.token;
+                  const rest = i >= 0 ? calloutOverlay.token.slice(i + 1) : "";
+                  return (
+                    <>
+                      <span style={{ whiteSpace: "nowrap" }}>{prefix}</span>
+                      {rest && <span style={{ whiteSpace: "nowrap" }}>{rest}</span>}
+                    </>
+                  );
+                })()}
+              </div>
+              <p style={{ fontSize: 26, fontWeight: 700, marginTop: 20, color: "#fff" }}>{calloutOverlay.patientName}</p>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", marginTop: 10, textTransform: "uppercase", letterSpacing: "2px" }}>
+                {calloutOverlay.department}
+              </p>
+              {isSpeaking && (
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 24 }}
+                >
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} style={{
+                      width: 6, height: 20 + i * 8, borderRadius: 3, background: "#B87333",
+                      animation: `speakPulse 0.8s ease-in-out ${i * 0.15}s infinite`,
+                    }} />
+                  ))}
+                </motion.div>
+              )}
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 28, letterSpacing: "1px", textTransform: "uppercase" }}>
+                Tap anywhere to dismiss
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 55% 35%, ${theme.overlayCopper} 0%, transparent 50%)`, pointerEvents: "none" }} />
       <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 80% 50%, ${theme.overlayBlue} 0%, transparent 40%)`, pointerEvents: "none" }} />
       <div className="grid-bg" style={{ position: "absolute", inset: 0, opacity: theme.gridOpacity, transition: "opacity 0.5s ease" }} />
