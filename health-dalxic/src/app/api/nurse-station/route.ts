@@ -218,6 +218,29 @@ export async function POST(request: Request) {
       data: { treatment: JSON.parse(JSON.stringify({ ...treatment, nursingTasks: tasks })) },
     });
 
+    // Emit PROCEDURE billable for the completed nursing task. Price resolves via
+    // ServicePrice catalog on description (e.g. "Dressing", "Catheterization") and
+    // falls back to 15 when unconfigured. Direct-treatment walk-ins depend on this
+    // being the only billable line for the visit.
+    const now = new Date();
+    const book = await db.monthlyBook.findFirst({
+      where: { hospitalId: hospital.id, year: now.getFullYear(), month: now.getMonth() + 1, status: "active" },
+    });
+    if (book) {
+      const taskType = tasks[idx].type || "nursing";
+      const description = `Nursing: ${taskType}`;
+      await createBillableItem({
+        hospitalId: hospital.id,
+        patientId: recordId,
+        bookId: book.id,
+        serviceType: "PROCEDURE",
+        description,
+        unitCost: 15,
+        renderedBy: completedBy || "nurse",
+        departmentId: "nursing",
+      });
+    }
+
     await logAudit({
       actorType: "device_operator",
       actorId: completedBy || "nurse",
