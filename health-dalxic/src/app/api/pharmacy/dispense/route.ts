@@ -144,12 +144,35 @@ export async function POST(request: Request) {
   return Response.json({ success: true, dispensedCount, stockDeductions });
 }
 
-/** Parse a reasonable dispense quantity from prescription fields */
+/**
+ * Parse a reasonable dispense quantity from prescription fields.
+ * dosage is usually a strength ("500mg", "5ml") — NOT a unit count — so we only
+ * treat it as a tablet count when the text explicitly says "tab/cap/pill/unit/piece".
+ * Otherwise dosagePerTake defaults to 1.
+ */
 function parseDispenseQuantity(rx: { dosage: string; frequency: string; duration: string }): number {
-  // Try to extract numbers: "2 tablets" → 2, "3x daily" → 3, "7 days" → 7
-  const dosageNum = parseInt(rx.dosage) || 1;
-  const freqNum = rx.frequency?.toLowerCase().includes("3") ? 3 : rx.frequency?.toLowerCase().includes("2") ? 2 : 1;
-  const durationNum = parseInt(rx.duration) || 1;
-  // Total tablets/units = dosage per take × times per day × days
-  return dosageNum * freqNum * durationNum;
+  const dosageText = (rx.dosage || "").toLowerCase();
+  const freqText = (rx.frequency || "").toLowerCase();
+  const durationText = (rx.duration || "").toLowerCase();
+
+  // Units per take — only trust an explicit tablet/capsule count
+  const unitMatch = dosageText.match(/(\d+)\s*(tab|cap|pill|unit|piece|drop|puff|spray)/);
+  const dosagePerTake = unitMatch ? parseInt(unitMatch[1], 10) : 1;
+
+  // Times per day — handle digits, Latin abbreviations, and common English phrases
+  let timesPerDay = 1;
+  const freqDigit = freqText.match(/(\d+)\s*(x|times|\/)/);
+  if (freqDigit) timesPerDay = parseInt(freqDigit[1], 10);
+  else if (/\b(qid|four\s+times)\b/.test(freqText)) timesPerDay = 4;
+  else if (/\b(tid|three\s+times|thrice)\b/.test(freqText)) timesPerDay = 3;
+  else if (/\b(bid|twice|two\s+times)\b/.test(freqText)) timesPerDay = 2;
+  else if (/\b(od|once|daily|qd)\b/.test(freqText)) timesPerDay = 1;
+
+  // Duration in days — parse leading number; treat "1 week" as 7
+  let days = parseInt(durationText, 10) || 1;
+  if (/\bweek/.test(durationText)) days = (parseInt(durationText, 10) || 1) * 7;
+
+  const total = dosagePerTake * timesPerDay * days;
+  // Safety cap: reject any single-prescription dispense above 120 units
+  return Math.max(1, Math.min(total, 120));
 }
