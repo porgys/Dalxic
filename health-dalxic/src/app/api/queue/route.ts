@@ -88,6 +88,7 @@ export async function POST(request: Request) {
         emergencyFlag,
         emergencyReason: emergencyFlag ? "severity_auto" : null,
         checkoutPin,
+        visitStatus: "queued",
       })),
       diagnosis: JSON.parse(JSON.stringify({ primary: null, secondary: [], icdCodes: [], notes: null })),
       treatment: JSON.parse(JSON.stringify({ prescriptions: [], procedures: [], followUp: null, nextAppointment: null })),

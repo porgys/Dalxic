@@ -48,6 +48,7 @@ export const TERMINAL_STATES: ReadonlySet<VisitState> = new Set<VisitState>([
 /** Allowed transitions. If (from → to) is not listed here, it is rejected. */
 const TRANSITIONS: Record<VisitState, readonly VisitState[]> = {
   active: [
+    "with_doctor",
     "paused_for_lab",
     "paused_for_imaging",
     "paused_for_pharmacy",
