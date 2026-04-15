@@ -84,6 +84,10 @@ export function isValidTransition(from: VisitState, to: VisitState): boolean {
   return TRANSITIONS[from]?.includes(to) ?? false;
 }
 
+export function isValidVisitState(value: unknown): value is VisitState {
+  return typeof value === "string" && (VISIT_STATES as readonly string[]).includes(value);
+}
+
 export function isTerminal(state: VisitState): boolean {
   return TERMINAL_STATES.has(state);
 }

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
+import { isValidVisitState, isValidTransition, type VisitState } from "@/lib/visit-state";
 // GET: Fetch a single patient record by ID
 export async function GET(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
@@ -77,9 +78,24 @@ export async function PATCH(request: Request) {
     updates.visit = JSON.parse(JSON.stringify({ ...visit, referrals }));
   }
 
-  // Update visit status (e.g. active → in_consultation)
+  // Update visit status — validated against state machine.
+  // Legacy records with an unknown current state (e.g. "in_consultation" from v0) are auto-healed:
+  // we accept any valid target without a transition check so stuck records can be rescued.
   if (visitStatus) {
+    if (!isValidVisitState(visitStatus)) {
+      return Response.json({ error: `Invalid visit status: ${visitStatus}` }, { status: 400 });
+    }
     const visit = record.visit as Record<string, unknown>;
+    const current = visit.visitStatus;
+    const currentIsLegacy = current !== undefined && !isValidVisitState(current);
+    if (!currentIsLegacy && isValidVisitState(current)) {
+      if (current !== visitStatus && !isValidTransition(current as VisitState, visitStatus)) {
+        return Response.json(
+          { error: `Invalid visit transition: ${current} → ${visitStatus}` },
+          { status: 409 },
+        );
+      }
+    }
     updates.visit = JSON.parse(JSON.stringify({ ...visit, ...(updates.visit as Record<string, unknown> || {}), visitStatus }));
   }
 
