@@ -71,7 +71,8 @@ export function middleware(request: NextRequest) {
   const host = request.headers.get("host") || ""
 
   // ── Hospital subdomain: root path loads workstations launchpad, not marketing page ──
-  if (pathname === "/" && isHospitalSubdomain(host)) {
+  // Exception: ?boot=1 lets the kiosk boot screen iframe render the marketing landing.
+  if (pathname === "/" && isHospitalSubdomain(host) && request.nextUrl.searchParams.get("boot") !== "1") {
     const url = request.nextUrl.clone()
     url.pathname = PLATFORM_ROUTE
     return NextResponse.redirect(url)

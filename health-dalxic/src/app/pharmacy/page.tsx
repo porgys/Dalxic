@@ -316,7 +316,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
       setQueue(data.patients);
       setCounts(data.counts);
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   const loadCatalog = useCallback(async () => {
     try {
@@ -326,7 +326,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
       const data = await res.json();
       setCatalog(data.catalog);
     } catch { /* retry */ }
-  }, [catalogSearch]);
+  }, [catalogSearch, HOSPITAL_CODE]);
 
   const loadInventory = useCallback(async () => {
     try {
@@ -337,7 +337,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
       const data = await res.json();
       setInventory(data.inventory);
     } catch { /* retry */ }
-  }, [invFilter]);
+  }, [invFilter, HOSPITAL_CODE]);
 
   const loadRetailSales = useCallback(async () => {
     try {
@@ -347,7 +347,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
       setRetailSales(data.sales);
       setRetailCounts(data.counts);
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   const computeReports = useCallback(() => {
     const totalStockValue = inventory.reduce((sum, s) => sum + s.quantityRemaining * s.sellPrice, 0);

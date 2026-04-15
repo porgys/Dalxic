@@ -254,6 +254,17 @@ export async function POST(request: Request) {
       data: { visit: JSON.parse(JSON.stringify(visit)) },
     });
 
+    // Broadcast so waiting-room display drops the patient from "Now Serving"
+    try {
+      const pusher = getPusher();
+      await pusher.trigger(hospitalChannel(hospitalCode, "queue"), "patient-completed", {
+        queueToken: visit.queueToken as string,
+        recordId,
+        nextStatus,
+        timestamp: new Date().toISOString(),
+      });
+    } catch { /* Pusher not configured */ }
+
     await logAudit({
       actorType: "doctor", actorId: docId || "doctor", hospitalId: hospital.id,
       action: "visit.consultation_completed", metadata: { recordId, nextStatus, billed: !alreadyBilled },
@@ -285,6 +296,16 @@ export async function POST(request: Request) {
       where: { id: recordId },
       data: { visit: JSON.parse(JSON.stringify(visit)) },
     });
+
+    try {
+      const pusher = getPusher();
+      await pusher.trigger(hospitalChannel(hospitalCode, "queue"), "patient-completed", {
+        queueToken: visit.queueToken as string,
+        recordId,
+        nextStatus: "awaiting_close",
+        timestamp: new Date().toISOString(),
+      });
+    } catch { /* Pusher not configured */ }
 
     return Response.json({ success: true, visitStatus: "awaiting_close" });
   }

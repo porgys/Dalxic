@@ -574,7 +574,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
       const res = await fetch(`/api/queue?hospitalCode=${HOSPITAL_CODE}`);
       if (res.ok) setQueueData(await res.json());
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => {
     if (activeNav === "queue") { loadQueue(); }
@@ -583,6 +583,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
     const ch = pusher?.subscribe(`hospital-${HOSPITAL_CODE}-queue`);
     ch?.bind("patient-added", () => loadQueue());
     ch?.bind("patient-requeued", () => loadQueue());
+    ch?.bind("patient-completed", () => loadQueue());
     const erCh = pusher?.subscribe(`hospital-${HOSPITAL_CODE}-emergency`);
     erCh?.bind("emergency-admission", () => loadQueue());
     erCh?.bind("emergency-escalation", () => loadQueue());
@@ -590,7 +591,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
       ch?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-queue`);
       erCh?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-emergency`);
     };
-  }, [activeNav, loadQueue]);
+  }, [activeNav, loadQueue, HOSPITAL_CODE]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;

@@ -351,7 +351,7 @@ function KioskInner() {
       {/* Phase 1: The actual landing page as the boot screen */}
       {(phase === "landing" || phase === "transition") && (
         <iframe
-          src="/"
+          src="/?boot=1"
           style={{
             position: "fixed", inset: 0, width: "100%", height: "100%",
             border: "none", zIndex: 1,
