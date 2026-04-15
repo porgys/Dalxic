@@ -69,8 +69,8 @@ function QueueDisplay() {
           .filter((d: { department: string; visitStatus?: string }) => {
             if (dept && d.department !== dept) return false;
             const vs = d.visitStatus ?? "active";
-            // Show waiting + in_consultation patients (exclude closed, pharmacy, admitted, etc.)
-            return vs === "active" || vs === "lab_results_ready" || vs === "in_consultation";
+            // Show waiting + with_doctor patients (exclude closed, pharmacy, admitted, etc.)
+            return vs === "active" || vs === "lab_results_ready" || vs === "with_doctor";
           })
           .map((d: { token: string; patientName: string; department: string; emergencyFlag: boolean; visitStatus?: string }) => ({
             token: d.token,
@@ -78,7 +78,7 @@ function QueueDisplay() {
             department: d.department,
             emergencyFlag: d.emergencyFlag ?? false,
             visitStatus: d.visitStatus ?? "active",
-            status: (d.visitStatus === "in_consultation" ? "serving" : "waiting") as "waiting" | "serving",
+            status: (d.visitStatus === "with_doctor" ? "serving" : "waiting") as "waiting" | "serving",
           }));
         setQueue(items);
       }

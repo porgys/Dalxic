@@ -600,7 +600,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         if (skipAutoResumeRef.current) return;
         const inConsult = data.filter((d: { visitStatus?: string; department?: string }) => {
           const vs = d.visitStatus ?? "active";
-          return vs === "in_consultation" && deptMatch(d);
+          return vs === "with_doctor" && deptMatch(d);
         });
         if (inConsult.length > 0) {
           setActiveSession((prev) => {
@@ -691,7 +691,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
 
     // Update patient visit status to in_consultation
     try {
-      await fetch("/api/records", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: next.id, hospitalCode: HOSPITAL_CODE, visitStatus: "in_consultation" }) });
+      await fetch("/api/records", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: next.id, hospitalCode: HOSPITAL_CODE, visitStatus: "with_doctor" }) });
     } catch { /* silent */ }
     // Trigger Pusher broadcast → waiting room announces the callout
     try {
