@@ -468,6 +468,40 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
     })();
   }, [operator.operatorName, HOSPITAL_CODE]);
 
+  // Poll coveredSpecialties every 15s so GM catch-all reflects live OFF_DUTY toggles.
+  // Identity fields (doctorId/doctorSpecialty) stay fixed to the session — only the
+  // on-duty roster changes at runtime.
+  useEffect(() => {
+    const LABEL_TO_KEY: Record<string, string> = {
+      "general medicine": "general", "emergency medicine": "emergency",
+      "ob/gyn": "obstetrics", "general surgery": "surgery",
+      "eye clinic": "eye", "ophthalmology": "eye",
+    };
+    const normalize = (s: string) => {
+      const r = (s || "general").toLowerCase();
+      return LABEL_TO_KEY[r] || r;
+    };
+    const refresh = async () => {
+      try {
+        const res = await fetch(`/api/doctors?hospitalCode=${HOSPITAL_CODE}`);
+        if (!res.ok) return;
+        const doctors = await res.json();
+        const covered = doctors
+          .filter((d: { status?: string }) => (d.status || "AVAILABLE") !== "OFF_DUTY")
+          .map((d: { specialty?: string }) => normalize(d.specialty || "general"))
+          .filter((s: string) => s !== "general");
+        setCoveredSpecialties((prev) => {
+          const next = Array.from(new Set(covered)) as string[];
+          // Skip setState if the list is identical — avoids triggering loadQueue re-run every 15s
+          if (prev.length === next.length && prev.every((x) => next.includes(x))) return prev;
+          return next;
+        });
+      } catch { /* keep current list on failure */ }
+    };
+    const id = setInterval(refresh, 15000);
+    return () => clearInterval(id);
+  }, [HOSPITAL_CODE]);
+
   // Check group membership + load branches
   useEffect(() => {
     (async () => {
