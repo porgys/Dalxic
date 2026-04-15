@@ -171,8 +171,8 @@ function CardsPanel({ operatorId, template, customTemplate }: { operatorId: stri
     ? allCards.filter((c) => {
         const needle = query.trim().toLowerCase();
         return (
-          c.cardNumber.toLowerCase().includes(needle) ||
-          c.patientName.toLowerCase().includes(needle) ||
+          (c.cardNumber ?? "").toLowerCase().includes(needle) ||
+          (c.patientName ?? "").toLowerCase().includes(needle) ||
           (c.phone ?? "").toLowerCase().includes(needle)
         );
       })

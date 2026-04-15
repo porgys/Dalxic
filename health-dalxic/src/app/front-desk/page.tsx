@@ -601,8 +601,10 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
       if (res.ok) {
         const data = await res.json();
         const q = searchQuery.toLowerCase();
-        setSearchResults(data.filter((d: { patientName: string; token: string; chiefComplaint: string }) =>
-          d.patientName.toLowerCase().includes(q) || d.token.toLowerCase().includes(q) || d.chiefComplaint.toLowerCase().includes(q)
+        setSearchResults(data.filter((d: { patientName?: string; token?: string; chiefComplaint?: string }) =>
+          (d.patientName ?? "").toLowerCase().includes(q) ||
+          (d.token ?? "").toLowerCase().includes(q) ||
+          (d.chiefComplaint ?? "").toLowerCase().includes(q)
         ));
       }
     } catch { /* retry */ }

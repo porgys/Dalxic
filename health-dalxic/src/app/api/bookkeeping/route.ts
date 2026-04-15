@@ -238,9 +238,9 @@ export async function GET(request: Request) {
       if (!search) return true;
       const s = search.toLowerCase();
       return (
-        (p.name as string).toLowerCase().includes(s) ||
+        ((p.name as string) ?? "").toLowerCase().includes(s) ||
         (p.phone && (p.phone as string).includes(s)) ||
-        (p.queueToken && (p.queueToken as string).toLowerCase().includes(s))
+        (p.queueToken && ((p.queueToken as string) ?? "").toLowerCase().includes(s))
       );
     });
 
