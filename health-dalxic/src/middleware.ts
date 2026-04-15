@@ -54,9 +54,28 @@ function applySecurityHeaders(response: NextResponse) {
   return response
 }
 
+const PLATFORM_ROUTE = "/w/rJ1~tN5kZm8Q-bA4xW7nDs2vFh"
+const APEX_HOSTS = new Set(["health.dalxic.com", "www.health.dalxic.com", "localhost", "localhost:3000"])
+
+function isHospitalSubdomain(host: string): boolean {
+  const h = host.toLowerCase()
+  if (APEX_HOSTS.has(h)) return false
+  if (h.endsWith(".vercel.app")) return false
+  if (/^\d+\.\d+\.\d+\.\d+(:\d+)?$/.test(h)) return false
+  return h.endsWith(".health.dalxic.com")
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const ua = request.headers.get("user-agent")
+  const host = request.headers.get("host") || ""
+
+  // ── Hospital subdomain: root path loads workstations launchpad, not marketing page ──
+  if (pathname === "/" && isHospitalSubdomain(host)) {
+    const url = request.nextUrl.clone()
+    url.pathname = PLATFORM_ROUTE
+    return NextResponse.redirect(url)
+  }
 
   // ── Bot wall: block bots from API routes (protects Anthropic billing) ──
   if (pathname.startsWith("/api/")) {
