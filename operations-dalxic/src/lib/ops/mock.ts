@@ -629,7 +629,7 @@ export interface MockLoyaltyTier {
   color: string
 }
 
-export const MOCK_TIERS: MockLoyaltyTier[] = [
+export const MOCK_LOYALTY_TIERS: MockLoyaltyTier[] = [
   { id: "TBronze", name: "Bronze",   minSpend:    0, earnRate: 1, perkLine: "1 point per GHS · birthday discount",                  members: 412, color: "#A78B6F" },
   { id: "TSilver", name: "Silver",   minSpend: 1000, earnRate: 2, perkLine: "2 pts per GHS · early access to promos",               members: 168, color: "#9CA3AF" },
   { id: "TGold",   name: "Gold",     minSpend: 3000, earnRate: 3, perkLine: "3 pts per GHS · free delivery within Accra",           members:  72, color: "#F59E0B" },
@@ -784,6 +784,492 @@ export const MOCK_AUDIT: MockAuditEvent[] = [
   { id: "AU0031", ts: "2026-04-10 09:30:00", date: "2026-04-10", actor: "George Owner", role: "Owner",         action: "export",        module: "Reports",     target: "VAT Return",      branch: "—",                severity: "info",     detail: "March 2026 VAT-3 exported to PDF" },
 ]
 
+/* ═══════════════════════════════════════════════════════════════
+   MASTER OPS — platform-wide datasets.
+   These sit above Trade + Institute. Not per-tenant.
+   ═══════════════════════════════════════════════════════════════ */
 
+export type Vertical = "trade" | "institute"
+export type TenantStatus = "trial" | "active" | "past_due" | "suspended" | "churned"
+export type TenantTier = "starter" | "growth" | "scale" | "enterprise"
 
+export interface MockTenant {
+  id: string
+  code: string
+  name: string
+  vertical: Vertical
+  tier: TenantTier
+  status: TenantStatus
+  region: string
+  country: string
+  branches: number
+  users: number
+  mrr: number
+  joinedOn: string
+  renewsOn: string
+  lastSeen: string
+  ownerName: string
+  ownerPhone: string
+  ownerEmail: string
+  health: number
+  activeModules: string[]
+  activeAddons: string[]
+}
 
+export const MOCK_TENANTS: MockTenant[] = [
+  { id: "TN-0001", code: "KASOA-MART",    name: "Kasoa SuperMart",            vertical: "trade",     tier: "scale",      status: "active",   region: "Central",    country: "Ghana",   branches: 4, users: 22, mrr: 1450, joinedOn: "2024-09-12", renewsOn: "2026-09-12", lastSeen: "2026-04-15 09:14", ownerName: "Mr. Asante",      ownerPhone: "+233 24 555 0101", ownerEmail: "mr.asante@kasoa-mart.gh",     health: 92, activeModules: ["pos","inventory","stock","branches","customers","loyalty","suppliers","po","accounting","expenses","tax","shifts","reports","audit","roles"], activeAddons: ["sms-5k","whatsapp-3k"] },
+  { id: "TN-0002", code: "TEMA-PHARM",    name: "Tema Community Pharmacy",    vertical: "trade",     tier: "growth",     status: "active",   region: "Greater Accra", country: "Ghana", branches: 2, users: 9,  mrr: 680,  joinedOn: "2025-02-04", renewsOn: "2026-08-04", lastSeen: "2026-04-15 08:42", ownerName: "Mrs. Mensah",     ownerPhone: "+233 55 111 0202", ownerEmail: "pharm@tema-pharm.gh",         health: 88, activeModules: ["pos","inventory","customers","loyalty","suppliers","reports"], activeAddons: ["sms-5k"] },
+  { id: "TN-0003", code: "KUMASI-BLD",    name: "Ashanti Building Supplies",  vertical: "trade",     tier: "enterprise", status: "active",   region: "Ashanti",    country: "Ghana",   branches: 9, users: 58, mrr: 3200, joinedOn: "2024-03-22", renewsOn: "2027-03-22", lastSeen: "2026-04-15 09:02", ownerName: "Mr. Osei",        ownerPhone: "+233 20 333 0303", ownerEmail: "owner@ashanti-bld.gh",       health: 96, activeModules: ["pos","inventory","stock","branches","customers","loyalty","suppliers","po","accounting","expenses","tax","shifts","payroll","reports","audit","roles","labels"], activeAddons: ["sms-20k","whatsapp-10k","extra-branches-3","priority-support"] },
+  { id: "TN-0004", code: "ACCRA-BOUTIQ",  name: "Osu Boutique Co.",           vertical: "trade",     tier: "growth",     status: "active",   region: "Greater Accra", country: "Ghana", branches: 2, users: 6,  mrr: 540,  joinedOn: "2025-07-14", renewsOn: "2026-07-14", lastSeen: "2026-04-14 22:18", ownerName: "Ms. Akosua",      ownerPhone: "+233 24 777 0404", ownerEmail: "akosua@osu-boutique.gh",     health: 79, activeModules: ["pos","inventory","customers","loyalty","reports"], activeAddons: [] },
+  { id: "TN-0005", code: "LEGON-ACAD",    name: "Legon Preparatory School",   vertical: "institute", tier: "scale",      status: "active",   region: "Greater Accra", country: "Ghana", branches: 1, users: 34, mrr: 980,  joinedOn: "2024-08-01", renewsOn: "2026-08-01", lastSeen: "2026-04-15 07:30", ownerName: "Dr. Ofori",       ownerPhone: "+233 27 888 0505", ownerEmail: "head@legon-prep.edu.gh",     health: 94, activeModules: ["enrollment","gradebook","fees","attendance","parents","reports","audit","roles"], activeAddons: ["sms-10k","parent-portal"] },
+  { id: "TN-0006", code: "CAPE-JUNIOR",   name: "Cape Coast Junior Academy",  vertical: "institute", tier: "growth",     status: "active",   region: "Central",    country: "Ghana",   branches: 1, users: 18, mrr: 420,  joinedOn: "2025-09-03", renewsOn: "2026-09-03", lastSeen: "2026-04-15 06:58", ownerName: "Mr. Quarshie",    ownerPhone: "+233 26 444 0606", ownerEmail: "admin@cape-junior.edu.gh",   health: 85, activeModules: ["enrollment","gradebook","fees","attendance"], activeAddons: ["sms-5k"] },
+  { id: "TN-0007", code: "SUNYANI-NGO",   name: "Hope Sunyani Outreach",      vertical: "institute", tier: "starter",    status: "trial",    region: "Bono",       country: "Ghana",   branches: 1, users: 4,  mrr: 0,    joinedOn: "2026-04-01", renewsOn: "2026-04-30", lastSeen: "2026-04-14 15:10", ownerName: "Pastor Boateng",  ownerPhone: "+233 54 999 0707", ownerEmail: "boateng@hope-sunyani.org",   health: 62, activeModules: ["enrollment","attendance"], activeAddons: [] },
+  { id: "TN-0008", code: "TAKORADI-FISH", name: "Takoradi Fish Market Co.",   vertical: "trade",     tier: "starter",    status: "active",   region: "Western",    country: "Ghana",   branches: 1, users: 3,  mrr: 180,  joinedOn: "2026-01-18", renewsOn: "2026-07-18", lastSeen: "2026-04-15 07:00", ownerName: "Mama Araba",      ownerPhone: "+233 50 222 0808", ownerEmail: "mama@takoradi-fish.gh",      health: 71, activeModules: ["pos","inventory","reports"], activeAddons: [] },
+  { id: "TN-0009", code: "MADINA-AUTO",   name: "Madina Auto Spares",         vertical: "trade",     tier: "growth",     status: "past_due", region: "Greater Accra", country: "Ghana", branches: 1, users: 7,  mrr: 680,  joinedOn: "2024-11-02", renewsOn: "2026-04-02", lastSeen: "2026-04-13 18:44", ownerName: "Mr. Yeboah",      ownerPhone: "+233 20 666 0909", ownerEmail: "yeboah@madina-auto.gh",      health: 48, activeModules: ["pos","inventory","suppliers","po","reports"], activeAddons: ["sms-5k"] },
+  { id: "TN-0010", code: "ELMINA-TOUR",   name: "Elmina Heritage Tours",      vertical: "trade",     tier: "scale",      status: "active",   region: "Central",    country: "Ghana",   branches: 3, users: 14, mrr: 1200, joinedOn: "2024-12-10", renewsOn: "2026-12-10", lastSeen: "2026-04-15 09:25", ownerName: "Ms. Efua",        ownerPhone: "+233 27 555 1010", ownerEmail: "efua@elmina-tours.gh",       health: 91, activeModules: ["pos","inventory","customers","loyalty","accounting","reports","audit","roles"], activeAddons: ["whatsapp-10k"] },
+  { id: "TN-0011", code: "HO-WELLNESS",   name: "Ho Wellness Pharmacy",       vertical: "trade",     tier: "starter",    status: "suspended",region: "Volta",      country: "Ghana",   branches: 1, users: 2,  mrr: 0,    joinedOn: "2025-03-04", renewsOn: "2026-02-04", lastSeen: "2026-02-10 12:00", ownerName: "Mr. Agbeko",      ownerPhone: "+233 24 123 1111", ownerEmail: "agbeko@ho-wellness.gh",      health: 12, activeModules: [], activeAddons: [] },
+  { id: "TN-0012", code: "TAMALE-TECH",   name: "Tamale Tech Hub School",     vertical: "institute", tier: "enterprise", status: "active",   region: "Northern",   country: "Ghana",   branches: 2, users: 42, mrr: 2400, joinedOn: "2024-02-18", renewsOn: "2027-02-18", lastSeen: "2026-04-15 08:10", ownerName: "Dr. Seidu",       ownerPhone: "+233 20 444 1212", ownerEmail: "seidu@tamale-tech.edu.gh",   health: 97, activeModules: ["enrollment","gradebook","fees","attendance","parents","library","exams","reports","audit","roles","timetable","transport"], activeAddons: ["sms-20k","parent-portal","priority-support","extra-users-20"] },
+  { id: "TN-0013", code: "KOFORIDUA-MKT", name: "Koforidua Central Market",   vertical: "trade",     tier: "growth",     status: "active",   region: "Eastern",    country: "Ghana",   branches: 3, users: 11, mrr: 720,  joinedOn: "2025-06-22", renewsOn: "2026-06-22", lastSeen: "2026-04-15 08:55", ownerName: "Mr. Boateng",     ownerPhone: "+233 26 777 1313", ownerEmail: "boateng@kofo-market.gh",     health: 83, activeModules: ["pos","inventory","stock","branches","customers","suppliers","reports"], activeAddons: ["sms-5k"] },
+  { id: "TN-0014", code: "WINNEBA-COL",   name: "Winneba Community College",  vertical: "institute", tier: "scale",      status: "trial",    region: "Central",    country: "Ghana",   branches: 1, users: 22, mrr: 0,    joinedOn: "2026-03-20", renewsOn: "2026-05-20", lastSeen: "2026-04-15 07:42", ownerName: "Prof. Nkrumah",   ownerPhone: "+233 55 888 1414", ownerEmail: "nkrumah@winneba-col.edu.gh", health: 76, activeModules: ["enrollment","gradebook","fees","attendance","exams"], activeAddons: [] },
+  { id: "TN-0015", code: "DANSOMAN-CLIN", name: "Dansoman Clinical Store",    vertical: "trade",     tier: "growth",     status: "active",   region: "Greater Accra", country: "Ghana", branches: 1, users: 5,  mrr: 540,  joinedOn: "2025-05-11", renewsOn: "2026-05-11", lastSeen: "2026-04-15 09:30", ownerName: "Dr. Amponsah",    ownerPhone: "+233 24 999 1515", ownerEmail: "amponsah@dansoman-clin.gh",  health: 87, activeModules: ["pos","inventory","customers","suppliers","reports"], activeAddons: ["whatsapp-3k"] },
+  { id: "TN-0016", code: "BOLGA-COOP",    name: "Bolgatanga Farmers Co-op",   vertical: "trade",     tier: "starter",    status: "active",   region: "Upper East", country: "Ghana",   branches: 1, users: 3,  mrr: 180,  joinedOn: "2026-02-12", renewsOn: "2026-08-12", lastSeen: "2026-04-14 17:30", ownerName: "Mr. Azure",       ownerPhone: "+233 27 666 1616", ownerEmail: "azure@bolga-coop.gh",        health: 74, activeModules: ["pos","inventory","reports"], activeAddons: [] },
+  { id: "TN-0017", code: "ACCRA-MALL-KS", name: "Accra Mall Kids Store",      vertical: "trade",     tier: "growth",     status: "active",   region: "Greater Accra", country: "Ghana", branches: 1, users: 8,  mrr: 680,  joinedOn: "2025-08-19", renewsOn: "2026-08-19", lastSeen: "2026-04-15 08:20", ownerName: "Ms. Yaa",         ownerPhone: "+233 20 111 1717", ownerEmail: "yaa@accramall-kids.gh",      health: 89, activeModules: ["pos","inventory","customers","loyalty","reports"], activeAddons: ["sms-5k","whatsapp-3k"] },
+  { id: "TN-0018", code: "AXIM-ACADEMY",  name: "Axim Seaside Academy",       vertical: "institute", tier: "growth",     status: "past_due", region: "Western",    country: "Ghana",   branches: 1, users: 12, mrr: 420,  joinedOn: "2025-01-07", renewsOn: "2026-03-07", lastSeen: "2026-04-12 09:10", ownerName: "Mr. Arhin",       ownerPhone: "+233 54 222 1818", ownerEmail: "arhin@axim-academy.edu.gh",  health: 51, activeModules: ["enrollment","gradebook","attendance"], activeAddons: [] },
+  { id: "TN-0019", code: "OBUASI-FOOD",   name: "Obuasi Food Hall",           vertical: "trade",     tier: "scale",      status: "active",   region: "Ashanti",    country: "Ghana",   branches: 2, users: 16, mrr: 1200, joinedOn: "2024-10-30", renewsOn: "2026-10-30", lastSeen: "2026-04-15 09:00", ownerName: "Mr. Adusei",      ownerPhone: "+233 26 333 1919", ownerEmail: "adusei@obuasi-food.gh",      health: 90, activeModules: ["pos","inventory","stock","branches","customers","loyalty","suppliers","accounting","tax","shifts","reports","audit","roles"], activeAddons: ["sms-10k","extra-branches-2"] },
+  { id: "TN-0020", code: "NAVRONGO-TECH", name: "Navrongo Technical Institute", vertical: "institute", tier: "scale",   status: "active",   region: "Upper East", country: "Ghana",   branches: 1, users: 28, mrr: 980,  joinedOn: "2024-05-15", renewsOn: "2026-05-15", lastSeen: "2026-04-15 08:02", ownerName: "Dr. Apaak",       ownerPhone: "+233 24 444 2020", ownerEmail: "apaak@navrongo-tech.edu.gh", health: 93, activeModules: ["enrollment","gradebook","fees","attendance","parents","exams","library","reports","roles"], activeAddons: ["parent-portal"] },
+  { id: "TN-0021", code: "TECHIMAN-GEN",  name: "Techiman General Store",     vertical: "trade",     tier: "starter",    status: "churned",  region: "Bono East",  country: "Ghana",   branches: 1, users: 0,  mrr: 0,    joinedOn: "2025-04-18", renewsOn: "2026-01-18", lastSeen: "2025-12-28 14:22", ownerName: "Mr. Kofi",        ownerPhone: "+233 20 555 2121", ownerEmail: "—",                          health: 0,  activeModules: [], activeAddons: [] },
+  { id: "TN-0022", code: "ABURI-GARDEN",  name: "Aburi Garden Café & Shop",   vertical: "trade",     tier: "growth",     status: "active",   region: "Eastern",    country: "Ghana",   branches: 1, users: 5,  mrr: 540,  joinedOn: "2025-11-08", renewsOn: "2026-11-08", lastSeen: "2026-04-15 08:48", ownerName: "Ms. Akua",        ownerPhone: "+233 55 333 2222", ownerEmail: "akua@aburi-garden.gh",       health: 86, activeModules: ["pos","inventory","customers","loyalty","reports"], activeAddons: ["whatsapp-3k"] },
+  { id: "TN-0023", code: "LABONE-PREP",   name: "Labone Montessori",          vertical: "institute", tier: "growth",     status: "active",   region: "Greater Accra", country: "Ghana", branches: 1, users: 14, mrr: 420,  joinedOn: "2025-10-02", renewsOn: "2026-10-02", lastSeen: "2026-04-15 06:40", ownerName: "Ms. Adjoa",       ownerPhone: "+233 24 666 2323", ownerEmail: "adjoa@labone-mont.edu.gh",   health: 88, activeModules: ["enrollment","gradebook","attendance","parents"], activeAddons: ["sms-5k"] },
+  { id: "TN-0024", code: "WA-WHOLESALE",  name: "Wa Wholesale Depot",         vertical: "trade",     tier: "scale",      status: "active",   region: "Upper West", country: "Ghana",   branches: 2, users: 12, mrr: 1200, joinedOn: "2025-03-28", renewsOn: "2026-03-28", lastSeen: "2026-04-15 08:12", ownerName: "Al-Hajj Musah",   ownerPhone: "+233 27 111 2424", ownerEmail: "musah@wa-wholesale.gh",      health: 84, activeModules: ["pos","inventory","stock","branches","suppliers","po","accounting","reports","roles"], activeAddons: ["sms-10k"] },
+]
+
+/* ───── Tiers ───── */
+
+export interface MockTier {
+  id: TenantTier
+  name: string
+  tagline: string
+  monthly: number
+  annual: number
+  branchLimit: number | "unlimited"
+  userLimit: number | "unlimited"
+  txLimit: number | "unlimited"
+  supportSLA: string
+  modules: string[]
+  accent: "neutral" | "sky" | "emerald" | "amber"
+  popular?: boolean
+}
+
+export const MOCK_TIERS: MockTier[] = [
+  {
+    id: "starter", name: "Starter", tagline: "Single counter. Solo trader. Just enough.",
+    monthly: 180, annual: 1800,
+    branchLimit: 1, userLimit: 3, txLimit: 3000,
+    supportSLA: "Email · 72h",
+    modules: ["pos", "inventory", "reports"],
+    accent: "neutral",
+  },
+  {
+    id: "growth", name: "Growth", tagline: "Two counters. Loyalty. First SMS blast.",
+    monthly: 420, annual: 4200,
+    branchLimit: 2, userLimit: 10, txLimit: 15000,
+    supportSLA: "Email · 24h",
+    modules: ["pos","inventory","customers","loyalty","suppliers","reports","audit"],
+    accent: "sky",
+    popular: true,
+  },
+  {
+    id: "scale", name: "Scale", tagline: "Multi-branch. Payroll. Tax ready. The ERP.",
+    monthly: 980, annual: 9800,
+    branchLimit: 5, userLimit: 40, txLimit: 75000,
+    supportSLA: "Phone · 4h",
+    modules: ["pos","inventory","stock","branches","customers","loyalty","suppliers","po","accounting","expenses","tax","shifts","payroll","reports","audit","roles","labels"],
+    accent: "emerald",
+  },
+  {
+    id: "enterprise", name: "Enterprise", tagline: "Unlimited everything. Dedicated CSM.",
+    monthly: 2400, annual: 24000,
+    branchLimit: "unlimited", userLimit: "unlimited", txLimit: "unlimited",
+    supportSLA: "24/7 · 1h · Named CSM",
+    modules: ["pos","inventory","stock","branches","customers","loyalty","suppliers","po","accounting","expenses","tax","shifts","payroll","reports","audit","roles","labels"],
+    accent: "amber",
+  },
+]
+
+/* ───── Modules (catalog across both verticals) ───── */
+
+export interface MockModule {
+  id: string
+  name: string
+  vertical: Vertical | "both"
+  category: string
+  description: string
+  icon: string
+  minTier: TenantTier
+  addonPrice?: number
+  dependencies?: string[]
+  adoption: number
+  status: "ga" | "beta" | "preview"
+}
+
+export const MOCK_MODULES: MockModule[] = [
+  // Trade
+  { id: "pos",         name: "Point of Sale",      vertical: "trade",     category: "Storefront",   description: "Touch-first POS. Cash, MoMo, card. Offline fallback.",                  icon: "pos",         minTier: "starter",    adoption: 100, status: "ga" },
+  { id: "inventory",   name: "Inventory",          vertical: "trade",     category: "Storefront",   description: "Products, variants, barcodes, reorder points.",                          icon: "inventory",   minTier: "starter",    adoption: 100, status: "ga" },
+  { id: "stock",       name: "Stock Movements",    vertical: "trade",     category: "Operations",   description: "Transfers between branches, counts, adjustments.",                       icon: "stock",       minTier: "scale",      dependencies: ["inventory","branches"], adoption: 48, status: "ga" },
+  { id: "branches",    name: "Multi-Branch",       vertical: "trade",     category: "Operations",   description: "Branches, registers, per-branch permissions.",                            icon: "branches",    minTier: "growth",     adoption: 62, status: "ga" },
+  { id: "customers",   name: "Customer Book",      vertical: "trade",     category: "CRM",          description: "Profiles, purchase history, credit ledger.",                              icon: "customers",   minTier: "growth",     adoption: 78, status: "ga" },
+  { id: "loyalty",     name: "Loyalty & Promos",   vertical: "trade",     category: "CRM",          description: "Tiers, points, BOGOF, coupons, promotions.",                               icon: "loyalty",     minTier: "growth",     dependencies: ["customers"], adoption: 54, status: "ga" },
+  { id: "suppliers",   name: "Suppliers",          vertical: "trade",     category: "Procurement",  description: "Supplier directory, lead times, payables.",                               icon: "suppliers",   minTier: "growth",     adoption: 68, status: "ga" },
+  { id: "po",          name: "Purchase Orders",    vertical: "trade",     category: "Procurement",  description: "PO creation, receipt, 3-way match.",                                       icon: "po",          minTier: "scale",      dependencies: ["suppliers","inventory"], adoption: 42, status: "ga" },
+  { id: "accounting",  name: "Accounting",         vertical: "both",      category: "Finance",      description: "Chart of accounts, journals, general ledger.",                             icon: "coa",         minTier: "scale",      adoption: 38, status: "ga" },
+  { id: "expenses",    name: "Expenses",           vertical: "both",      category: "Finance",      description: "Expense capture, categorisation, approval flow.",                          icon: "expenses",    minTier: "growth",     adoption: 58, status: "ga" },
+  { id: "tax",         name: "Tax Engine",         vertical: "both",      category: "Finance",      description: "Ghana VAT, NHIL, GETFund, COVID Levy. GRA-ready.",                        icon: "tax",         minTier: "scale",      dependencies: ["accounting"], adoption: 34, status: "ga" },
+  { id: "shifts",      name: "Shifts & Z-Report",  vertical: "trade",     category: "Operations",   description: "Open/close tills, cash reconciliation, Z-reports.",                        icon: "shifts",      minTier: "scale",      dependencies: ["pos"], adoption: 40, status: "ga" },
+  { id: "payroll",     name: "Payroll",            vertical: "both",      category: "HR",           description: "SSNIT Tier 1 & 2, PAYE bands, payslips.",                                 icon: "payroll",     minTier: "scale",      addonPrice: 120, adoption: 28, status: "ga" },
+  { id: "reports",     name: "Reports Library",    vertical: "both",      category: "Insights",     description: "33+ reports: sales, tax, inventory, payroll, audit.",                     icon: "reports",     minTier: "starter",    adoption: 100, status: "ga" },
+  { id: "audit",       name: "Audit Log",          vertical: "both",      category: "Governance",   description: "Immutable event stream. Who did what, when.",                              icon: "audit",       minTier: "growth",     adoption: 72, status: "ga" },
+  { id: "roles",       name: "Roles & Permissions",vertical: "both",      category: "Governance",   description: "Role matrix across modules, branch scoping.",                              icon: "roles",       minTier: "scale",      adoption: 46, status: "ga" },
+  { id: "labels",      name: "Barcode Labels",     vertical: "trade",     category: "Operations",   description: "Shelf labels, price tags, thermal + A4 sheet.",                            icon: "labels",      minTier: "growth",     dependencies: ["inventory"], adoption: 32, status: "ga" },
+
+  // Institute
+  { id: "enrollment",  name: "Enrollment",         vertical: "institute", category: "Admissions",   description: "Student intake, application workflow, waitlist.",                          icon: "customers",   minTier: "starter",    adoption: 100, status: "ga" },
+  { id: "gradebook",   name: "Gradebook",          vertical: "institute", category: "Academic",     description: "Scores, GPA, WAEC-style transcript.",                                      icon: "reports",     minTier: "growth",     adoption: 88, status: "ga" },
+  { id: "fees",        name: "Fees & Billing",     vertical: "institute", category: "Finance",      description: "Term fees, instalments, MoMo collection.",                                icon: "billing",     minTier: "growth",     adoption: 78, status: "ga" },
+  { id: "attendance",  name: "Attendance",         vertical: "institute", category: "Academic",     description: "Daily roll call, absence SMS to parents.",                                 icon: "check",       minTier: "starter",    adoption: 92, status: "ga" },
+  { id: "parents",     name: "Parent Portal",      vertical: "institute", category: "Communication",description: "Parent login, fee balance, report cards.",                                icon: "customers",   minTier: "growth",     addonPrice: 80, dependencies: ["gradebook"], adoption: 44, status: "ga" },
+  { id: "library",     name: "Library",            vertical: "institute", category: "Operations",   description: "Book catalog, check-out, fines.",                                          icon: "modules",     minTier: "scale",      adoption: 22, status: "beta" },
+  { id: "exams",       name: "Exams",              vertical: "institute", category: "Academic",     description: "Timetable, seat plan, mark entry, reports.",                               icon: "calendar",    minTier: "growth",     adoption: 58, status: "ga" },
+  { id: "timetable",   name: "Timetable",          vertical: "institute", category: "Academic",     description: "Class schedule, teacher workload, clash detection.",                       icon: "calendar",    minTier: "scale",      adoption: 32, status: "beta" },
+  { id: "transport",   name: "Transport",          vertical: "institute", category: "Operations",   description: "Bus routes, stops, driver assignment.",                                    icon: "branches",    minTier: "enterprise", adoption: 14, status: "preview" },
+]
+
+/* ───── Add-ons ───── */
+
+export interface MockAddon {
+  id: string
+  name: string
+  description: string
+  price: number
+  unit: string
+  category: "messaging" | "capacity" | "support" | "integration"
+  icon: string
+  activeCount: number
+}
+
+export const MOCK_ADDONS: MockAddon[] = [
+  { id: "sms-5k",           name: "SMS Pack · 5,000",     description: "5,000 SMS credits, expires in 12 months. Valid across Ghana.",      price: 80,  unit: "one-off",  category: "messaging",   icon: "phone",     activeCount: 11 },
+  { id: "sms-10k",          name: "SMS Pack · 10,000",    description: "10,000 SMS credits, expires in 12 months.",                         price: 150, unit: "one-off",  category: "messaging",   icon: "phone",     activeCount: 4 },
+  { id: "sms-20k",          name: "SMS Pack · 20,000",    description: "20,000 SMS credits, best-value bulk. Ideal for schools.",            price: 280, unit: "one-off",  category: "messaging",   icon: "phone",     activeCount: 2 },
+  { id: "whatsapp-3k",      name: "WhatsApp · 3,000",     description: "3,000 WhatsApp template messages/mo via Meta Cloud API.",            price: 120, unit: "monthly",  category: "messaging",   icon: "whatsapp",  activeCount: 3 },
+  { id: "whatsapp-10k",     name: "WhatsApp · 10,000",    description: "10,000 template messages/mo. Includes priority delivery.",           price: 320, unit: "monthly",  category: "messaging",   icon: "whatsapp",  activeCount: 2 },
+  { id: "extra-branches-2", name: "Extra Branches · 2",   description: "Add 2 branches beyond your tier limit.",                              price: 240, unit: "monthly",  category: "capacity",    icon: "branches",  activeCount: 1 },
+  { id: "extra-branches-3", name: "Extra Branches · 3",   description: "Add 3 branches beyond your tier limit.",                              price: 340, unit: "monthly",  category: "capacity",    icon: "branches",  activeCount: 1 },
+  { id: "extra-users-20",   name: "Extra Users · 20",     description: "Add 20 operator seats beyond your tier limit.",                       price: 180, unit: "monthly",  category: "capacity",    icon: "staff",     activeCount: 1 },
+  { id: "priority-support", name: "Priority Support",     description: "4h first-response SLA, phone line, named specialist.",                price: 400, unit: "monthly",  category: "support",     icon: "support",   activeCount: 2 },
+  { id: "parent-portal",    name: "Parent Portal",        description: "Self-service parent login for grades, fees, attendance.",             price: 80,  unit: "monthly",  category: "integration", icon: "customers", activeCount: 2 },
+  { id: "momo-direct",      name: "MoMo Direct Settle",   description: "Same-day settle from MoMo to linked bank account.",                    price: 60,  unit: "monthly",  category: "integration", icon: "phone",     activeCount: 0 },
+  { id: "gra-efiling",      name: "GRA E-Filing",         description: "One-tap VAT-3 and NHIL file upload to GRA portal.",                    price: 90,  unit: "monthly",  category: "integration", icon: "tax",       activeCount: 0 },
+]
+
+/* ───── Invoices / Billing ───── */
+
+export interface MockInvoice {
+  id: string
+  tenantId: string
+  tenantName: string
+  period: string
+  issuedOn: string
+  dueOn: string
+  amount: number
+  status: "draft" | "sent" | "paid" | "overdue" | "void"
+  method?: "momo" | "bank" | "card"
+  reference?: string
+}
+
+export const MOCK_INVOICES: MockInvoice[] = [
+  { id: "INV-2604-0001", tenantId: "TN-0003", tenantName: "Ashanti Building Supplies",   period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 3200, status: "paid",    method: "bank", reference: "GCB-TRX-4422" },
+  { id: "INV-2604-0002", tenantId: "TN-0001", tenantName: "Kasoa SuperMart",             period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 1450, status: "paid",    method: "momo", reference: "MTN-98237644" },
+  { id: "INV-2604-0003", tenantId: "TN-0010", tenantName: "Elmina Heritage Tours",       period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 1200, status: "paid",    method: "momo", reference: "MTN-98237810" },
+  { id: "INV-2604-0004", tenantId: "TN-0012", tenantName: "Tamale Tech Hub School",      period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 2400, status: "paid",    method: "bank", reference: "CAL-5598" },
+  { id: "INV-2604-0005", tenantId: "TN-0019", tenantName: "Obuasi Food Hall",            period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 1200, status: "paid",    method: "momo", reference: "MTN-98238101" },
+  { id: "INV-2604-0006", tenantId: "TN-0020", tenantName: "Navrongo Technical Institute",period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 980,  status: "paid",    method: "bank", reference: "GCB-TRX-4510" },
+  { id: "INV-2604-0007", tenantId: "TN-0005", tenantName: "Legon Preparatory School",    period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 980,  status: "paid",    method: "bank", reference: "ZEN-7791" },
+  { id: "INV-2604-0008", tenantId: "TN-0002", tenantName: "Tema Community Pharmacy",     period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 680,  status: "sent" },
+  { id: "INV-2604-0009", tenantId: "TN-0004", tenantName: "Osu Boutique Co.",            period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 540,  status: "sent" },
+  { id: "INV-2604-0010", tenantId: "TN-0009", tenantName: "Madina Auto Spares",          period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 680,  status: "overdue" },
+  { id: "INV-2604-0011", tenantId: "TN-0018", tenantName: "Axim Seaside Academy",        period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 420,  status: "overdue" },
+  { id: "INV-2604-0012", tenantId: "TN-0015", tenantName: "Dansoman Clinical Store",     period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 540,  status: "paid",    method: "momo", reference: "MTN-98239440" },
+  { id: "INV-2604-0013", tenantId: "TN-0013", tenantName: "Koforidua Central Market",    period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 720,  status: "paid",    method: "momo", reference: "MTN-98239501" },
+  { id: "INV-2604-0014", tenantId: "TN-0006", tenantName: "Cape Coast Junior Academy",   period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 420,  status: "paid",    method: "bank", reference: "CAL-5612" },
+  { id: "INV-2604-0015", tenantId: "TN-0022", tenantName: "Aburi Garden Café & Shop",    period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 540,  status: "paid",    method: "momo", reference: "MTN-98240110" },
+  { id: "INV-2604-0016", tenantId: "TN-0023", tenantName: "Labone Montessori",           period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 420,  status: "paid",    method: "momo", reference: "MTN-98240223" },
+  { id: "INV-2604-0017", tenantId: "TN-0024", tenantName: "Wa Wholesale Depot",          period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 1200, status: "paid",    method: "bank", reference: "GCB-TRX-4588" },
+  { id: "INV-2604-0018", tenantId: "TN-0017", tenantName: "Accra Mall Kids Store",       period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 680,  status: "sent" },
+  { id: "INV-2604-0019", tenantId: "TN-0008", tenantName: "Takoradi Fish Market Co.",    period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 180,  status: "paid",    method: "momo", reference: "MTN-98240401" },
+  { id: "INV-2604-0020", tenantId: "TN-0016", tenantName: "Bolgatanga Farmers Co-op",    period: "Apr 2026", issuedOn: "2026-04-01", dueOn: "2026-04-15", amount: 180,  status: "sent" },
+]
+
+/* ───── Partners / Resellers ───── */
+
+export interface MockPartner {
+  id: string
+  code: string
+  name: string
+  tier: "silver" | "gold" | "platinum"
+  region: string
+  contact: string
+  phone: string
+  email: string
+  tenantsReferred: number
+  commissionYTD: number
+  commissionRate: number
+  status: "active" | "paused" | "pending"
+  joinedOn: string
+}
+
+export const MOCK_PARTNERS: MockPartner[] = [
+  { id: "PT-01", code: "ACC-NORTH",  name: "Accra North Solutions",  tier: "gold",     region: "Greater Accra", contact: "Kofi Bediako",    phone: "+233 24 900 1001", email: "kofi@accranorth.gh",  tenantsReferred: 8,  commissionYTD: 3840, commissionRate: 15, status: "active",  joinedOn: "2024-06-14" },
+  { id: "PT-02", code: "KUMASI-IT",  name: "Kumasi IT Co-lab",       tier: "platinum", region: "Ashanti",       contact: "Akua Frimpong",   phone: "+233 20 900 1002", email: "akua@kumasi-it.gh",   tenantsReferred: 14, commissionYTD: 8120, commissionRate: 20, status: "active",  joinedOn: "2024-02-28" },
+  { id: "PT-03", code: "TAMALE-DIG", name: "Tamale Digital Partners",tier: "silver",   region: "Northern",      contact: "Issah Abdulai",   phone: "+233 27 900 1003", email: "issah@tamale-dig.gh", tenantsReferred: 4,  commissionYTD: 1200, commissionRate: 10, status: "active",  joinedOn: "2025-04-09" },
+  { id: "PT-04", code: "CAPE-TECH",  name: "Cape Coast Tech Hub",    tier: "silver",   region: "Central",       contact: "Esi Mensah",      phone: "+233 55 900 1004", email: "esi@cape-tech.gh",    tenantsReferred: 3,  commissionYTD: 720,  commissionRate: 10, status: "active",  joinedOn: "2025-08-22" },
+  { id: "PT-05", code: "HO-CONSULT", name: "Ho Business Consultants",tier: "silver",   region: "Volta",         contact: "Mawuli Kpodo",    phone: "+233 50 900 1005", email: "mawuli@ho-biz.gh",    tenantsReferred: 2,  commissionYTD: 480,  commissionRate: 10, status: "paused",  joinedOn: "2025-11-15" },
+  { id: "PT-06", code: "WA-DIG",     name: "Wa Digital Services",    tier: "silver",   region: "Upper West",    contact: "Al-Hassan Bawa",  phone: "+233 54 900 1006", email: "hassan@wa-digital.gh",tenantsReferred: 1,  commissionYTD: 180,  commissionRate: 10, status: "pending", joinedOn: "2026-03-02" },
+  { id: "PT-07", code: "TEMA-NET",   name: "Tema Harbour Networks",  tier: "gold",     region: "Greater Accra", contact: "Daniel Akoto",    phone: "+233 26 900 1007", email: "daniel@tema-net.gh",  tenantsReferred: 6,  commissionYTD: 2890, commissionRate: 15, status: "active",  joinedOn: "2024-11-30" },
+  { id: "PT-08", code: "SUNY-CONN",  name: "Sunyani Connect",        tier: "silver",   region: "Bono",          contact: "Theresa Gyasi",   phone: "+233 24 900 1008", email: "theresa@sunyani.gh",  tenantsReferred: 2,  commissionYTD: 420,  commissionRate: 10, status: "active",  joinedOn: "2025-09-17" },
+]
+
+/* ───── Support tickets ───── */
+
+export type TicketStatus = "open" | "pending" | "resolved" | "closed"
+export type TicketPriority = "low" | "normal" | "high" | "urgent"
+
+export interface MockTicket {
+  id: string
+  tenantId: string
+  tenantName: string
+  subject: string
+  category: string
+  priority: TicketPriority
+  status: TicketStatus
+  assignee: string
+  openedOn: string
+  lastMessage: string
+  messages: number
+  slaMins: number
+}
+
+export const MOCK_TICKETS: MockTicket[] = [
+  { id: "TK-1084", tenantId: "TN-0009", tenantName: "Madina Auto Spares",       subject: "MoMo payment not reflecting on invoice",        category: "Billing",    priority: "urgent",  status: "open",     assignee: "Linda",   openedOn: "2026-04-15 08:22", lastMessage: "Screenshot attached showing MTN confirmation", messages: 3, slaMins: 45 },
+  { id: "TK-1083", tenantId: "TN-0012", tenantName: "Tamale Tech Hub School",   subject: "Parent portal login failing after password reset",category: "Technical",  priority: "high",    status: "pending",  assignee: "Samuel",  openedOn: "2026-04-15 07:44", lastMessage: "Asked user to clear cache", messages: 4, slaMins: 120 },
+  { id: "TK-1082", tenantId: "TN-0003", tenantName: "Ashanti Building Supplies",subject: "Need help onboarding Kumasi North branch",       category: "Onboarding", priority: "normal",  status: "open",     assignee: "Abena",   openedOn: "2026-04-15 06:10", lastMessage: "Scheduled session for Thursday", messages: 2, slaMins: 240 },
+  { id: "TK-1081", tenantId: "TN-0018", tenantName: "Axim Seaside Academy",     subject: "Dunning emails ignored — need call",             category: "Billing",    priority: "high",    status: "open",     assignee: "Linda",   openedOn: "2026-04-14 16:30", lastMessage: "Owner requested call tomorrow", messages: 5, slaMins: 60 },
+  { id: "TK-1080", tenantId: "TN-0005", tenantName: "Legon Preparatory School", subject: "Bulk SMS template rejection",                    category: "Messaging",  priority: "normal",  status: "pending",  assignee: "Samuel",  openedOn: "2026-04-14 11:18", lastMessage: "Submitted updated template to Meta", messages: 6, slaMins: 240 },
+  { id: "TK-1079", tenantId: "TN-0001", tenantName: "Kasoa SuperMart",          subject: "Z-report cash variance GHS 12 across 3 tills",   category: "Technical",  priority: "normal",  status: "resolved", assignee: "Kwame",   openedOn: "2026-04-14 09:00", lastMessage: "Cause: float miscounted at open — training sent", messages: 8, slaMins: 0 },
+  { id: "TK-1078", tenantId: "TN-0002", tenantName: "Tema Community Pharmacy",  subject: "Request NHIS-ready prescription field",          category: "Feature",    priority: "low",     status: "pending",  assignee: "Abena",   openedOn: "2026-04-13 14:22", lastMessage: "Added to Q3 roadmap", messages: 3, slaMins: 600 },
+  { id: "TK-1077", tenantId: "TN-0020", tenantName: "Navrongo Technical Institute",subject:"Printer not connecting to receipt printer",    category: "Hardware",   priority: "normal",  status: "resolved", assignee: "Kwame",   openedOn: "2026-04-13 10:45", lastMessage: "Driver update resolved it", messages: 12, slaMins: 0 },
+  { id: "TK-1076", tenantId: "TN-0007", tenantName: "Hope Sunyani Outreach",    subject: "How do I add volunteers as users?",              category: "Onboarding", priority: "low",     status: "closed",   assignee: "Abena",   openedOn: "2026-04-12 13:10", lastMessage: "Guide sent", messages: 2, slaMins: 0 },
+  { id: "TK-1075", tenantId: "TN-0024", tenantName: "Wa Wholesale Depot",       subject: "Wholesale pricing tier missing",                category: "Feature",    priority: "normal",  status: "open",     assignee: "Samuel",  openedOn: "2026-04-12 09:00", lastMessage: "Gathering requirements", messages: 4, slaMins: 360 },
+  { id: "TK-1074", tenantId: "TN-0011", tenantName: "Ho Wellness Pharmacy",     subject: "Suspension appeal — payment cleared",           category: "Billing",    priority: "urgent",  status: "open",     assignee: "Linda",   openedOn: "2026-04-12 08:30", lastMessage: "Awaiting Ops review", messages: 2, slaMins: 30 },
+  { id: "TK-1073", tenantId: "TN-0019", tenantName: "Obuasi Food Hall",         subject: "Loyalty points not expiring correctly",          category: "Technical",  priority: "normal",  status: "pending",  assignee: "Kwame",   openedOn: "2026-04-11 15:00", lastMessage: "Reproduced, working on patch", messages: 7, slaMins: 180 },
+]
+
+/* ───── Platform staff (DalxicOps internal) ───── */
+
+export type StaffRole = "founder" | "account_manager" | "support_l1" | "support_l2" | "billing" | "analyst" | "engineer"
+
+export interface MockStaff {
+  id: string
+  name: string
+  email: string
+  role: StaffRole
+  region: string
+  tenantsAssigned: number
+  openTickets: number
+  lastActive: string
+  status: "online" | "away" | "offline"
+  joinedOn: string
+}
+
+export const MOCK_STAFF: MockStaff[] = [
+  { id: "ST-01", name: "George Gaisie",    email: "george@dalxic.com",   role: "founder",         region: "All",           tenantsAssigned: 0,  openTickets: 0, lastActive: "Now",           status: "online",  joinedOn: "2024-01-01" },
+  { id: "ST-02", name: "Abena Nyarko",     email: "abena@dalxic.com",    role: "account_manager", region: "Greater Accra", tenantsAssigned: 8,  openTickets: 2, lastActive: "2 mins ago",     status: "online",  joinedOn: "2024-03-14" },
+  { id: "ST-03", name: "Kwame Appiah",     email: "kwame@dalxic.com",    role: "support_l2",      region: "Ashanti",       tenantsAssigned: 6,  openTickets: 3, lastActive: "Just now",       status: "online",  joinedOn: "2024-05-20" },
+  { id: "ST-04", name: "Linda Sefa",       email: "linda@dalxic.com",    role: "billing",         region: "All",           tenantsAssigned: 0,  openTickets: 4, lastActive: "5 mins ago",     status: "online",  joinedOn: "2024-07-08" },
+  { id: "ST-05", name: "Samuel Osei",      email: "samuel@dalxic.com",   role: "support_l1",      region: "Northern",      tenantsAssigned: 5,  openTickets: 3, lastActive: "1 hour ago",     status: "away",    joinedOn: "2025-01-12" },
+  { id: "ST-06", name: "Akosua Ampomah",   email: "akosua@dalxic.com",   role: "analyst",         region: "All",           tenantsAssigned: 0,  openTickets: 0, lastActive: "3 hours ago",    status: "away",    joinedOn: "2024-11-02" },
+  { id: "ST-07", name: "Yaw Boateng",      email: "yaw@dalxic.com",      role: "engineer",        region: "All",           tenantsAssigned: 0,  openTickets: 0, lastActive: "Yesterday 6:14",status: "offline", joinedOn: "2025-02-20" },
+  { id: "ST-08", name: "Efua Darko",       email: "efua@dalxic.com",     role: "account_manager", region: "Western",       tenantsAssigned: 4,  openTickets: 1, lastActive: "20 mins ago",    status: "away",    joinedOn: "2025-06-04" },
+]
+
+/* ───── Releases / Feature flags ───── */
+
+export type ReleaseStage = "draft" | "canary" | "rolling" | "stable" | "deprecated"
+
+export interface MockRelease {
+  id: string
+  version: string
+  title: string
+  vertical: Vertical | "both"
+  releasedOn: string
+  stage: ReleaseStage
+  rolloutPct: number
+  summary: string
+  modules: string[]
+  breaking: boolean
+}
+
+export const MOCK_RELEASES: MockRelease[] = [
+  { id: "RL-042", version: "v4.2.0",  title: "WhatsApp bulk composer",          vertical: "both",      releasedOn: "2026-04-14", stage: "canary",     rolloutPct: 15,  summary: "Multi-recipient WhatsApp templates with preview. Meta rate-limit aware.", modules: ["whatsapp-3k","whatsapp-10k"], breaking: false },
+  { id: "RL-041", version: "v4.1.0",  title: "Barcode label designer",          vertical: "trade",     releasedOn: "2026-04-11", stage: "rolling",    rolloutPct: 72,  summary: "30x20, 50x30, A4-24, A4-40 layouts. EAN-13 barcode. Preview + print.", modules: ["labels"], breaking: false },
+  { id: "RL-040", version: "v4.0.0",  title: "Payroll engine — Ghana 2026",     vertical: "both",      releasedOn: "2026-04-05", stage: "stable",     rolloutPct: 100, summary: "SSNIT Tier 1 & 2, PAYE bands updated for 2026 tax year.",               modules: ["payroll"], breaking: true },
+  { id: "RL-039", version: "v3.9.0",  title: "Tax engine — VAT-3 export",       vertical: "both",      releasedOn: "2026-03-28", stage: "stable",     rolloutPct: 100, summary: "One-click VAT-3 PDF export for GRA submission.",                        modules: ["tax"], breaking: false },
+  { id: "RL-038", version: "v3.8.0",  title: "Multi-branch stock transfers",    vertical: "trade",     releasedOn: "2026-03-15", stage: "stable",     rolloutPct: 100, summary: "Request/fulfil flow, transit ledger, auto-reconciliation.",            modules: ["stock","branches"], breaking: false },
+  { id: "RL-037", version: "v3.7.0",  title: "Loyalty tiers + BOGOF",           vertical: "trade",     releasedOn: "2026-02-28", stage: "stable",     rolloutPct: 100, summary: "Bronze/Silver/Gold/Platinum, BOGOF promos, coupon caps.",              modules: ["loyalty"], breaking: false },
+  { id: "RL-036", version: "v3.6.0",  title: "Parent portal v2",                 vertical: "institute", releasedOn: "2026-02-14", stage: "stable",     rolloutPct: 100, summary: "Self-service fee balance, term reports, attendance alerts.",          modules: ["parents"], breaking: false },
+  { id: "RL-035", version: "v3.5.0",  title: "Z-Report + shift reconciliation", vertical: "trade",     releasedOn: "2026-01-30", stage: "stable",     rolloutPct: 100, summary: "Thermal Z-report, expected vs counted cash variance.",                 modules: ["shifts"], breaking: false },
+  { id: "RL-034", version: "v3.4.0",  title: "Timetable module (beta)",         vertical: "institute", releasedOn: "2026-04-10", stage: "canary",     rolloutPct: 8,   summary: "Weekly timetable, clash detection, teacher workload.",                  modules: ["timetable"], breaking: false },
+  { id: "RL-033", version: "v3.3.0",  title: "Transport routes (preview)",      vertical: "institute", releasedOn: "2026-04-08", stage: "draft",      rolloutPct: 0,   summary: "Bus routes, stops, driver assignment. Limited preview.",                 modules: ["transport"], breaking: false },
+]
+
+/* ───── Infrastructure health ───── */
+
+export interface MockInfraService {
+  id: string
+  name: string
+  category: "api" | "database" | "messaging" | "payments" | "storage" | "queue"
+  status: "operational" | "degraded" | "down"
+  uptime30d: number
+  latencyMs: number
+  throughput: string
+  provider: string
+  regionNote?: string
+}
+
+export const MOCK_INFRA: MockInfraService[] = [
+  { id: "IS-01", name: "API Gateway",         category: "api",       status: "operational", uptime30d: 99.98, latencyMs: 82,  throughput: "1.2k req/min",  provider: "Vercel",         regionNote: "iad1 primary, fra1 secondary" },
+  { id: "IS-02", name: "Tenant Database",     category: "database",  status: "operational", uptime30d: 99.95, latencyMs: 14,  throughput: "3.8k qps",      provider: "Neon Postgres",  regionNote: "eu-central-1, autoscaling" },
+  { id: "IS-03", name: "Shared Cache",        category: "database",  status: "operational", uptime30d: 99.99, latencyMs: 2,   throughput: "22k ops/sec",   provider: "Upstash Redis",  regionNote: "eu-west-1" },
+  { id: "IS-04", name: "Background Queue",    category: "queue",     status: "operational", uptime30d: 99.92, latencyMs: 180, throughput: "420 jobs/min",  provider: "QStash",         regionNote: "auto" },
+  { id: "IS-05", name: "Object Storage",      category: "storage",   status: "operational", uptime30d: 99.99, latencyMs: 44,  throughput: "890 GB stored", provider: "Vercel Blob",    regionNote: "iad1" },
+  { id: "IS-06", name: "SMS Gateway",         category: "messaging", status: "operational", uptime30d: 99.40, latencyMs: 1200,throughput: "84k SMS today", provider: "Africastalking", regionNote: "nrb1 · 12% balance" },
+  { id: "IS-07", name: "WhatsApp Cloud API",  category: "messaging", status: "degraded",    uptime30d: 99.10, latencyMs: 2400,throughput: "12k msg today", provider: "Meta",           regionNote: "Template approvals delayed" },
+  { id: "IS-08", name: "MoMo Collections",    category: "payments",  status: "operational", uptime30d: 99.80, latencyMs: 3200,throughput: "GHS 184k today",provider: "MTN + Vodafone", regionNote: "OTP flow stable" },
+  { id: "IS-09", name: "Card Acquirer",       category: "payments",  status: "operational", uptime30d: 99.96, latencyMs: 1800,throughput: "GHS 92k today", provider: "Hubtel",         regionNote: "Visa + Mastercard" },
+  { id: "IS-10", name: "Email Service",       category: "messaging", status: "operational", uptime30d: 99.99, latencyMs: 220, throughput: "4.2k sent today",provider: "Resend",        regionNote: "primary us-east" },
+  { id: "IS-11", name: "Audit Log Stream",    category: "queue",     status: "operational", uptime30d: 100,   latencyMs: 12,  throughput: "184 events/min",provider: "Self-hosted",    regionNote: "append-only" },
+  { id: "IS-12", name: "File Export Worker",  category: "queue",     status: "operational", uptime30d: 99.88, latencyMs: 340, throughput: "42 exports/day",provider: "Inngest",        regionNote: "auto" },
+]
+
+/* ───── Compliance filings ───── */
+
+export type FilingType = "VAT-3" | "SSNIT" | "PAYE" | "DPA" | "GRA-Annual"
+export type FilingStatus = "due" | "filed" | "overdue" | "accepted"
+
+export interface MockFiling {
+  id: string
+  tenantId: string
+  tenantName: string
+  type: FilingType
+  period: string
+  dueOn: string
+  filedOn?: string
+  status: FilingStatus
+  amount?: number
+  reference?: string
+}
+
+export const MOCK_FILINGS: MockFiling[] = [
+  { id: "FL-0001", tenantId: "TN-0003", tenantName: "Ashanti Building Supplies",   type: "VAT-3",    period: "Mar 2026",  dueOn: "2026-04-21", filedOn: "2026-04-14", status: "accepted", amount: 18420, reference: "GRA-VAT-448201" },
+  { id: "FL-0002", tenantId: "TN-0001", tenantName: "Kasoa SuperMart",             type: "VAT-3",    period: "Mar 2026",  dueOn: "2026-04-21", filedOn: "2026-04-15", status: "filed",    amount: 8240,  reference: "GRA-VAT-448220" },
+  { id: "FL-0003", tenantId: "TN-0010", tenantName: "Elmina Heritage Tours",       type: "VAT-3",    period: "Mar 2026",  dueOn: "2026-04-21", status: "due",      amount: 6220 },
+  { id: "FL-0004", tenantId: "TN-0019", tenantName: "Obuasi Food Hall",            type: "VAT-3",    period: "Mar 2026",  dueOn: "2026-04-21", status: "due",      amount: 7100 },
+  { id: "FL-0005", tenantId: "TN-0024", tenantName: "Wa Wholesale Depot",          type: "VAT-3",    period: "Mar 2026",  dueOn: "2026-04-21", filedOn: "2026-04-15", status: "filed",    amount: 9840,  reference: "GRA-VAT-448235" },
+  { id: "FL-0006", tenantId: "TN-0003", tenantName: "Ashanti Building Supplies",   type: "SSNIT",    period: "Mar 2026",  dueOn: "2026-04-14", filedOn: "2026-04-13", status: "accepted", amount: 4520,  reference: "SSNIT-4810221" },
+  { id: "FL-0007", tenantId: "TN-0003", tenantName: "Ashanti Building Supplies",   type: "PAYE",     period: "Mar 2026",  dueOn: "2026-04-14", filedOn: "2026-04-14", status: "accepted", amount: 6842,  reference: "GRA-PAYE-881422" },
+  { id: "FL-0008", tenantId: "TN-0012", tenantName: "Tamale Tech Hub School",      type: "SSNIT",    period: "Mar 2026",  dueOn: "2026-04-14", filedOn: "2026-04-12", status: "accepted", amount: 2840,  reference: "SSNIT-4810299" },
+  { id: "FL-0009", tenantId: "TN-0001", tenantName: "Kasoa SuperMart",             type: "PAYE",     period: "Mar 2026",  dueOn: "2026-04-14", filedOn: "2026-04-13", status: "accepted", amount: 2210,  reference: "GRA-PAYE-881500" },
+  { id: "FL-0010", tenantId: "TN-0009", tenantName: "Madina Auto Spares",          type: "PAYE",     period: "Mar 2026",  dueOn: "2026-04-14", status: "overdue",  amount: 890 },
+  { id: "FL-0011", tenantId: "TN-0018", tenantName: "Axim Seaside Academy",        type: "SSNIT",    period: "Mar 2026",  dueOn: "2026-04-14", status: "overdue",  amount: 620 },
+  { id: "FL-0012", tenantId: "TN-0005", tenantName: "Legon Preparatory School",    type: "DPA",      period: "2026",      dueOn: "2026-06-30", status: "due" },
+  { id: "FL-0013", tenantId: "TN-0003", tenantName: "Ashanti Building Supplies",   type: "DPA",      period: "2026",      dueOn: "2026-06-30", filedOn: "2026-02-14", status: "accepted", reference: "DPC-GH-44210" },
+  { id: "FL-0014", tenantId: "TN-0020", tenantName: "Navrongo Technical Institute",type: "DPA",      period: "2026",      dueOn: "2026-06-30", filedOn: "2026-03-02", status: "accepted", reference: "DPC-GH-44298" },
+  { id: "FL-0015", tenantId: "TN-0003", tenantName: "Ashanti Building Supplies",   type: "GRA-Annual",period:"FY 2025",    dueOn: "2026-06-30", status: "due",      amount: 42180 },
+]
+
+/* ───── Platform audit (ops staff actions) ───── */
+
+export interface MockPlatformAudit {
+  id: string
+  ts: string
+  actor: string
+  actorRole: string
+  action: string
+  target: string
+  tenantId?: string
+  severity: "info" | "warn" | "critical"
+  detail: string
+  ip: string
+}
+
+export const MOCK_PLATFORM_AUDIT: MockPlatformAudit[] = [
+  { id: "PA-0042", ts: "2026-04-15 09:12", actor: "Linda Sefa",    actorRole: "Billing",         action: "invoice_send",    target: "INV-2604-0010",  tenantId: "TN-0009", severity: "info",     detail: "Sent reminder to Madina Auto Spares (overdue)", ip: "10.0.0.14" },
+  { id: "PA-0041", ts: "2026-04-15 08:55", actor: "Abena Nyarko",  actorRole: "Account Manager", action: "tenant_login_as", target: "TN-0003",        tenantId: "TN-0003", severity: "warn",     detail: "Logged into Ashanti Building Supplies as owner (debugging report export)", ip: "10.0.0.22" },
+  { id: "PA-0040", ts: "2026-04-15 08:30", actor: "George Gaisie", actorRole: "Founder",         action: "tier_modify",     target: "Growth",         severity: "critical", detail: "Added 'tax' module to Growth tier (was Scale only)", ip: "10.0.0.1" },
+  { id: "PA-0039", ts: "2026-04-15 08:02", actor: "Samuel Osei",   actorRole: "Support L1",      action: "ticket_assign",   target: "TK-1083",        tenantId: "TN-0012", severity: "info",     detail: "Assigned high-priority ticket to self", ip: "10.0.0.31" },
+  { id: "PA-0038", ts: "2026-04-15 07:44", actor: "Yaw Boateng",   actorRole: "Engineer",        action: "release_promote", target: "v4.2.0 canary",  severity: "warn",     detail: "Promoted WhatsApp composer from 5% → 15% canary", ip: "10.0.0.44" },
+  { id: "PA-0037", ts: "2026-04-14 17:00", actor: "Linda Sefa",    actorRole: "Billing",         action: "tenant_suspend",  target: "TN-0011",        tenantId: "TN-0011", severity: "critical", detail: "Suspended Ho Wellness Pharmacy — 65 days past due", ip: "10.0.0.14" },
+  { id: "PA-0036", ts: "2026-04-14 15:22", actor: "George Gaisie", actorRole: "Founder",         action: "addon_publish",   target: "momo-direct",    severity: "info",     detail: "Published MoMo Direct Settle add-on", ip: "10.0.0.1" },
+  { id: "PA-0035", ts: "2026-04-14 14:10", actor: "Kwame Appiah",  actorRole: "Support L2",      action: "tenant_refund",   target: "TN-0001",        tenantId: "TN-0001", severity: "warn",     detail: "Refunded GHS 80 SMS pack — duplicate purchase", ip: "10.0.0.28" },
+  { id: "PA-0034", ts: "2026-04-14 11:30", actor: "Akosua Ampomah",actorRole: "Analyst",         action: "export",          target: "MRR Q1 2026",    severity: "info",     detail: "Exported MRR cohort report (CSV, 24 tenants)", ip: "10.0.0.18" },
+  { id: "PA-0033", ts: "2026-04-14 10:05", actor: "Abena Nyarko",  actorRole: "Account Manager", action: "tenant_upgrade",  target: "TN-0013",        tenantId: "TN-0013", severity: "info",     detail: "Koforidua Central Market upgraded Starter → Growth", ip: "10.0.0.22" },
+  { id: "PA-0032", ts: "2026-04-14 09:00", actor: "Linda Sefa",    actorRole: "Billing",         action: "invoice_void",    target: "INV-2603-0088",  tenantId: "TN-0007", severity: "warn",     detail: "Voided trial invoice — tenant still in trial", ip: "10.0.0.14" },
+  { id: "PA-0031", ts: "2026-04-13 19:30", actor: "Yaw Boateng",   actorRole: "Engineer",        action: "flag_toggle",     target: "exp-new-dashboard", severity: "info",  detail: "Enabled experimental dashboard for 3 internal tenants", ip: "10.0.0.44" },
+]
+
+/* ───── Growth analytics series ───── */
+
+export const MOCK_MRR_SERIES = [
+  { month: "Oct 25", mrr: 12840, newMrr: 1680, churnMrr: 280 },
+  { month: "Nov 25", mrr: 14220, newMrr: 1580, churnMrr: 200 },
+  { month: "Dec 25", mrr: 15680, newMrr: 1680, churnMrr: 220 },
+  { month: "Jan 26", mrr: 17420, newMrr: 1920, churnMrr: 180 },
+  { month: "Feb 26", mrr: 19100, newMrr: 1820, churnMrr: 140 },
+  { month: "Mar 26", mrr: 20740, newMrr: 1760, churnMrr: 120 },
+  { month: "Apr 26", mrr: 22420, newMrr: 1860, churnMrr: 180 },
+]
+
+export const MOCK_REGIONS = [
+  { region: "Greater Accra", tenants: 7,  mrr: 5430 },
+  { region: "Ashanti",       tenants: 3,  mrr: 5600 },
+  { region: "Central",       tenants: 3,  mrr: 2600 },
+  { region: "Northern",      tenants: 1,  mrr: 2400 },
+  { region: "Upper East",    tenants: 2,  mrr: 1160 },
+  { region: "Upper West",    tenants: 1,  mrr: 1200 },
+  { region: "Western",       tenants: 2,  mrr: 600  },
+  { region: "Eastern",       tenants: 2,  mrr: 1260 },
+  { region: "Volta",         tenants: 1,  mrr: 0    },
+  { region: "Bono",          tenants: 1,  mrr: 0    },
+  { region: "Bono East",     tenants: 1,  mrr: 0    },
+]
+
+/* ───── Platform settings (defaults) ───── */
+
+export const MOCK_PLATFORM_SETTINGS = {
+  brand: { name: "DalxicOperations", parent: "Dalxic", accent: "#10B981", legalName: "Dalxic Operations Ltd." },
+  contacts: { supportEmail: "help@dalxic.com", billingEmail: "billing@dalxic.com", phone: "+233 30 000 2025", whatsapp: "+233 55 200 2025" },
+  tax: { vat: 15, nhil: 2.5, getfund: 2.5, covidLevy: 1, ssnitTier1Employer: 13, ssnitTier2Employer: 5, ssnitEmployee: 5.5 },
+  payments: { momoProviders: ["MTN","Vodafone","AirtelTigo"], cardProviders: ["Visa","Mastercard","Hubtel"], settlementDays: 1 },
+  limits: { freeTrialDays: 30, maxFileUploadMB: 25, sessionTimeoutMins: 30, pinAttempts: 3 },
+  webhooks: [
+    { id: "WH-01", url: "https://hooks.slack.com/services/T…/B…/…", event: "tenant.suspended", active: true },
+    { id: "WH-02", url: "https://hooks.slack.com/services/T…/B…/…", event: "invoice.overdue",  active: true },
+    { id: "WH-03", url: "https://api.segment.io/v1/track",          event: "tenant.created",   active: true },
+    { id: "WH-04", url: "https://api.segment.io/v1/track",          event: "tenant.upgraded",  active: true },
+  ],
+  apiKeys: [
+    { id: "AK-01", label: "Production",   keyMasked: "ops_live_••••••••8e4f", createdOn: "2024-03-01", lastUsed: "2 mins ago" },
+    { id: "AK-02", label: "Staging",      keyMasked: "ops_test_••••••••22a0", createdOn: "2024-03-01", lastUsed: "1 hour ago" },
+    { id: "AK-03", label: "Partner API",  keyMasked: "ops_ptnr_••••••••9ddc", createdOn: "2025-06-14", lastUsed: "Yesterday" },
+  ],
+}

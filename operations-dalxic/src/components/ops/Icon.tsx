@@ -14,6 +14,9 @@ export type IconName =
   | "menu" | "close" | "search" | "plus" | "edit" | "trash" | "check" | "chevron-right"
   | "download" | "print" | "share" | "filter" | "settings" | "logout" | "lock"
   | "phone" | "mail" | "whatsapp" | "calendar" | "tag" | "user"
+  | "tenants" | "tiers" | "modules" | "addons" | "partners" | "support" | "staff"
+  | "releases" | "infra" | "compliance" | "billing" | "trending" | "sparkle"
+  | "globe" | "shield" | "database" | "flag" | "bolt" | "layers" | "code"
 
 const PATHS: Record<IconName, string> = {
   dashboard:      "M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z",
@@ -62,6 +65,26 @@ const PATHS: Record<IconName, string> = {
   calendar:       "M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2zM3 10h18M8 2v4M16 2v4",
   tag:            "M20 12l-8 8-9-9V3h8l9 9zM7 7h.01",
   user:           "M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0",
+  tenants:        "M3 21V8l9-5 9 5v13M9 21v-8h6v8M9 9h.01M15 9h.01",
+  tiers:          "M4 20h16M6 20v-6l6-3 6 3v6M9 8V4h6v4M12 8v12",
+  modules:        "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z",
+  addons:         "M12 2v20M2 12h20M5 5l14 14M19 5L5 19",
+  partners:       "M17 11a4 4 0 100-8 4 4 0 000 8zM9 15a4 4 0 100-8 4 4 0 000 8zM1 21a6 6 0 0112 0M11 21a6 6 0 0112 0",
+  support:        "M12 3a9 9 0 100 18 9 9 0 000-18zM8 10a4 4 0 018 0v1a3 3 0 01-3 3h-2v3",
+  staff:          "M9 7a3 3 0 106 0 3 3 0 00-6 0zM3 21a6 6 0 0118 0M15 11l2 2 4-4",
+  releases:       "M12 2l3 6 6 1-4.5 4.5 1 6.5L12 17l-5.5 3 1-6.5L3 9l6-1z",
+  infra:          "M4 9h16M4 15h16M6 4h12l2 5H4zM6 20h12l2-5H4z",
+  compliance:     "M12 3l8 4v5c0 5-3.5 9-8 10-4.5-1-8-5-8-10V7z",
+  billing:        "M3 5h18v14H3zM3 10h18M7 15h4M15 15h2",
+  trending:       "M3 17l6-6 4 4 8-8M13 7h8v8",
+  sparkle:        "M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2",
+  globe:          "M12 3a9 9 0 100 18 9 9 0 000-18zM3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18",
+  shield:         "M12 3l8 4v5c0 5-3.5 9-8 10-4.5-1-8-5-8-10V7z",
+  database:       "M4 6c0-1.5 3.5-3 8-3s8 1.5 8 3v12c0 1.5-3.5 3-8 3s-8-1.5-8-3zM4 12c0 1.5 3.5 3 8 3s8-1.5 8-3",
+  flag:           "M4 21V3M4 5h12l-2 4 2 4H4",
+  bolt:           "M13 3L4 14h7l-1 7 9-11h-7z",
+  layers:         "M12 3l10 5-10 5L2 8zM2 13l10 5 10-5M2 18l10 5 10-5",
+  code:           "M8 17l-5-5 5-5M16 7l5 5-5 5M14 4l-4 16",
 }
 
 export function Icon({ name, size = 18, color = "currentColor", strokeWidth = 1.6, style }: {

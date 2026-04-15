@@ -10,7 +10,7 @@ import {
 } from "@/components/ops/primitives"
 import { Icon } from "@/components/ops/Icon"
 import {
-  MOCK_TIERS, MockLoyaltyTier,
+  MOCK_LOYALTY_TIERS, MockLoyaltyTier,
   MOCK_MEMBERS, MockLoyaltyMember,
   MOCK_PROMOS, MockPromo, PromoType,
 } from "@/lib/ops/mock"
@@ -39,7 +39,7 @@ function LoyaltyView() {
   const [showNewPromo, setShowNewPromo] = useState(false)
 
   const totals = useMemo(() => {
-    const totalMembers = MOCK_TIERS.reduce((a, t) => a + t.members, 0)
+    const totalMembers = MOCK_LOYALTY_TIERS.reduce((a, t) => a + t.members, 0)
     const promoRev = MOCK_PROMOS.filter(p => p.status === "live" || p.status === "ended").reduce((a, p) => a + p.revenue, 0)
     const livePromos = MOCK_PROMOS.filter(p => p.status === "live").length
     const totalPoints = MOCK_MEMBERS.reduce((a, m) => a + m.points, 0)
@@ -148,7 +148,7 @@ function LoyaltyView() {
             onChange={(v) => { setView(v); setQuery("") }}
             accent="amber"
             tabs={[
-              { key: "tiers",   label: "Tiers",   count: MOCK_TIERS.length },
+              { key: "tiers",   label: "Tiers",   count: MOCK_LOYALTY_TIERS.length },
               { key: "members", label: "Members", count: MOCK_MEMBERS.length },
               { key: "promos",  label: "Promos",  count: MOCK_PROMOS.length },
             ]}
@@ -156,7 +156,7 @@ function LoyaltyView() {
 
           {view === "tiers" && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14, marginTop: 14 }}>
-              {MOCK_TIERS.map(t => (
+              {MOCK_LOYALTY_TIERS.map(t => (
                 <button
                   key={t.id}
                   onClick={() => setActiveTier(t)}
