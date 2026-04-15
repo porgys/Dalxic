@@ -604,7 +604,8 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                           {item.prescriptions.map((rx, j) => {
                             // Check stock for this medication
-                            const matchedDrug = catalog.find((d) => d.name.toLowerCase() === rx.medication.toLowerCase());
+                            const rxMed = (rx.medication ?? "").toLowerCase();
+                            const matchedDrug = rxMed ? catalog.find((d) => (d.name ?? "").toLowerCase() === rxMed) : undefined;
                             return (
                               <div key={j} style={{
                                 display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 1fr auto", gap: 12, alignItems: "center",
