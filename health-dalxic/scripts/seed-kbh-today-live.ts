@@ -71,7 +71,7 @@ function todayAt(h: number, m = 0): Date {
 
 type PatientPlan = {
   dept: "general" | "pediatrics" | "obstetrics" | "surgery" | "emergency";
-  visitStatus: "queued" | "with_doctor" | "paused_for_lab" | "paused_for_pharmacy" | "paused_for_imaging" | "paused_for_procedure" | "awaiting_close" | "admitted" | "closed" | "lwbs" | "deceased";
+  visitStatus: "active" | "with_doctor" | "paused_for_lab" | "paused_for_pharmacy" | "paused_for_imaging" | "paused_for_procedure" | "awaiting_close" | "admitted" | "closed" | "lwbs" | "deceased";
   arrivedAt: Date;
   seq: number;
   emergencyFlag?: boolean;
@@ -161,7 +161,7 @@ async function main() {
   const targets: Record<PatientPlan["visitStatus"], number> = {
     closed: 72, admitted: 11, awaiting_close: 5,
     paused_for_lab: 8, paused_for_pharmacy: 6, paused_for_imaging: 4, paused_for_procedure: 2,
-    with_doctor: 4, queued: 28, lwbs: 2, deceased: 1,
+    with_doctor: 4, active:28, lwbs: 2, deceased: 1,
   };
   // Flatten to a queue of states, then assign in arrival order (earliest → most completed)
   const stateQueue: PatientPlan["visitStatus"][] = [];
@@ -171,7 +171,7 @@ async function main() {
     ["admitted", targets.admitted], ["awaiting_close", targets.awaiting_close],
     ["paused_for_imaging", targets.paused_for_imaging], ["paused_for_procedure", targets.paused_for_procedure],
     ["paused_for_lab", targets.paused_for_lab], ["paused_for_pharmacy", targets.paused_for_pharmacy],
-    ["with_doctor", targets.with_doctor], ["queued", targets.queued],
+    ["with_doctor", targets.with_doctor], ["active", targets.active],
   ];
   for (const [s, n] of orderedStates) for (let i = 0; i < n; i++) stateQueue.push(s);
 
@@ -181,7 +181,7 @@ async function main() {
       const arrivedAt = new Date();
       arrivedAt.setHours(hr, rnd(0, 59), rnd(0, 59), 0);
       const dept = deptPick();
-      const status = stateQueue[idx] || "queued";
+      const status = stateQueue[idx] || "active";
       idx++;
       plans.push({
         dept,
