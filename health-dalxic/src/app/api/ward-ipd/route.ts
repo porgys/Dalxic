@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { logAudit, getClientIP } from "@/lib/audit";
 import { createBillableItem } from "@/lib/billing";
 import { rateLimit } from "@/lib/rate-limit";
+import { isValidVisitState, isValidTransition, type VisitState } from "@/lib/visit-state";
 // GET: Get inpatients for a hospital
 export async function GET(request: Request) {
   const blocked = rateLimit(request); if (blocked) return blocked;  const { searchParams } = new URL(request.url);
@@ -159,8 +160,24 @@ export async function POST(request: Request) {
     }
 
     const visit = record.visit as Record<string, unknown>;
+
+    // Advance visit lifecycle to "admitted" — but only if current state legally transitions there.
+    // Legacy records without a valid visitStatus are auto-healed by setting admitted directly.
+    const current = visit.visitStatus;
+    let nextStatus: VisitState = "admitted";
+    if (isValidVisitState(current)) {
+      if (current !== "admitted" && !isValidTransition(current as VisitState, "admitted")) {
+        return Response.json(
+          { error: `Cannot admit from ${current}` },
+          { status: 409 },
+        );
+      }
+      nextStatus = current === "admitted" ? "admitted" : nextStatus;
+    }
+
     const updatedVisit = {
       ...visit,
+      visitStatus: nextStatus,
       admission: {
         admitted: true,
         admittedAt: new Date().toISOString(),
