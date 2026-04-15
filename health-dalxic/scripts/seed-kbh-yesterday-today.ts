@@ -25,7 +25,8 @@ const db = new PrismaClient({ adapter });
 const HOSPITAL_CODE = "KBH";
 const SEED_TAG = "kbh_yt_seed_2026_04_15";
 const NAME_PREFIX = "KBH";
-const CONCURRENCY = 8;
+const CONCURRENCY = 3;
+const MAX_RETRIES = 4;
 
 const YESTERDAY_COUNT = 721;
 const TODAY_COUNT = 630;
@@ -113,13 +114,30 @@ function todayStamp(slot: number, total: number): Date {
 
 function minutesBefore(d: Date, m: number): Date { return new Date(d.getTime() - m * 60 * 1000); }
 
+async function retry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try { return await fn(); }
+    catch (e) {
+      lastErr = e;
+      const msg = String((e as Error)?.message || e);
+      const retriable = /Connection terminated|ECONNRESET|ETIMEDOUT|socket hang up|fetch failed|Engine is not yet connected/i.test(msg);
+      if (!retriable || attempt === MAX_RETRIES) throw e;
+      const backoff = 500 * Math.pow(2, attempt - 1);
+      console.warn(`\n  ⚠ ${label} attempt ${attempt} failed (${msg.slice(0, 80)}) — retrying in ${backoff}ms`);
+      await new Promise(r => setTimeout(r, backoff));
+    }
+  }
+  throw lastErr;
+}
+
 async function runInBatches<T>(items: T[], worker: (item: T, idx: number) => Promise<void>) {
   let cursor = 0;
   async function pumpWorker() {
     while (true) {
       const my = cursor++;
       if (my >= items.length) return;
-      await worker(items[my], my);
+      await retry(`slot ${my}`, () => worker(items[my], my));
     }
   }
   await Promise.all(Array.from({ length: CONCURRENCY }).map(() => pumpWorker()));
@@ -196,7 +214,11 @@ async function main() {
   await initBillCounter(hospital.id);
   console.log(`📕 Month book #${book.id} — bills so far ${billCounter}`);
 
-  /* ─── Shift rotation history ───────────────────────────────── */
+  /* ─── Shift rotation history (idempotent) ──────────────────── */
+  const existingSeedShifts = await db.doctorShift.count({ where: { hospitalId: hospital.id, notes: { in: ["Morning rotation — closed", "Night rotation — closed"] } } });
+  if (existingSeedShifts >= doctors.length * 2) {
+    console.log("⏰ Shift history already present — skipping");
+  } else {
   console.log("⏰ Writing shift history (yesterday night → today morning)...");
   for (const d of doctors) {
     // Close any lingering open shift
@@ -235,6 +257,7 @@ async function main() {
         clockInAt: minutesBefore(now, rnd(60, 300)),
       },
     });
+  }
   }
 
   /* ─── Build cohort plans ───────────────────────────────────── */
@@ -390,7 +413,24 @@ async function main() {
     });
   }
 
-  console.log(`📋 Planned: ${plans.length} patients (${YESTERDAY_COUNT} yesterday + ${TODAY_COUNT} today)`);
+  /* ─── Reorder: today's live first so the board fills up immediately ── */
+  plans.sort((a, b) => {
+    const aLive = a.cohort === "today" && !a.closeOut;
+    const bLive = b.cohort === "today" && !b.closeOut;
+    if (aLive !== bLive) return aLive ? -1 : 1;
+    const aToday = a.cohort === "today";
+    const bToday = b.cohort === "today";
+    if (aToday !== bToday) return aToday ? -1 : 1;
+    return 0;
+  });
+
+  console.log(`📋 Planned: ${plans.length} patients (${YESTERDAY_COUNT} yesterday + ${TODAY_COUNT} today) — today live first`);
+
+  /* ─── Resume support disabled: today-live cohort must always run ── */
+  const alreadySeeded = await db.patientRecord.count({ where: { hospitalId: hospital.id, createdBy: SEED_TAG } });
+  if (alreadySeeded > 0) {
+    console.log(`ℹ  ${alreadySeeded} patients already seeded under this tag from a prior run — ignoring; new records will append (no dedupe)`);
+  }
 
   /* ─── Summary ──────────────────────────────────────────────── */
   const summary = {
@@ -412,11 +452,18 @@ async function main() {
   };
 
   let processed = 0;
+  let failures = 0;
   await runInBatches(plans, async (plan) => {
-    await seedPatient(hospital.id, book.id, plan, pickDoctor(plan.dept), wards, summary);
+    try {
+      await seedPatient(hospital.id, book.id, plan, pickDoctor(plan.dept), wards, summary);
+    } catch (e) {
+      failures++;
+      console.warn(`\n  ✖ slot ${plan.cohort}-${plan.seq} gave up: ${(e as Error).message?.slice(0, 80)}`);
+    }
     processed++;
     if (processed % 50 === 0) process.stdout.write(`·${processed} `);
   });
+  if (failures > 0) console.log(`\n  ⚠ ${failures} patient slots failed after retries`);
 
   /* ─── Blood bank top-up ───────────────────────────────────── */
   console.log("\n🩸 Topping up blood bank...");
