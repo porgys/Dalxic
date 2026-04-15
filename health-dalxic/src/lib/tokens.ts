@@ -33,6 +33,13 @@ export const DEPT_PREFIXES: Record<string, string> = {
   direct_treatment: "DT",
 };
 
+function maxSuffix(tokens: string[]): number {
+  return tokens.reduce((m, t) => {
+    const n = parseInt(t.split("-").pop() || "0", 10);
+    return Number.isFinite(n) && n > m ? n : m;
+  }, 0);
+}
+
 /** Generate department-coded queue token: GR-KBH-001, PD-KBH-002 */
 export async function generateQueueToken(
   hospitalId: string,
@@ -47,7 +54,6 @@ export async function generateQueueToken(
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Count today's records in the same department for per-department sequencing
   const allRecords = await db.patientRecord.findMany({
     where: {
       hospitalId,
@@ -57,40 +63,47 @@ export async function generateQueueToken(
     select: { visit: true },
   });
 
-  const deptCount = allRecords.filter((r) => {
-    const visit = r.visit as { department?: string } | null;
-    const d = (visit?.department || "general").toLowerCase();
-    return d === dept;
-  }).length;
+  const deptTokens = allRecords
+    .map((r) => {
+      const visit = r.visit as { department?: string; queueToken?: string } | null;
+      const d = (visit?.department || "general").toLowerCase();
+      return d === dept && visit?.queueToken?.startsWith(`${prefix}-${code}-`) ? visit.queueToken : null;
+    })
+    .filter((t): t is string => !!t);
 
-  return `${prefix}-${code}-${String(deptCount + 1).padStart(3, "0")}`;
+  return `${prefix}-${code}-${String(maxSuffix(deptTokens) + 1).padStart(3, "0")}`;
 }
 
 /** Generate emergency token: ER-KBH-001 */
 export async function generateERToken(hospitalCode: string): Promise<string> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const count = await db.patientRecord.count({
+  const records = await db.patientRecord.findMany({
     where: {
       hospital: { code: hospitalCode },
       createdAt: { gte: today },
       visit: { path: ["emergencyFlag"], equals: true },
     },
+    select: { visit: true },
   });
-  return `ER-${hospitalCode}-${String(count + 1).padStart(3, "0")}`;
+  const tokens = records
+    .map((r) => (r.visit as { queueToken?: string } | null)?.queueToken)
+    .filter((t): t is string => !!t && t.startsWith(`ER-${hospitalCode}-`));
+  return `ER-${hospitalCode}-${String(maxSuffix(tokens) + 1).padStart(3, "0")}`;
 }
 
 /** Generate lab sub-token: LAB-KBH-001 */
 export async function generateLabToken(hospitalCode: string): Promise<string> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const count = await db.labOrder.count({
+  const orders = await db.labOrder.findMany({
     where: {
-      labToken: { startsWith: `LAB-${hospitalCode}` },
+      labToken: { startsWith: `LAB-${hospitalCode}-` },
       orderedAt: { gte: today },
     },
+    select: { labToken: true },
   });
-  return `LAB-${hospitalCode}-${String(count + 1).padStart(3, "0")}`;
+  return `LAB-${hospitalCode}-${String(maxSuffix(orders.map((o) => o.labToken)) + 1).padStart(3, "0")}`;
 }
 
 /** Generate referral sub-token for any station */
