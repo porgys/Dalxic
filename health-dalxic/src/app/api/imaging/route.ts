@@ -155,7 +155,7 @@ export async function POST(request: Request) {
         patientId: recordId,
         bookId: book.id,
         serviceType: "IMAGING",
-        description: `${modality === "ultrasound" ? "Ultrasound" : "CT/Radiology"}: ${examType} (${bodyPart})`,
+        description: examType,
         unitCost: modality === "ultrasound" ? 80 : 200,
         renderedBy: orderedBy || "doctor",
         departmentId: modality === "ultrasound" ? "ultrasound" : "imaging",
