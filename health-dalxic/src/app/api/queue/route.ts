@@ -162,12 +162,16 @@ export async function GET(request: Request) {
     return Response.json({ error: "Hospital not found" }, { status: 404 });
   }
 
-  // Show open visits only — terminal states (closed/admitted/lwbs/deceased) are excluded
-  // so the queue doesn't fill with history and starve new patients when data grows.
+  // Show open visits only — terminal states (closed/admitted/lwbs/deceased) are excluded.
+  // 24h recency window prevents zombie records (e.g. doctor never clicked "close")
+  // from accumulating and making the queue look absurd. Any patient legitimately
+  // persisting past 24h should be in `admitted` status, which is already excluded.
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const records = await db.patientRecord.findMany({
     where: {
       hospitalId: hospital.id,
       entryPoint: { not: "blood_donation" },
+      createdAt: { gte: cutoff },
       AND: [
         { NOT: { visit: { path: ["visitStatus"], equals: "closed" } } },
         { NOT: { visit: { path: ["visitStatus"], equals: "admitted" } } },
