@@ -43,9 +43,19 @@ function QueueDisplay() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceUnlocked, setVoiceUnlocked] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   useEffect(() => {
     if (localStorage.getItem("voice_unlocked") === "1") setVoiceUnlocked(true);
+    const saved = localStorage.getItem("waiting_voice_enabled");
+    if (saved !== null) setVoiceEnabled(saved === "1");
   }, []);
+  const toggleVoice = () => {
+    setVoiceEnabled((prev) => {
+      const next = !prev;
+      localStorage.setItem("waiting_voice_enabled", next ? "1" : "0");
+      return next;
+    });
+  };
   const calloutQueueRef = useRef<CalloutEntry[]>([]);
   const processingRef = useRef(false);
 
@@ -95,26 +105,28 @@ function QueueDisplay() {
       setCurrentCallout(entry);
       setIsSpeaking(true);
 
-      try {
-        await calloutNumber({
-          token: entry.token,
-          room: entry.room || undefined,
-          department: entry.department,
-          mode: voiceMode,
-          rate: 0.85,
-          volume: 1,
-        });
-        // Repeat once for emphasis
-        await new Promise((r) => setTimeout(r, 1500));
-        await calloutNumber({
-          token: entry.token,
-          room: entry.room || undefined,
-          department: entry.department,
-          mode: voiceMode,
-          rate: 0.85,
-          volume: 1,
-        });
-      } catch { /* voice failed */ }
+      if (voiceEnabled) {
+        try {
+          await calloutNumber({
+            token: entry.token,
+            room: entry.room || undefined,
+            department: entry.department,
+            mode: voiceMode,
+            rate: 0.85,
+            volume: 1,
+          });
+          // Repeat once for emphasis
+          await new Promise((r) => setTimeout(r, 1500));
+          await calloutNumber({
+            token: entry.token,
+            room: entry.room || undefined,
+            department: entry.department,
+            mode: voiceMode,
+            rate: 0.85,
+            volume: 1,
+          });
+        } catch { /* voice failed */ }
+      }
 
       setIsSpeaking(false);
       setRecentCallouts((prev) => [entry, ...prev].slice(0, 5));
@@ -127,7 +139,7 @@ function QueueDisplay() {
     }
 
     processingRef.current = false;
-  }, [voiceMode]);
+  }, [voiceMode, voiceEnabled]);
 
   // Subscribe to Pusher events
   useEffect(() => {
@@ -275,6 +287,17 @@ function QueueDisplay() {
           {dept && <div style={{ fontSize: 11, color: theme.copperText, letterSpacing: "1px", textTransform: "uppercase", marginTop: 2 }}>{dept} Department</div>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button
+            onClick={toggleVoice}
+            title={voiceEnabled ? "Voice On — Tap To Mute" : "Voice Off — Tap To Unmute"}
+            style={{
+              background: "transparent", border: "none", cursor: "pointer",
+              fontSize: 16, opacity: voiceEnabled ? 1 : 0.4, transition: "opacity 0.2s",
+              padding: 0, lineHeight: 1,
+            }}
+          >
+            {voiceEnabled ? "🔊" : "🔇"}
+          </button>
           <ThemeToggle isDayMode={theme.isDayMode} onToggle={theme.toggle} />
           <time suppressHydrationWarning className="font-mono text-sm tabular-nums" style={{ color: "#B87333", fontWeight: 700, letterSpacing: "1px" }}>
             {currentTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
