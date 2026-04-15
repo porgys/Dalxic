@@ -92,7 +92,7 @@ function ICUContent({ operator }: { operator: OperatorSession }) {
 
   const loadPatients = useCallback(async () => {
     try { const res = await fetch(`/api/icu?hospitalCode=${HOSPITAL_CODE}`); if (res.ok) { const d = await res.json(); setPatients(d.patients || []); } } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => { loadPatients(); }, [loadPatients]);
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);

@@ -365,7 +365,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
         }
       } catch { /* */ }
     })();
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   const handleCrossSearch = async () => {
     if (!crossSearchQuery.trim() || crossSearchQuery.length < 2 || !hospitalGroup) return;
@@ -451,7 +451,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
       finally { setSuggestionLoading(false); }
     }, 300);
     return () => clearTimeout(h);
-  }, [form.fullName, attachedCardNumber]);
+  }, [form.fullName, attachedCardNumber, HOSPITAL_CODE]);
 
   const handleCardLookup = async (q: string) => {
     setCardLookup(q);
@@ -669,7 +669,7 @@ function FrontDeskContent({ operator }: { operator: OperatorSession }) {
         setCloseCounts(data.counts);
       }
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => {
     if (activeNav === "close") { loadCloseQueue(); const i = setInterval(loadCloseQueue, 5000); return () => clearInterval(i); }

@@ -169,7 +169,7 @@ function RadiologyContent({ operator }: { operator: OperatorSession }) {
         setCounts(data.counts);
       }
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => { loadOrders(); }, [loadOrders]);
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);

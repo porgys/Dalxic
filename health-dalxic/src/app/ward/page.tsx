@@ -224,7 +224,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
         setCounts(data.counts || { admitted: 0, discharged: 0, total: 0 });
       }
     } catch { /* retry */ }
-  }, [activeNav, isAdmin, assignedWardNames]);
+  }, [activeNav, isAdmin, assignedWardNames, HOSPITAL_CODE]);
 
   const loadWards = useCallback(async () => {
     setLoadingWards(true);
@@ -236,7 +236,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
       }
     } catch { /* */ }
     setLoadingWards(false);
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   const loadPendingOrders = useCallback(async () => {
     setLoadingOrders(true);
@@ -248,7 +248,7 @@ function WardIPDContent({ operator }: { operator: OperatorSession }) {
       }
     } catch { /* */ }
     setLoadingOrders(false);
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   // Filter wards for non-admin: only show assigned wards
   const visibleWards = (!isAdmin && assignedWardIds.length > 0) ? wards.filter(w => assignedWardIds.includes(w.id)) : wards;

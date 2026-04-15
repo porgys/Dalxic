@@ -368,7 +368,7 @@ function PharmacyContent({ operator }: { operator: OperatorSession }) {
     const ch2 = pusher?.subscribe(`hospital-${HOSPITAL_CODE}`);
     ch2?.bind("pharmacy-payment-confirmed", () => loadRetailSales());
     return () => { clearInterval(interval); ch?.unbind_all(); ch2?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-queue`); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}`); };
-  }, [loadQueue, loadRetailSales]);
+  }, [loadQueue, loadRetailSales, HOSPITAL_CODE]);
 
   useEffect(() => { loadCatalog(); }, [loadCatalog]);
   useEffect(() => { loadInventory(); }, [loadInventory]);

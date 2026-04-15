@@ -76,7 +76,7 @@ function CardsBookingsContent({ operator }: { operator: OperatorSession }) {
         if (data.cardTemplateCustom) setCardTemplateCustom(data.cardTemplateCustom as CustomTemplate);
       }
     } catch {}
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => { loadHospital(); }, [loadHospital]);
 
@@ -163,7 +163,7 @@ function CardsPanel({ operatorId, template, customTemplate }: { operatorId: stri
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => { loadInventory(); }, [loadInventory]);
 
@@ -352,7 +352,7 @@ function BookingsPanel({ operatorId }: { operatorId: string }) {
     const weekAhead = new Date(); weekAhead.setDate(weekAhead.getDate() + 14);
     const res = await fetch(`/api/bookings?hospitalCode=${HOSPITAL_CODE}&from=${today.toISOString()}&to=${weekAhead.toISOString()}`);
     if (res.ok) setBookings(await res.json());
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => { load(); }, [load]);
 

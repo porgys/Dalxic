@@ -233,7 +233,7 @@ export default function PlatformPage() {
       }
     }
     loadHospital()
-  }, [])
+  }, [HOSPITAL_CODE])
 
   const STATIONS = [
     ...ALL_WORKSTATIONS.filter((ws) => activeModules.includes(ws.key)),

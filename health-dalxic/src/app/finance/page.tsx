@@ -141,7 +141,7 @@ function RevenueTab() {
     } finally {
       setLoading(false);
     }
-  }, [from, to, groupBy]);
+  }, [from, to, groupBy, HOSPITAL_CODE]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -272,7 +272,7 @@ function PayoutsTab({ operator }: { operator: OperatorSession }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -415,7 +415,7 @@ function ShiftsTab({ operator }: { operator: OperatorSession }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => { load(); }, [load]);
 

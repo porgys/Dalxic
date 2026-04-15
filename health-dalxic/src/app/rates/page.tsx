@@ -62,7 +62,7 @@ function RatesContent({ operator }: { operator: OperatorSession }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => { reload(); }, [reload]);
 
@@ -86,7 +86,7 @@ function RatesContent({ operator }: { operator: OperatorSession }) {
     await reload();
     setToast("Saved");
     return true;
-  }, [operator.operatorName, reload]);
+  }, [operator.operatorName, reload, HOSPITAL_CODE]);
 
   return (
     <div style={{ minHeight: "100vh", background: BG, color: INK, paddingBottom: 64 }}>

@@ -187,7 +187,7 @@ function BedManagementContent() {
         setSummary(data.summary || { totalBeds: 0, totalAvailable: 0, totalOccupied: 0 });
       }
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);

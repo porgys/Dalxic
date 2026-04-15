@@ -281,7 +281,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
         setCounts(data.counts || { totalPatients: 0, needsVitals: 0, pendingTasks: 0, pendingInjections: 0 });
       }
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   const loadInjections = useCallback(async () => {
     try {
@@ -295,7 +295,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
         setInjCounts(data.counts);
       }
     } catch { /* retry */ }
-  }, [injView]);
+  }, [injView, HOSPITAL_CODE]);
 
   useEffect(() => {
     loadPatients();
@@ -304,7 +304,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
     ch?.bind("patient-added", () => loadPatients());
     ch?.bind("patient-requeued", () => loadPatients());
     return () => { ch?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-queue`); };
-  }, [loadPatients]);
+  }, [loadPatients, HOSPITAL_CODE]);
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
   useEffect(() => { const t = setInterval(loadPatients, 20000); return () => clearInterval(t); }, [loadPatients]);
   useEffect(() => { if (activeNav === "injections") { loadInjections(); const t = setInterval(loadInjections, 15000); return () => clearInterval(t); } }, [activeNav, loadInjections]);
@@ -328,7 +328,7 @@ function NurseStationContent({ operator }: { operator: OperatorSession }) {
       finally { setDrugLoading(false); }
     }, 250);
     return () => clearTimeout(t);
-  }, [drugQuery, activeNav]);
+  }, [drugQuery, activeNav, HOSPITAL_CODE]);
 
   /* ─── Actions ─── */
   const recordVitalsFor = async (recordId: string) => {

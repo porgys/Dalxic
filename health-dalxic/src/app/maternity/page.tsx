@@ -112,7 +112,7 @@ function MaternityContent({ operator }: { operator: OperatorSession }) {
 
   const loadPatients = useCallback(async () => {
     try { const res = await fetch(`/api/maternity?hospitalCode=${HOSPITAL_CODE}`); if (res.ok) { const d = await res.json(); setPatients(d.patients || []); setCounts(d.counts); } } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => { loadPatients(); }, [loadPatients]);
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);

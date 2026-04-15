@@ -206,7 +206,7 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
       const res = await fetch(`/api/billing?hospitalCode=${HOSPITAL_CODE}`);
       if (res.ok) setStats(await res.json());
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   const loadUnbilled = useCallback(async (patientId: string) => {
     try {
@@ -217,14 +217,14 @@ function BillingContent({ operator }: { operator: OperatorSession }) {
         setUnbilledTotal(data.total || 0);
       }
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   const loadBills = useCallback(async (patientId: string) => {
     try {
       const res = await fetch(`/api/billing?hospitalCode=${HOSPITAL_CODE}&patientId=${patientId}&view=bills`);
       if (res.ok) setPatientBills(await res.json());
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   const searchPatient = () => {
     if (!patientSearch.trim()) return;

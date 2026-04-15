@@ -83,7 +83,7 @@ function QueueDisplay() {
         setQueue(items);
       }
     } catch { /* retry */ }
-  }, [dept]);
+  }, [dept, HOSPITAL_CODE]);
 
   // Process callout queue (one at a time with voice)
   const processCalloutQueue = useCallback(async () => {
@@ -200,7 +200,7 @@ function QueueDisplay() {
     } catch {
       return () => clearInterval(interval);
     }
-  }, [dept, loadQueue, processCalloutQueue]);
+  }, [dept, loadQueue, processCalloutQueue, HOSPITAL_CODE]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);

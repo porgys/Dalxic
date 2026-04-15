@@ -190,7 +190,7 @@ function LabContent({ operator }: { operator: OperatorSession }) {
       const res = await fetch(`/api/lab-orders?hospitalCode=${HOSPITAL_CODE}&status=pending`);
       if (res.ok) setOrders(await res.json());
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => {
     loadOrders();
@@ -200,7 +200,7 @@ function LabContent({ operator }: { operator: OperatorSession }) {
     const ch = pusher?.subscribe(`hospital-${HOSPITAL_CODE}-lab`);
     ch?.bind("new-order", () => loadOrders());
     return () => { clearInterval(interval); ch?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-lab`); };
-  }, [loadOrders]);
+  }, [loadOrders, HOSPITAL_CODE]);
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);

@@ -198,7 +198,7 @@ export default function AdminPage() {
       if (bookRes.ok) setBooks(await bookRes.json());
       if (queueRes.ok) { const q = await queueRes.json(); setTodayCount(q.length); }
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   // Resolve hospital ID from code on mount
   useEffect(() => {
@@ -208,7 +208,7 @@ export default function AdminPage() {
         if (res.ok) { const h = await res.json(); setHospitalId(h.id); loadData(h.id); }
       } catch { /* */ }
     })();
-  }, [loadData]);
+  }, [loadData, HOSPITAL_CODE]);
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);

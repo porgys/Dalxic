@@ -261,7 +261,7 @@ function BookkeepingContent({ operator }: { operator: OperatorSession }) {
       if (view === "assessment") { setAssessment(data); }
     } catch { /* silent */ }
     setLoading(false);
-  }, [period]);
+  }, [period, HOSPITAL_CODE]);
 
   // Load data on nav/period change
   useEffect(() => {

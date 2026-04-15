@@ -159,7 +159,7 @@ export default function EmergencyOverridePage() {
         if (res.ok) { const h = await res.json(); setHospitalId(h.id); }
       } catch { /* */ }
     })();
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);

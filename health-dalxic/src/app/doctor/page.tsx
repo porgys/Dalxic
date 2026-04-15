@@ -460,7 +460,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         }
       } catch { /* fallback to general */ }
     })();
-  }, [operator.operatorName]);
+  }, [operator.operatorName, HOSPITAL_CODE]);
 
   // Check group membership + load branches
   useEffect(() => {
@@ -481,7 +481,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         }
       } catch { /* */ }
     })();
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   // Poll inter-branch referrals
   useEffect(() => {
@@ -500,7 +500,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
     load();
     const t = setInterval(load, 8000);
     return () => clearInterval(t);
-  }, [hospitalGroup]);
+  }, [hospitalGroup, HOSPITAL_CODE]);
 
   const sendInterBranchReferral = async () => {
     if (!activeSession || !hospitalGroup || !ibDest || !ibDept || !ibReason.trim()) return;
@@ -617,7 +617,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         }
       }
     } catch { /* retry */ }
-  }, [doctorSpecialty, coveredSpecialties]);
+  }, [doctorSpecialty, coveredSpecialties, HOSPITAL_CODE]);
 
   const loadReferrals = useCallback(async () => {
     try {
@@ -628,7 +628,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
         setReferralCount(data.counts.pending);
       }
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   useEffect(() => {
     loadQueue(); loadReferrals();
@@ -648,7 +648,7 @@ function DoctorContent({ operator }: { operator: OperatorSession }) {
       rCh?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-referrals`);
       lCh?.unbind_all(); pusher?.unsubscribe(`hospital-${HOSPITAL_CODE}-lab-results`);
     };
-  }, [loadQueue, loadReferrals]);
+  }, [loadQueue, loadReferrals, HOSPITAL_CODE]);
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
 
   const updateDoctorStatus = async (newStatus: string) => {

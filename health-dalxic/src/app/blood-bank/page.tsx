@@ -99,7 +99,7 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
         if (d.donors) setDonors(d.donors);
       }
     } catch { /* retry */ }
-  }, []);
+  }, [HOSPITAL_CODE]);
 
   const loadData = useCallback(async () => {
     if (activeNav === "donors") { loadDonors(); return; }
@@ -113,7 +113,7 @@ function BloodBankContent({ operator }: { operator: OperatorSession }) {
         if (d.counts) setCounts(d.counts);
       }
     } catch { /* retry */ }
-  }, [activeNav, loadDonors]);
+  }, [activeNav, loadDonors, HOSPITAL_CODE]);
 
   useEffect(() => { loadData(); }, [loadData]);
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
