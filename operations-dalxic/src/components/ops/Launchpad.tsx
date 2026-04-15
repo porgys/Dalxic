@@ -78,7 +78,7 @@ export function Launchpad({ orgName }: { orgName: string }) {
                 {items.length} modules
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14, textAlign: "left" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, 280px)", gap: 14, textAlign: "left", justifyContent: "center" }}>
               {items.map((m) => <ModuleCard key={m.slug} mod={m} />)}
             </div>
           </section>
