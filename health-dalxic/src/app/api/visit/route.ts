@@ -222,7 +222,11 @@ export async function POST(request: Request) {
     const nextStatus: VisitState = hasPrescriptions ? "paused_for_pharmacy" : "awaiting_close";
     const guard = guardTransition(visit.visitStatus, nextStatus);
     if (!guard.ok) return guard.response;
-    const alreadyBilled = visit.consultationBilled === true;
+    // Per-doctor billed tracking so daisy-chain referrals bill each specialist
+    // without double-billing the same doctor if they re-submit.
+    const billedDoctors = (visit.consultationBilledDoctors as string[]) || [];
+    const billedKey = docId || "_anon_";
+    const alreadyBilled = billedDoctors.includes(billedKey);
     visit.visitStatus = guard.next;
     visit.consultationCompletedAt = new Date().toISOString();
     visit.consultationCompletedBy = docId || "doctor";
@@ -232,7 +236,7 @@ export async function POST(request: Request) {
     if (!services.includes("consultation")) services.push("consultation");
     visit.services = services;
 
-    // Emit CONSULTATION billable once — fee resolved by doctor.consultationFee → ServicePrice → fallback
+    // Emit CONSULTATION billable once per doctor — fee resolved by doctor.consultationFee → ServicePrice → fallback
     if (!alreadyBilled) {
       const doc = docId ? await db.doctor.findUnique({ where: { id: docId } }) : null;
       await createBillableItem({
@@ -246,6 +250,8 @@ export async function POST(request: Request) {
         doctorId: doc?.id,
         departmentId: doc?.department || "consultation",
       });
+      billedDoctors.push(billedKey);
+      visit.consultationBilledDoctors = billedDoctors;
       visit.consultationBilled = true;
     }
 
