@@ -58,7 +58,23 @@ const TRANSITIONS: Record<VisitState, readonly VisitState[]> = {
     "lwbs",
     "deceased",
   ],
-  queued: ["active", "with_doctor", "lwbs", "deceased"],
+  // queued is the real start state after front-desk registration. No API
+  // explicitly transitions queued → active, so queued must forward to every
+  // state active can reach. Includes `closed` for direct-treatment walk-ins
+  // that get a nurse supply + PIN checkout with no doctor consult.
+  queued: [
+    "active",
+    "with_doctor",
+    "paused_for_lab",
+    "paused_for_imaging",
+    "paused_for_pharmacy",
+    "paused_for_procedure",
+    "awaiting_close",
+    "closed",
+    "admitted",
+    "lwbs",
+    "deceased",
+  ],
   with_doctor: [
     "paused_for_lab",
     "paused_for_imaging",
@@ -69,7 +85,19 @@ const TRANSITIONS: Record<VisitState, readonly VisitState[]> = {
     "deceased",
   ],
   paused_for_lab: ["lab_results_ready", "active", "with_doctor", "deceased"],
-  lab_results_ready: ["active", "with_doctor", "awaiting_close", "deceased"],
+  // lab_results_ready is a "returning to doctor" state. Same forward semantics
+  // as queued — doctor can now send to pharmacy, imaging, procedure, etc.
+  lab_results_ready: [
+    "active",
+    "with_doctor",
+    "paused_for_lab",
+    "paused_for_imaging",
+    "paused_for_pharmacy",
+    "paused_for_procedure",
+    "awaiting_close",
+    "admitted",
+    "deceased",
+  ],
   paused_for_imaging: ["active", "with_doctor", "deceased"],
   paused_for_pharmacy: ["active", "with_doctor", "awaiting_close", "deceased"],
   paused_for_procedure: ["active", "with_doctor", "awaiting_close", "deceased"],
