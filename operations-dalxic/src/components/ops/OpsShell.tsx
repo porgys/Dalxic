@@ -202,6 +202,9 @@ function Sidebar() {
         <Link href="/trade" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", color: T.amber, fontSize: 11, fontWeight: 700, textDecoration: "none" }}>
           <Icon name="pos" size={12} /> DalxicTrade →
         </Link>
+        <Link href="/health" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", color: T.copper, fontSize: 11, fontWeight: 700, textDecoration: "none" }}>
+          <Icon name="support" size={12} /> DalxicHealth →
+        </Link>
         <Link href="/institute" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", color: T.sky, fontSize: 11, fontWeight: 700, textDecoration: "none" }}>
           <Icon name="customers" size={12} /> DalxicInstitute →
         </Link>

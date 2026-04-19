@@ -126,11 +126,12 @@ function Nav() {
     window.addEventListener("scroll", h)
     return () => window.removeEventListener("scroll", h)
   }, [])
-  const links = [
-    { label: "Trade", href: "#trade" },
-    { label: "Institute", href: "#institute" },
+  const HEALTH_COL = "#D97706"
+  const links: { label: string; href: string; external?: boolean; color?: string }[] = [
+    { label: "Health", href: "/health", color: HEALTH_COL },
+    { label: "Trade", href: "#trade", color: TRADE_COL },
+    { label: "Institute", href: "#institute", color: INST_COL },
     { label: "Features", href: "#features" },
-    { label: "Health", href: HEALTH_URL, external: true },
     { label: "Media", href: MEDIA_URL, external: true },
   ]
   return (
@@ -141,14 +142,17 @@ function Nav() {
           <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'Plus Jakarta Sans','Space Grotesk',sans-serif", background: `linear-gradient(135deg, ${EMERALD}, ${EMERALD_GL})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Operations</span>
         </a>
         <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="hidden-mobile">
-          {links.map(l => (
-            <a key={l.label} href={l.href} target={l.external ? "_blank" : undefined} rel={l.external ? "noopener noreferrer" : undefined}
-              style={{ fontSize: 13, color: "#6B9B8A", textDecoration: "none", fontWeight: 500, transition: "color 0.2s", fontFamily: "'DM Sans', sans-serif" }}
-              onMouseEnter={e => (e.currentTarget.style.color = "#ECF5F0")}
-              onMouseLeave={e => (e.currentTarget.style.color = "#6B9B8A")}>
-              {l.label}
-            </a>
-          ))}
+          {links.map(l => {
+            const base = l.color ?? "#6B9B8A"
+            return (
+              <a key={l.label} href={l.href} target={l.external ? "_blank" : undefined} rel={l.external ? "noopener noreferrer" : undefined}
+                style={{ fontSize: 13, color: base, textDecoration: "none", fontWeight: l.color ? 600 : 500, transition: "color 0.2s", fontFamily: "'DM Sans', sans-serif" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "#ECF5F0")}
+                onMouseLeave={e => (e.currentTarget.style.color = base)}>
+                {l.label}
+              </a>
+            )
+          })}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }} className="hidden-mobile">
           <button onClick={() => window.location.href = "/auth"}
@@ -490,13 +494,13 @@ export default function Home() {
               {[
                 { title: "Platform", links: [["Trade", "/trade"], ["Institute", "/institute"], ["Pricing", "/pricing"]] },
                 { title: "Company", links: [["About", "/about"], ["Team", "/team"], ["Contact", "#contact"]] },
-                { title: "Subsidiaries", links: [["Dalxic Main", MAIN_URL], ["DalxicHealth", HEALTH_URL], ["DalxicMedia", MEDIA_URL]] },
+                { title: "Subsidiaries", links: [["Dalxic Main", MAIN_URL], ["DalxicHealth", "/health"], ["DalxicMedia", MEDIA_URL]] },
                 { title: "Legal", links: [["Privacy Policy", "/privacy"], ["Terms Of Service", "/terms"]] },
               ].map(col => (
                 <div key={col.title}>
                   <div style={{ fontWeight: 700, fontSize: 13, letterSpacing: 1, textTransform: "uppercase", marginBottom: 16, color: "#6B9B8A" }}>{col.title}</div>
                   {col.links.map(([label, href]) => {
-                    const isInternal = ["/trade", "/institute", "/auth", "/register", "/pricing"].includes(href)
+                    const isInternal = ["/health", "/trade", "/institute", "/auth", "/register", "/pricing"].includes(href)
                     return (
                       <div key={label} style={{ marginBottom: 10 }}>
                         {isInternal ? (

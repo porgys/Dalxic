@@ -1,10 +1,12 @@
 "use client"
 import { useState, useRef, useCallback, useEffect } from "react"
 import { useAuth, Session } from "@/lib/use-auth"
+import { TenderModal, ReceiptPreview } from "@/components/trade/sale-journey"
+import type { TenderResult, CompletedSale } from "@/components/trade/sale-journey"
 
 /* ═══════════════════════════════════════════════════════════════
    DALXICTRADE — Dashboard / POS / Inventory
-   Flexible retail platform with photo-based catalogue.
+   Patchflow-compliant Sale Journey spine.
    ═══════════════════════════════════════════════════════════════ */
 
 const EMERALD    = "#10B981"
@@ -359,13 +361,16 @@ function DashboardScreen({ products, setScreen }: { products: Product[]; setScre
   )
 }
 
-/* ── POS Screen ── */
-function POSScreen({ products, onSaleComplete, authFetch, orgCode }: { products: Product[]; onSaleComplete: () => void; authFetch: (url: string, options?: RequestInit) => Promise<Response>; orgCode: string }) {
+/* ── POS Screen — Sale Journey spine (§3 patchflow) ── */
+function POSScreen({ products, onSaleComplete, authFetch, orgCode, session }: { products: Product[]; onSaleComplete: () => void; authFetch: (url: string, options?: RequestInit) => Promise<Response>; orgCode: string; session: Session }) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [search, setSearch] = useState("")
   const [selectedCat, setSelectedCat] = useState("All")
-  const [charging, setCharging] = useState(false)
-  const [saleResult, setSaleResult] = useState<string | null>(null)
+  const [tenderOpen, setTenderOpen] = useState(false)
+  const [processing, setProcessing] = useState(false)
+  const [tenderError, setTenderError] = useState<string | null>(null)
+  const [completedSale, setCompletedSale] = useState<CompletedSale | null>(null)
+  const [receiptOpen, setReceiptOpen] = useState(false)
 
   const categories = ["All", ...new Set(products.map(p => p.category))]
   const filtered = products.filter(p => {
@@ -389,128 +394,222 @@ function POSScreen({ products, onSaleComplete, authFetch, orgCode }: { products:
   const total = cart.reduce((a, c) => a + c.product.price * c.qty, 0)
   const itemCount = cart.reduce((a, c) => a + c.qty, 0)
 
-  const handleCharge = async () => {
-    if (cart.length === 0 || charging) return
-    setCharging(true)
-    setSaleResult(null)
+  const handleOpenTender = () => {
+    if (cart.length === 0) return
+    setTenderError(null)
+    setTenderOpen(true)
+  }
+
+  const handleTenderConfirm = async (result: TenderResult) => {
+    setProcessing(true)
+    setTenderError(null)
     try {
+      const payload = {
+        orgCode,
+        items: cart.map(c => ({ productId: c.product.id, quantity: c.qty })),
+        paymentMethod: result.method,
+        paymentRef: result.reference,
+        customerPhone: result.customerPhone,
+        soldBy: session.operatorId ?? "system",
+        soldByName: session.operatorName ?? "POS",
+      }
+      console.log("[Sale] Posting:", payload)
       const res = await authFetch("/api/trade/sales", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orgCode,
-          items: cart.map(c => ({ productId: c.product.id, quantity: c.qty })),
-          paymentMethod: "CASH",
-          soldBy: "system",
-          soldByName: "POS",
-        }),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Sale failed" }))
-        throw new Error(err.error || "Sale failed")
+        const msg = err.error || `Sale failed (${res.status})`
+        console.error("[Sale] API error:", res.status, err)
+        throw new Error(msg)
       }
       const sale = await res.json() as ApiSale
+      console.log("[Sale] Success:", sale.receiptCode)
+      const completed: CompletedSale = {
+        receiptCode: sale.receiptCode,
+        total: sale.total / 100,
+        items: sale.items.map(it => ({ name: it.productName, qty: it.quantity, price: it.unitPrice / 100 })),
+        method: result.method,
+        customerPhone: result.customerPhone ?? sale.customerPhone ?? undefined,
+        customerName: sale.customerName ?? undefined,
+        change: result.change,
+        timestamp: sale.createdAt,
+        cashier: session.operatorName ?? "POS",
+        orgName: session.orgName ?? orgCode,
+      }
+      setCompletedSale(completed)
+      setTenderOpen(false)
+      setReceiptOpen(true)
       setCart([])
-      setSaleResult(`Sale complete — Receipt: ${sale.receiptCode}`)
       onSaleComplete()
-      setTimeout(() => setSaleResult(null), 5000)
     } catch (err) {
-      setSaleResult(`Error: ${err instanceof Error ? err.message : "Sale failed"}`)
-      setTimeout(() => setSaleResult(null), 4000)
+      const msg = err instanceof Error ? err.message : "Sale failed"
+      console.error("[Sale] Error:", msg)
+      setTenderError(msg)
     } finally {
-      setCharging(false)
+      setProcessing(false)
     }
   }
 
+  const handleNewSale = () => {
+    setReceiptOpen(false)
+    setCompletedSale(null)
+    setSearch("")
+    setSelectedCat("All")
+  }
+
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 56px)" }}>
-      {/* Product grid */}
-      <div style={{ flex: 1, padding: "20px 24px", overflowY: "auto" }}>
-        <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
-          <input placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)}
-            style={{ ...inputStyle, maxWidth: 260 }} />
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {categories.map(c => (
-              <button key={c} onClick={() => setSelectedCat(c)}
-                style={{
-                  padding: "6px 14px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                  fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", border: "none",
-                  background: selectedCat === c ? `${EMERALD}20` : "rgba(255,255,255,0.03)",
-                  color: selectedCat === c ? EMERALD_L : "#6B9B8A",
-                }}>
-                {c}
+    <>
+      <div style={{ display: "flex", height: "calc(100vh - 56px)" }}>
+        {/* S1 — Product grid (item entry slot) */}
+        <div style={{ flex: 1, padding: "20px 24px", overflowY: "auto" }}>
+          <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+            <input placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)}
+              style={{ ...inputStyle, maxWidth: 260 }} />
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {categories.map(c => (
+                <button key={c} onClick={() => setSelectedCat(c)}
+                  style={{
+                    padding: "6px 14px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", border: "none",
+                    background: selectedCat === c ? `${EMERALD}20` : "rgba(255,255,255,0.03)",
+                    color: selectedCat === c ? EMERALD_L : "#6B9B8A",
+                  }}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12 }}>
+            {filtered.map(p => {
+              const inCart = cart.find(c => c.product.id === p.id)
+              return (
+                <button key={p.id} onClick={() => addToCart(p)}
+                  style={{
+                    ...glass, padding: "16px 14px 14px", cursor: "pointer", textAlign: "left",
+                    transition: "all 0.22s ease",
+                    borderColor: inCart ? `${EMERALD}35` : "rgba(16,185,129,0.08)",
+                    boxShadow: inCart ? `0 0 0 2px ${EMERALD}20, 0 8px 24px ${EMERALD}08` : "none",
+                    position: "relative",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = `${EMERALD}40`; e.currentTarget.style.transform = "translateY(-2px)" }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = inCart ? `${EMERALD}35` : "rgba(16,185,129,0.08)"; e.currentTarget.style.transform = "none" }}>
+                  {inCart && (
+                    <div style={{
+                      position: "absolute", top: 8, right: 8, width: 24, height: 24, borderRadius: 8,
+                      background: `linear-gradient(135deg, ${EMERALD}, #059669)`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 11, fontWeight: 800, color: "#fff", fontFamily: "'Space Grotesk', sans-serif",
+                      boxShadow: `0 4px 12px ${EMERALD}50`,
+                    }}>{inCart.qty}</div>
+                  )}
+                  <div style={{
+                    width: "100%", height: 88, borderRadius: 10,
+                    background: p.photo ? `url(${p.photo}) center/cover` : `linear-gradient(135deg, ${EMERALD}08, ${EMERALD}04)`,
+                    display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12,
+                    border: `1px solid ${EMERALD}08`,
+                  }}>
+                    {!p.photo && <span style={{ fontSize: 30, opacity: 0.25 }}>📦</span>}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#ECF5F0", marginBottom: 6, fontFamily: "'DM Sans', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 16, fontWeight: 800, color: TRADE_COL, fontFamily: "'Space Grotesk', sans-serif" }}>GHS {p.price}</span>
+                    <span style={{
+                      fontSize: 10, fontFamily: "'DM Mono', monospace", padding: "2px 6px", borderRadius: 4,
+                      background: p.stock < 10 ? "rgba(239,68,68,0.12)" : `${EMERALD}08`,
+                      color: p.stock < 10 ? "#EF4444" : "#3A6B5A",
+                    }}>{p.stock} left</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* S4 — Cart container */}
+        <div style={{ width: 340, borderLeft: `1px solid ${EMERALD}10`, background: "rgba(4,10,15,0.5)", display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "18px 20px", borderBottom: `1px solid ${EMERALD}08`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#ECF5F0", fontFamily: "'Space Grotesk', sans-serif" }}>Cart <span style={{ color: "#6B9B8A", fontWeight: 500 }}>({itemCount})</span></div>
+            {cart.length > 0 && (
+              <button onClick={() => setCart([])}
+                style={{ fontSize: 10, color: "#6B9B8A", background: "transparent", border: `1px solid ${EMERALD}12`, borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>
+                Clear
               </button>
+            )}
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+            {cart.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "50px 20px", color: "#3A6B5A", fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+                <div style={{ fontSize: 40, marginBottom: 14, opacity: 0.2 }}>🛒</div>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>Cart Is Empty</div>
+                <div style={{ fontSize: 11, color: "#2A4A3A" }}>Tap A Product To Start</div>
+              </div>
+            ) : cart.map(c => (
+              <div key={c.product.id} style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "12px 0",
+                borderBottom: `1px solid ${EMERALD}06`,
+                animation: "fadeUp 0.25s ease",
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#ECF5F0", fontFamily: "'DM Sans', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.product.name}</div>
+                  <div style={{ fontSize: 11, color: "#6B9B8A", fontFamily: "'DM Mono', monospace", marginTop: 3 }}>GHS {c.product.price} × {c.qty}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <button onClick={() => updateQty(c.product.id, -1)} style={{ width: 28, height: 28, borderRadius: 7, border: `1px solid ${EMERALD}20`, background: "transparent", color: "#6B9B8A", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.10)"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.35)"; e.currentTarget.style.color = "#FCA5A5" }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = `${EMERALD}20`; e.currentTarget.style.color = "#6B9B8A" }}>−</button>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#ECF5F0", fontFamily: "'DM Mono', monospace", minWidth: 24, textAlign: "center" }}>{c.qty}</span>
+                  <button onClick={() => updateQty(c.product.id, 1)} style={{ width: 28, height: 28, borderRadius: 7, border: `1px solid ${EMERALD}20`, background: "transparent", color: "#6B9B8A", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = `${EMERALD}12`; e.currentTarget.style.borderColor = `${EMERALD}40`; e.currentTarget.style.color = EMERALD_L }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = `${EMERALD}20`; e.currentTarget.style.color = "#6B9B8A" }}>+</button>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: TRADE_COL, fontFamily: "'Space Grotesk', sans-serif", minWidth: 68, textAlign: "right" }}>GHS {(c.product.price * c.qty).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+              </div>
             ))}
           </div>
-        </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12 }}>
-          {filtered.map(p => (
-            <button key={p.id} onClick={() => addToCart(p)}
-              style={{ ...glass, padding: "18px 14px", cursor: "pointer", textAlign: "left", transition: "all 0.2s" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = `${EMERALD}30` }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(16,185,129,0.08)" }}>
-              {/* Photo placeholder */}
-              <div style={{ width: "100%", height: 80, borderRadius: 10, background: p.photo ? `url(${p.photo}) center/cover` : `${EMERALD}06`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, border: `1px solid ${EMERALD}08` }}>
-                {!p.photo && <span style={{ fontSize: 28, opacity: 0.3 }}>{p.category === "Clothing" ? "👕" : p.category === "Electronics" ? "📱" : p.category === "Groceries" ? "🍚" : p.category === "Fresh" ? "🐟" : "📦"}</span>}
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#ECF5F0", marginBottom: 4, fontFamily: "'DM Sans', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 15, fontWeight: 800, color: TRADE_COL, fontFamily: "'Space Grotesk', sans-serif" }}>GHS {p.price}</span>
-                <span style={{ fontSize: 10, color: p.stock < 10 ? "#EF4444" : "#3A6B5A", fontFamily: "'DM Mono', monospace" }}>{p.stock} left</span>
-              </div>
+          {/* S3 — Tender trigger */}
+          <div style={{ padding: "16px 20px", borderTop: `1px solid ${EMERALD}12`, background: "rgba(4,10,15,0.7)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, alignItems: "baseline" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#ECF5F0", fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "0.04em", textTransform: "uppercase" }}>Total</span>
+              <span style={{ fontSize: 26, fontWeight: 800, color: TRADE_COL, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: -1 }}>GHS {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            </div>
+            <button onClick={handleOpenTender} style={{
+              ...btnPrimary, width: "100%", padding: "15px 0", fontSize: 13, textAlign: "center",
+              opacity: cart.length === 0 ? 0.4 : 1,
+              cursor: cart.length === 0 ? "not-allowed" : "pointer",
+              background: cart.length === 0 ? "rgba(255,255,255,0.04)" : `linear-gradient(135deg, ${EMERALD}, #059669)`,
+              boxShadow: cart.length > 0 ? `0 8px 28px ${EMERALD}35` : "none",
+              letterSpacing: "0.08em",
+            }} disabled={cart.length === 0}>
+              Charge Customer
             </button>
-          ))}
+          </div>
         </div>
       </div>
 
-      {/* Cart sidebar */}
-      <div style={{ width: 320, borderLeft: `1px solid ${EMERALD}10`, background: "rgba(4,10,15,0.5)", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "18px 20px", borderBottom: `1px solid ${EMERALD}08` }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#ECF5F0", fontFamily: "'Space Grotesk', sans-serif" }}>Cart <span style={{ color: "#6B9B8A", fontWeight: 500 }}>({itemCount})</span></div>
-        </div>
-        <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
-          {cart.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 0", color: "#3A6B5A", fontSize: 13 }}>
-              <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.3 }}>🛒</div>
-              Tap Products To Add
-            </div>
-          ) : cart.map(c => (
-            <div key={c.product.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${EMERALD}06` }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#ECF5F0", fontFamily: "'DM Sans', sans-serif" }}>{c.product.name}</div>
-                <div style={{ fontSize: 11, color: "#6B9B8A", fontFamily: "'DM Mono', monospace", marginTop: 2 }}>GHS {c.product.price} x {c.qty}</div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <button onClick={() => updateQty(c.product.id, -1)} style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${EMERALD}20`, background: "transparent", color: "#6B9B8A", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#ECF5F0", fontFamily: "'DM Mono', monospace", minWidth: 20, textAlign: "center" }}>{c.qty}</span>
-                <button onClick={() => updateQty(c.product.id, 1)} style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${EMERALD}20`, background: "transparent", color: "#6B9B8A", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: TRADE_COL, fontFamily: "'Space Grotesk', sans-serif", minWidth: 60, textAlign: "right" }}>GHS {(c.product.price * c.qty).toLocaleString()}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{ padding: "16px 20px", borderTop: `1px solid ${EMERALD}10` }}>
-          {saleResult && (
-            <div style={{
-              padding: "10px 14px", borderRadius: 10, marginBottom: 12, fontSize: 12, fontWeight: 600, fontFamily: "'DM Sans', sans-serif",
-              background: saleResult.startsWith("Error") ? "rgba(239,68,68,0.1)" : "rgba(16,185,129,0.1)",
-              border: `1px solid ${saleResult.startsWith("Error") ? "rgba(239,68,68,0.25)" : "rgba(16,185,129,0.25)"}`,
-              color: saleResult.startsWith("Error") ? "#EF4444" : EMERALD_L,
-            }}>
-              {saleResult}
-            </div>
-          )}
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#ECF5F0", fontFamily: "'Space Grotesk', sans-serif" }}>Total</span>
-            <span style={{ fontSize: 22, fontWeight: 800, color: TRADE_COL, fontFamily: "'Space Grotesk', sans-serif" }}>GHS {total.toLocaleString()}</span>
-          </div>
-          <button onClick={handleCharge} style={{ ...btnPrimary, width: "100%", padding: "14px 0", fontSize: 13, textAlign: "center", opacity: cart.length === 0 || charging ? 0.5 : 1 }} disabled={cart.length === 0 || charging}>
-            {charging ? "Processing..." : "Charge Customer"}
-          </button>
-        </div>
-      </div>
-    </div>
+      {/* S3 — Tender modal (patchflow slot) */}
+      <TenderModal
+        open={tenderOpen}
+        total={total}
+        onConfirm={handleTenderConfirm}
+        onCancel={() => { setTenderOpen(false); setTenderError(null) }}
+        processing={processing}
+        error={tenderError}
+        enabledMethods={["CASH", "MOBILE_MONEY"]}
+      />
+
+      {/* S16 — Receipt slot + S17 delivery options */}
+      <ReceiptPreview
+        sale={completedSale}
+        open={receiptOpen}
+        onNewSale={handleNewSale}
+        onDismiss={() => setReceiptOpen(false)}
+      />
+    </>
   )
 }
 
@@ -980,7 +1079,7 @@ function AnalyticsScreen({ products, analytics }: { products: Product[]; analyti
    ═══════════════════════════════════════════════════════════════ */
 
 export default function TradePage() {
-  const { session, login, logout, authFetch } = useAuth()
+  const { session, hydrated, login, logout, authFetch } = useAuth()
   const [screen, setScreen] = useState<Screen>("dashboard")
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -1079,6 +1178,14 @@ export default function TradePage() {
     fetchAnalytics()
   }, [fetchProducts, fetchOrders, fetchAnalytics])
 
+  if (!hydrated || (!session && !hydrated)) {
+    return (
+      <div style={{ minHeight: "100vh", background: BG, fontFamily: "'DM Sans', sans-serif", color: "#ECF5F0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: EMERALD_L, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "0.06em" }}>Loading...</div>
+      </div>
+    )
+  }
+
   if (!session) {
     return <LoginScreen onLogin={login} />
   }
@@ -1102,7 +1209,7 @@ export default function TradePage() {
       `}</style>
       <Header screen={screen} setScreen={setScreen} session={session} onLogout={logout} />
       {screen === "dashboard" && <DashboardScreen products={products} setScreen={setScreen} />}
-      {screen === "pos" && <POSScreen products={products} onSaleComplete={handleSaleComplete} authFetch={authFetch} orgCode={orgCode} />}
+      {screen === "pos" && <POSScreen products={products} onSaleComplete={handleSaleComplete} authFetch={authFetch} orgCode={orgCode} session={session} />}
       {screen === "inventory" && <InventoryScreen products={products} onProductAdded={fetchProducts} categories={categories} onCategoryAdded={fetchCategories} feedback={feedback} setFeedback={setFeedback} authFetch={authFetch} orgCode={orgCode} />}
       {screen === "orders" && <OrdersScreen orders={orders} />}
       {screen === "analytics" && <AnalyticsScreen products={products} analytics={analytics} />}

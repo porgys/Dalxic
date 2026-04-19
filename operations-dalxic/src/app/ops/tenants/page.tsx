@@ -10,8 +10,8 @@ import {
 } from "@/components/ops/primitives"
 import { Icon } from "@/components/ops/Icon"
 import {
-  MOCK_TENANTS, MockTenant, TenantStatus, TenantTier,
-  MOCK_INVOICES, MOCK_TICKETS, MOCK_MODULES,
+  MOCK_TENANTS, MockTenant, TenantStatus, TenantTier, OrgType,
+  MOCK_INVOICES, MOCK_TICKETS, MOCK_MODULES, ORG_TONE, ALL_BEHAVIOURS,
 } from "@/lib/ops/mock"
 
 type View = "all" | "active" | "trial" | "past_due" | "suspended"
@@ -27,7 +27,7 @@ const TIER_TONE: Record<TenantTier, Tone> = {
 export default function OpsTenantsPage() {
   const [view, setView] = useState<View>("all")
   const [query, setQuery] = useState("")
-  const [vertical, setVertical] = useState("All")
+  const [orgType, setOrgType] = useState("All")
   const [region, setRegion] = useState("All")
   const [tier, setTier] = useState("All")
   const [active, setActive] = useState<MockTenant | null>(null)
@@ -37,14 +37,14 @@ export default function OpsTenantsPage() {
   const filtered = useMemo(() => {
     return MOCK_TENANTS.filter(t => {
       if (view !== "all" && t.status !== view) return false
-      if (vertical !== "All" && t.vertical !== vertical.toLowerCase()) return false
+      if (orgType !== "All" && t.type !== orgType.toLowerCase()) return false
       if (region !== "All" && t.region !== region) return false
       if (tier !== "All" && t.tier !== tier.toLowerCase()) return false
       if (!query) return true
       const q = query.toLowerCase()
       return t.name.toLowerCase().includes(q) || t.code.toLowerCase().includes(q) || t.ownerName.toLowerCase().includes(q) || t.ownerPhone.includes(q)
     })
-  }, [view, query, vertical, region, tier])
+  }, [view, query, orgType, region, tier])
 
   const totals = useMemo(() => ({
     total: MOCK_TENANTS.length,
@@ -65,8 +65,11 @@ export default function OpsTenantsPage() {
         <div style={{ fontSize: 11, color: T.txM, marginTop: 2 }}>{t.ownerName} · {t.ownerPhone}</div>
       </div>
     )},
-    { key: "vertical", label: "Vertical", width: 110, render: (t) => (
-      <Pill tone={t.vertical === "trade" ? "amber" : "sky"}>{t.vertical}</Pill>
+    { key: "type", label: "Type", width: 110, render: (t) => (
+      <Pill tone={ORG_TONE[t.type]}>{t.type}</Pill>
+    )},
+    { key: "behaviours", label: "Behaviours", width: 90, align: "center", render: (t) => (
+      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 700, color: t.activeBehaviours.length === 6 ? T.emerald : T.txM }}>{t.activeBehaviours.length}/6</span>
     )},
     { key: "tier", label: "Tier", width: 110, render: (t) => <Pill tone={TIER_TONE[t.tier]}>{t.tier}</Pill> },
     { key: "status", label: "Status", width: 120, render: (t) => <Pill tone={STATUS_TONE[t.status]} dot>{t.status.replace("_", " ")}</Pill> },
@@ -114,9 +117,9 @@ export default function OpsTenantsPage() {
           />
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
-            <Field label="Vertical">
-              <Select value={vertical} onChange={(e) => setVertical(e.target.value)}>
-                <option>All</option><option>Trade</option><option>Institute</option>
+            <Field label="Type">
+              <Select value={orgType} onChange={(e) => setOrgType(e.target.value)}>
+                <option>All</option><option>Trade</option><option>Health</option><option>Institute</option><option>Restaurant</option><option>Salon</option>
               </Select>
             </Field>
             <Field label="Region">
@@ -182,7 +185,7 @@ function TenantDrawer({ tenant, onClose }: { tenant: MockTenant | null; onClose:
             <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
               <Pill tone={STATUS_TONE[tenant.status]} dot>{tenant.status.replace("_", " ")}</Pill>
               <Pill tone={TIER_TONE[tenant.tier]}>{tenant.tier}</Pill>
-              <Pill tone={tenant.vertical === "trade" ? "amber" : "sky"}>{tenant.vertical}</Pill>
+              <Pill tone={ORG_TONE[tenant.type]}>{tenant.type}</Pill>
             </div>
             <div style={{ fontSize: 22, fontWeight: 800, color: T.tx, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "-0.01em" }}>
               {tenant.name}
@@ -209,13 +212,50 @@ function TenantDrawer({ tenant, onClose }: { tenant: MockTenant | null; onClose:
 
       <Section title="Owner & Contact">
         <Card padding={20}>
-          <RowKV label="Primary contact" value={tenant.ownerName} />
+          <RowKV label="Primary Contact" value={tenant.ownerName} />
           <RowKV label="Phone" value={tenant.ownerPhone} mono />
           <RowKV label="Email" value={tenant.ownerEmail} mono last />
         </Card>
       </Section>
 
-      <Section title="Active Modules" sub={`${tenant.activeModules.length} of ${MOCK_MODULES.filter(m => m.vertical === tenant.vertical || m.vertical === "both").length} available for ${tenant.vertical}`}>
+      <Section title="6 Behaviours" sub={`${tenant.activeBehaviours.length} of 6 active · ${tenant.paymentGate === "pay_before" ? "Pay-Before" : "Pay-After"}`}>
+        <Card padding={14}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+            {ALL_BEHAVIOURS.map(b => {
+              const active = tenant.activeBehaviours.includes(b)
+              return (
+                <div key={b} style={{
+                  padding: "6px 12px", borderRadius: 8,
+                  background: active ? `${T.emerald}10` : T.surface2,
+                  border: `1px solid ${active ? T.emerald + "30" : T.border}`,
+                  fontSize: 11, fontWeight: 700, letterSpacing: "0.04em",
+                  color: active ? T.emerald : T.txD,
+                  fontFamily: "'DM Mono', monospace",
+                  textTransform: "uppercase",
+                }}>
+                  {b}
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            <Pill tone={tenant.paymentGate === "pay_before" ? "copper" : "amber"} dot>{tenant.paymentGate === "pay_before" ? "Pay-Before" : "Pay-After"}</Pill>
+          </div>
+          {Object.keys(tenant.labelConfig).length > 0 && (
+            <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
+              <div style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, color: T.txD, fontFamily: "'DM Mono', monospace", marginBottom: 8 }}>Label Config</div>
+              {(Object.entries(tenant.labelConfig) as [string, string][]).map(([beh, label]) => (
+                <div key={beh} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${T.border}` }}>
+                  <span style={{ fontSize: 11, color: T.txM, fontFamily: "'DM Mono', monospace", textTransform: "uppercase" }}>{beh}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: T.tx }}>{label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </Section>
+
+      <Section title="Active Modules" sub={`${tenant.activeModules.length} of ${MOCK_MODULES.filter(m => m.vertical === tenant.type || m.vertical === "universal").length} available for ${tenant.type}`}>
         <Card padding={14}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {tenant.activeModules.map(modId => {

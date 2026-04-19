@@ -1,42 +1,23 @@
-import { db } from "@/lib/db";
-import { rateLimit } from "@/lib/rate-limit";
-import { authenticateRequest, requireRole } from "@/lib/auth";
-
-/**
- * Audit log viewer — read-only, append-only trail.
- *
- * GET: Fetch audit logs for an org (paginated, filterable)
- */
+import { db } from "@/lib/db"
+import { authenticateRequest } from "@/lib/auth"
+import { ok } from "@/lib/api/response"
 
 export async function GET(request: Request) {
-  const blocked = rateLimit(request);
-  if (blocked) return blocked;
+  const auth = await authenticateRequest(request)
+  if (auth instanceof Response) return auth
+  const url = new URL(request.url)
+  const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1"))
+  const limit = Math.min(100, parseInt(url.searchParams.get("limit") ?? "50"))
+  const entity = url.searchParams.get("entity")
+  const action = url.searchParams.get("action")
 
-  const auth = await authenticateRequest(request);
-  if (auth instanceof Response) return auth;
-
-  const roleCheck = requireRole(auth, ["admin", "manager"]);
-  if (roleCheck) return roleCheck;
-
-  const { searchParams } = new URL(request.url);
-  const action = searchParams.get("action");
-  const actorId = searchParams.get("actorId");
-  const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 200);
-  const offset = parseInt(searchParams.get("offset") || "0");
-
-  const where: Record<string, unknown> = { orgId: auth.orgId };
-  if (action) where.action = { contains: action };
-  if (actorId) where.actorId = actorId;
+  const where: Record<string, unknown> = { orgId: auth.orgId }
+  if (entity) where.entity = entity
+  if (action) where.action = action
 
   const [logs, total] = await Promise.all([
-    db.auditLog.findMany({
-      where,
-      orderBy: { timestamp: "desc" },
-      take: limit,
-      skip: offset,
-    }),
+    db.auditLog.findMany({ where, orderBy: { timestamp: "desc" }, skip: (page - 1) * limit, take: limit }),
     db.auditLog.count({ where }),
-  ]);
-
-  return Response.json({ logs, total, limit, offset });
+  ])
+  return ok({ logs, total, page, limit })
 }

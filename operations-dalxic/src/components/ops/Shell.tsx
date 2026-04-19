@@ -12,7 +12,8 @@ import { T, Field, Input, Button, Card } from "./primitives"
 const TRADE_COL = "#F59E0B"
 
 export function Shell({ children }: { children: ReactNode }) {
-  const { session, login, logout } = useAuth()
+  const { session, hydrated, login, logout } = useAuth()
+  if (!hydrated) return <div style={{ background: T.bg, color: T.tx, minHeight: "100vh" }} />
   if (!session) return <LoginScreen onLogin={login} />
   return (
     <div style={{ background: T.bg, color: T.tx, minHeight: "100vh", fontFamily: "'DM Sans', sans-serif" }}>

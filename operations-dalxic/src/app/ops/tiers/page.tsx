@@ -2,11 +2,11 @@
 /* ═══════════════════════════════════════════════════════════════
    /ops/tiers — Subscription tier catalog + module assignment
    ═══════════════════════════════════════════════════════════════ */
-import { useState } from "react"
+import { useState, Fragment } from "react"
 import { OpsPage } from "@/components/ops/OpsShell"
 import { Card, Stat, Pill, Button, Drawer, Section, T, Tone } from "@/components/ops/primitives"
 import { Icon } from "@/components/ops/Icon"
-import { MOCK_TIERS, MOCK_TENANTS, MOCK_MODULES, MockTier } from "@/lib/ops/mock"
+import { MOCK_TIERS, MOCK_TENANTS, MOCK_MODULES, MockTier, ALL_BEHAVIOURS, ORG_TONE } from "@/lib/ops/mock"
 
 export default function OpsTiersPage() {
   const [active, setActive] = useState<MockTier | null>(null)
@@ -109,6 +109,24 @@ function TierCard({ tier, onClick }: { tier: MockTier; onClick: () => void }) {
         <LimitRow label="Support" value={tier.supportSLA} />
       </div>
 
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 9, color: T.txD, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, marginBottom: 6, fontFamily: "'DM Mono', monospace" }}>
+          Behaviours ({tier.behaviours.length}/6)
+        </div>
+        <div style={{ display: "flex", gap: 4 }}>
+          {ALL_BEHAVIOURS.map(b => (
+            <div key={b} style={{
+              width: 18, height: 18, borderRadius: 4,
+              background: tier.behaviours.includes(b) ? `${c}30` : T.surface2,
+              border: `1px solid ${tier.behaviours.includes(b) ? c : T.border}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              {tier.behaviours.includes(b) && <Icon name="check" size={9} color={c} />}
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div style={{ marginTop: "auto" }}>
         <div style={{ fontSize: 10, color: T.txD, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, marginBottom: 8, fontFamily: "'DM Mono', monospace" }}>
           {tier.modules.length} modules included
@@ -159,8 +177,8 @@ function ModuleMatrix() {
           </thead>
           <tbody>
             {Object.entries(groups).map(([cat, mods]) => (
-              <>
-                <tr key={cat + "-h"} style={{ background: T.surface2 }}>
+              <Fragment key={cat}>
+                <tr style={{ background: T.surface2 }}>
                   <td colSpan={2 + MOCK_TIERS.length} style={{
                     padding: "10px 18px",
                     fontSize: 10, color: T.emerald, fontFamily: "'DM Mono', monospace",
@@ -178,7 +196,7 @@ function ModuleMatrix() {
                         <div style={{ fontSize: 11, color: T.txD, marginTop: 2, maxWidth: 360 }}>{m.description}</div>
                       </td>
                       <td style={{ padding: "12px 18px", textAlign: "center" }}>
-                        <Pill tone={m.vertical === "trade" ? "amber" : m.vertical === "institute" ? "sky" : "emerald"}>{m.vertical}</Pill>
+                        <Pill tone={m.vertical === "universal" ? "emerald" : ORG_TONE[m.vertical]}>{m.vertical}</Pill>
                       </td>
                       {MOCK_TIERS.map((t, ti) => (
                         <td key={t.id} style={{ padding: "12px 18px", textAlign: "center" }}>
@@ -200,7 +218,7 @@ function ModuleMatrix() {
                     </tr>
                   )
                 })}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -252,6 +270,34 @@ function TierDrawer({ tier, onClose }: { tier: MockTier | null; onClose: () => v
         <RowKV label="Support SLA" value={tier.supportSLA} last />
       </Card>
 
+      <Section title="Behaviours Unlocked">
+        <Card padding={14}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+            {ALL_BEHAVIOURS.map(b => {
+              const unlocked = tier.behaviours.includes(b)
+              return (
+                <div key={b} style={{
+                  padding: "6px 12px", borderRadius: 8,
+                  background: unlocked ? `${T.emerald}10` : T.surface2,
+                  border: `1px solid ${unlocked ? T.emerald + "30" : T.border}`,
+                  fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+                  color: unlocked ? T.emerald : T.txD,
+                  fontFamily: "'DM Mono', monospace", textTransform: "uppercase",
+                }}>
+                  {unlocked ? "✓" : "—"} {b}
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            {tier.stockTypes.map(s => <Pill key={s} tone="sky">{s}</Pill>)}
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            {tier.paymentGates.map(g => <Pill key={g} tone="amber">{g === "pay_before" ? "Pay-Before" : "Pay-After"}</Pill>)}
+          </div>
+        </Card>
+      </Section>
+
       <Section title={`Bundled Modules (${tier.modules.length})`}>
         <Card padding={14}>
           {tier.modules.map((id, i) => {
@@ -266,7 +312,7 @@ function TierDrawer({ tier, onClose }: { tier: MockTier | null; onClose: () => v
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.tx }}>{m?.name ?? id}</div>
                   <div style={{ fontSize: 11, color: T.txM, marginTop: 2 }}>{m?.category}</div>
                 </div>
-                <Pill tone={m?.vertical === "trade" ? "amber" : m?.vertical === "institute" ? "sky" : "emerald"}>{m?.vertical}</Pill>
+                <Pill tone={m?.vertical === "universal" ? "emerald" : m?.vertical ? ORG_TONE[m.vertical] : "emerald"}>{m?.vertical}</Pill>
               </div>
             )
           })}

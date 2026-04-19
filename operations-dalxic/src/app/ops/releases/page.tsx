@@ -9,7 +9,7 @@ import {
   Tabs, Section, T, Tone,
 } from "@/components/ops/primitives"
 import { Icon } from "@/components/ops/Icon"
-import { MOCK_RELEASES, MockRelease, ReleaseStage } from "@/lib/ops/mock"
+import { MOCK_RELEASES, MockRelease, ReleaseStage, ORG_TONE } from "@/lib/ops/mock"
 
 type View = "all" | "canary" | "rolling" | "stable" | "draft"
 
@@ -177,7 +177,7 @@ function ReleaseDrawer({ release, onClose }: { release: MockRelease | null; onCl
       <Card padding={20} style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           <Pill tone={STAGE_TONE[release.stage]} dot>{release.stage}</Pill>
-          <Pill tone={release.vertical === "trade" ? "amber" : release.vertical === "institute" ? "sky" : "emerald"}>{release.vertical}</Pill>
+          <Pill tone={release.vertical === "universal" ? "emerald" : ORG_TONE[release.vertical]}>{release.vertical}</Pill>
           {release.breaking && <Pill tone="red">breaking</Pill>}
         </div>
         <div style={{ fontSize: 22, fontWeight: 800, color: T.tx, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "-0.01em" }}>

@@ -34,7 +34,7 @@ export default function OpsAnalyticsPage() {
         <Stat label="ARR (annualised)" value={`GHS ${((latest.mrr * 12) / 1000).toFixed(0)}k`} accent="emerald" icon="trending" sub={`${growth.toFixed(0)}% since Oct`} />
         <Stat label="Net Retention"     value={`${netRetention.toFixed(0)}%`}                   accent="emerald" icon="sparkle" sub={`${(newMrrSum/1000).toFixed(1)}k new · ${(churnMrrSum/1000).toFixed(1)}k churn`} />
         <Stat label="ARPA"               value={`GHS ${Math.round(arpa).toLocaleString()}`}     accent="sky"     icon="billing" sub="Avg revenue / active account" />
-        <Stat label="Active Operators"  value={activeTenants}                                   accent="amber"   icon="tenants" sub="Across Trade + Institute" />
+        <Stat label="Active Operators"  value={activeTenants}                                   accent="amber"   icon="tenants" sub="Across All Verticals" />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 14, marginBottom: 28 }}>

@@ -9,9 +9,9 @@ import {
   Tabs, Section, T, Tone, Column,
 } from "@/components/ops/primitives"
 import { Icon, IconName } from "@/components/ops/Icon"
-import { MOCK_MODULES, MOCK_TIERS, MOCK_TENANTS, MockModule } from "@/lib/ops/mock"
+import { MOCK_MODULES, MOCK_TIERS, MOCK_TENANTS, MockModule, ORG_TONE } from "@/lib/ops/mock"
 
-type View = "all" | "trade" | "institute" | "both"
+type View = "all" | "trade" | "health" | "institute" | "restaurant" | "universal"
 
 const STATUS_TONE: Record<MockModule["status"], Tone> = {
   ga: "emerald", beta: "amber", preview: "sky",
@@ -64,8 +64,12 @@ export default function OpsModulesPage() {
       <span style={{ fontSize: 12, color: T.txM }}>{m.category}</span>
     )},
     { key: "vertical", label: "Vertical", width: 110, render: (m) => (
-      <Pill tone={m.vertical === "trade" ? "amber" : m.vertical === "institute" ? "sky" : "emerald"}>{m.vertical}</Pill>
+      <Pill tone={m.vertical === "universal" ? "emerald" : ORG_TONE[m.vertical]}>{m.vertical}</Pill>
     )},
+    { key: "behaviour", label: "Behaviour", width: 110, render: (m) => m.behaviour
+      ? <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 700, color: T.txM, textTransform: "uppercase", letterSpacing: "0.06em" }}>{m.behaviour}</span>
+      : <span style={{ color: T.txD }}>—</span>
+    },
     { key: "minTier", label: "Min Tier", width: 120, render: (m) => (
       <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 700, color: T.tx, textTransform: "uppercase", letterSpacing: "0.08em" }}>{m.minTier}</span>
     )},
@@ -84,7 +88,7 @@ export default function OpsModulesPage() {
     <>
       <OpsPage
         title="Modules"
-        subtitle="Every module across Trade and Institute. This is the source of truth — tiers reference it, tenants activate from it."
+        subtitle="Every module across all verticals. This is the source of truth — tiers reference it, tenants activate from it."
         icon="modules"
         action={<Button icon="plus">New Module</Button>}
       >
@@ -102,10 +106,12 @@ export default function OpsModulesPage() {
           <Tabs<View>
             value={view} onChange={setView} accent="emerald"
             tabs={[
-              { key: "all",        label: "All",        count: MOCK_MODULES.length },
-              { key: "trade",      label: "Trade",      count: MOCK_MODULES.filter(m => m.vertical === "trade").length },
-              { key: "institute",  label: "Institute",  count: MOCK_MODULES.filter(m => m.vertical === "institute").length },
-              { key: "both",       label: "Shared",     count: MOCK_MODULES.filter(m => m.vertical === "both").length },
+              { key: "all",        label: "All",          count: MOCK_MODULES.length },
+              { key: "trade",      label: "Trade",        count: MOCK_MODULES.filter(m => m.vertical === "trade").length },
+              { key: "health",     label: "Health",       count: MOCK_MODULES.filter(m => m.vertical === "health").length },
+              { key: "institute",  label: "Institute",    count: MOCK_MODULES.filter(m => m.vertical === "institute").length },
+              { key: "restaurant", label: "Restaurant",   count: MOCK_MODULES.filter(m => m.vertical === "restaurant").length },
+              { key: "universal",  label: "Universal",    count: MOCK_MODULES.filter(m => m.vertical === "universal").length },
             ]}
           />
 

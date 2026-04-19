@@ -10,7 +10,7 @@ import { Card, Stat, Pill, T, Section, Tone } from "@/components/ops/primitives"
 import { Icon, IconName } from "@/components/ops/Icon"
 import {
   MOCK_TENANTS, MOCK_INVOICES, MOCK_TICKETS, MOCK_MRR_SERIES,
-  MOCK_TIERS, MOCK_PLATFORM_AUDIT, MOCK_INFRA,
+  MOCK_TIERS, MOCK_PLATFORM_AUDIT, MOCK_INFRA, MOCK_MODULES,
 } from "@/lib/ops/mock"
 
 export default function OpsCommandPage() {
@@ -116,7 +116,7 @@ export default function OpsCommandPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
           <Tile href="/ops/tenants"    icon="tenants"    title="Tenants"      sub={`${MOCK_TENANTS.length} registered`} tone="emerald" />
           <Tile href="/ops/tiers"      icon="tiers"      title="Tiers"        sub="4 plans · Starter → Enterprise" tone="emerald" />
-          <Tile href="/ops/modules"    icon="modules"    title="Modules"      sub="26 modules across 2 verticals" tone="emerald" />
+          <Tile href="/ops/modules"    icon="modules"    title="Modules"      sub={`${MOCK_MODULES.length} modules across all verticals`} tone="emerald" />
           <Tile href="/ops/addons"     icon="addons"     title="Add-ons"      sub="12 add-ons · SMS, WhatsApp, extras" tone="emerald" />
           <Tile href="/ops/billing"    icon="billing"    title="Billing"      sub={`GHS ${totals.unpaid.toLocaleString()} outstanding`} tone="amber" />
           <Tile href="/ops/analytics"  icon="trending"   title="Analytics"    sub="MRR, cohorts, geography" tone="sky" />
@@ -129,6 +129,7 @@ export default function OpsCommandPage() {
           <Tile href="/ops/audit"      icon="audit"      title="Audit"        sub="Platform-wide immutable log" tone="amber" />
           <Tile href="/ops/settings"   icon="settings"   title="Settings"     sub="Brand, tax, keys, webhooks" tone="neutral" />
           <Tile href="/trade"          icon="pos"        title="→ Trade"       sub="Retail workstation (tenant view)" tone="amber" external />
+          <Tile href="/health"         icon="support"    title="→ Health"      sub="Hospital workstation (tenant view)" tone="amber" external />
           <Tile href="/institute"      icon="customers"  title="→ Institute"   sub="Schools & NGO workstation" tone="sky" external />
         </div>
       </Section>

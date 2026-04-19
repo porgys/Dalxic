@@ -1,0 +1,53 @@
+import Link from "next/link"
+
+export default function InstitutePage() {
+  return (
+    <main style={{
+      minHeight: "100vh", display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      background: "#040A0F", position: "relative", overflow: "hidden",
+    }}>
+      <div style={{
+        position: "absolute", top: "50%", left: "50%",
+        transform: "translate(-50%, -50%)", width: 600, height: 600,
+        borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(14,165,233,0.10) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
+
+      <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 640, padding: "0 24px" }}>
+        <p style={{ fontSize: 11, letterSpacing: 6, textTransform: "uppercase", color: "#0EA5E9", marginBottom: 24, fontWeight: 700, fontFamily: "'DM Mono', monospace" }}>
+          DalxicInstitute
+        </p>
+
+        <h1 style={{ fontSize: "clamp(36px, 6vw, 56px)", fontWeight: 800, lineHeight: 1.1, color: "#ECF5F0", marginBottom: 20, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "-0.02em" }}>
+          Education,{" "}
+          <span style={{ background: "linear-gradient(135deg, #0EA5E9, #38BDF8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            transformed
+          </span>
+        </h1>
+
+        <p style={{ fontSize: 16, color: "rgba(236,245,240,0.45)", lineHeight: 1.7, marginBottom: 48 }}>
+          Enrollment, gradebook, fees, attendance, exams, parent portal.
+          One platform for every school and institution.
+        </p>
+
+        <Link href="/kiosk/LEGON-ACAD" style={{
+          display: "inline-flex", alignItems: "center", gap: 10,
+          padding: "14px 32px", borderRadius: 12,
+          background: "linear-gradient(135deg, #0EA5E9, #0284C7)",
+          color: "#fff", fontSize: 13, fontWeight: 700,
+          letterSpacing: "0.08em", textTransform: "uppercase",
+          textDecoration: "none", boxShadow: "0 8px 32px rgba(14,165,233,0.25)",
+          fontFamily: "'DM Sans', sans-serif",
+        }}>
+          Enter Platform
+        </Link>
+      </div>
+
+      <div style={{ position: "absolute", bottom: 32, fontSize: 11, color: "rgba(236,245,240,0.15)", letterSpacing: 3, textTransform: "uppercase", fontFamily: "'DM Mono', monospace" }}>
+        Dalxic &middot; Ghana
+      </div>
+    </main>
+  )
+}

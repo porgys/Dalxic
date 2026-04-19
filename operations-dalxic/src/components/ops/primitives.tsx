@@ -18,6 +18,8 @@ export const T = {
   amber:     "#F59E0B",
   amberL:    "#FBBF24",
   sky:       "#0EA5E9",
+  copper:    "#D97706",
+  copperL:   "#E69A2E",
   tx:        "#ECF5F0",
   txM:       "#6B9B8A",
   txD:       "#3A6B5A",
@@ -30,17 +32,17 @@ export function Page({ children, title, subtitle, accent = "emerald", action }: 
   children: ReactNode
   title: string
   subtitle?: string
-  accent?: "emerald" | "amber" | "sky"
+  accent?: "emerald" | "amber" | "sky" | "copper"
   action?: ReactNode
 }) {
-  const accentColor = accent === "amber" ? T.amber : accent === "sky" ? T.sky : T.emerald
+  const accentColor = accent === "amber" ? T.amber : accent === "sky" ? T.sky : accent === "copper" ? T.copper : T.emerald
   return (
     <div style={{ minHeight: "calc(100vh - 56px)", background: T.bg, padding: "32px 32px 80px", fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ maxWidth: 1480, margin: "0 auto" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 28, gap: 24 }}>
           <div>
             <div style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700, color: accentColor, marginBottom: 8, fontFamily: "'DM Mono', monospace" }}>
-              DalxicTrade
+              {accent === "copper" ? "DalxicHealth" : accent === "sky" ? "DalxicInstitute" : "DalxicTrade"}
             </div>
             <h1 style={{ fontSize: 36, fontWeight: 800, color: T.tx, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "-0.02em", lineHeight: 1.05 }}>
               {title}
@@ -62,9 +64,9 @@ export function Card({ children, padding = 24, style, hover = false, accent = "e
   padding?: number | string
   style?: CSSProperties
   hover?: boolean
-  accent?: "emerald" | "amber" | "sky"
+  accent?: "emerald" | "amber" | "sky" | "copper"
 }) {
-  const c = accent === "amber" ? "245,158,11" : accent === "sky" ? "14,165,233" : "16,185,129"
+  const c = accent === "amber" ? "245,158,11" : accent === "sky" ? "14,165,233" : accent === "copper" ? "217,119,6" : "16,185,129"
   return (
     <div
       style={{
@@ -91,10 +93,10 @@ export function Stat({ label, value, sub, accent = "emerald", icon }: {
   label: string
   value: string | number
   sub?: string
-  accent?: "emerald" | "amber" | "sky" | "neutral"
+  accent?: "emerald" | "amber" | "sky" | "copper" | "neutral"
   icon?: IconName
 }) {
-  const color = accent === "amber" ? T.amber : accent === "sky" ? T.sky : accent === "neutral" ? T.tx : T.emerald
+  const color = accent === "amber" ? T.amber : accent === "sky" ? T.sky : accent === "copper" ? T.copper : accent === "neutral" ? T.tx : T.emerald
   const cardAccent = accent === "neutral" ? "emerald" : accent
   return (
     <Card accent={cardAccent}>
@@ -118,11 +120,11 @@ export function Stat({ label, value, sub, accent = "emerald", icon }: {
 
 /* ───── Status pill ───── */
 
-export type Tone = "emerald" | "amber" | "sky" | "red" | "neutral"
+export type Tone = "emerald" | "amber" | "sky" | "copper" | "red" | "neutral"
 
 export function Pill({ tone = "emerald", children, dot = false }: { tone?: Tone; children: ReactNode; dot?: boolean }) {
   const colors: Record<Tone, string> = {
-    emerald: T.emerald, amber: T.amber, sky: T.sky, red: T.red, neutral: T.txM,
+    emerald: T.emerald, amber: T.amber, sky: T.sky, copper: T.copper, red: T.red, neutral: T.txM,
   }
   const c = colors[tone]
   return (
@@ -428,9 +430,9 @@ export function Tabs<T extends string>({ tabs, value, onChange, accent = "emeral
   tabs: { key: T; label: string; icon?: IconName; count?: number }[]
   value: T
   onChange: (v: T) => void
-  accent?: "emerald" | "amber" | "sky"
+  accent?: "emerald" | "amber" | "sky" | "copper"
 }) {
-  const c = accent === "amber" ? T.amber : accent === "sky" ? T.sky : T.emerald
+  const c = accent === "amber" ? T.amber : accent === "sky" ? T.sky : accent === "copper" ? T.copper : T.emerald
   return (
     <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${T.border}`, marginBottom: 24 }}>
       {tabs.map((t) => {

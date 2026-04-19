@@ -1,28 +1,38 @@
-import { db } from "./db";
-
-export type ActorType = "operator" | "system" | "api";
+import { db } from "./db"
 
 export async function logAudit(params: {
-  actorType: ActorType;
-  actorId: string;
-  orgId: string;
-  action: string;
-  metadata?: Record<string, unknown>;
-  ipAddress: string;
+  orgId: string
+  actorId: string
+  actorName: string
+  action: string
+  entity: string
+  entityId?: string
+  before?: unknown
+  after?: unknown
+  ipAddress?: string
 }) {
   return db.auditLog.create({
     data: {
-      actorType: params.actorType,
-      actorId: params.actorId,
       orgId: params.orgId,
+      actorId: params.actorId,
+      actorName: params.actorName,
       action: params.action,
-      metadata: params.metadata ? JSON.parse(JSON.stringify(params.metadata)) : {},
-      ipAddress: params.ipAddress,
+      entity: params.entity,
+      entityId: params.entityId,
+      before: params.before as any,
+      after: params.after as any,
+      ipAddress: params.ipAddress ?? "unknown",
     },
-  });
+  })
 }
 
 export function getClientIP(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  return forwarded?.split(",")[0]?.trim() ?? "unknown";
+  const realIp = request.headers.get("x-real-ip")
+  if (realIp) return realIp
+  const forwarded = request.headers.get("x-forwarded-for")
+  if (forwarded) {
+    const parts = forwarded.split(",").map(s => s.trim())
+    return parts[parts.length - 1] || "unknown"
+  }
+  return "unknown"
 }
