@@ -169,9 +169,9 @@ export function ProcedureEngine({ accent, tenant, mode }: Props) {
 
       <Drawer open={!!s} onClose={() => setSelected(null)} title={s?.test ?? ""} subtitle={s?.orderNo} width={560}
         footer={<>
-          {s?.status === "pending" && <Button variant="outline" icon="check">Start Processing</Button>}
-          {s?.status === "in_progress" && <Button variant="outline" icon="check">Submit Result</Button>}
-          {s?.abnormal && <Button variant="danger" icon="alert">Flag Critical</Button>}
+          {s?.status === "pending" && <Button variant="outline" icon="check" onClick={() => { if (s) { setOrders(prev => prev.map(o => o.id === s.id ? { ...o, status: "in_progress" as const } : o)); setSelected(null) } }}>Start Processing</Button>}
+          {s?.status === "in_progress" && <Button variant="outline" icon="check" onClick={() => { if (s) { setOrders(prev => prev.map(o => o.id === s.id ? { ...o, status: "completed" as const, result: resultText || "Result recorded", abnormal: abnormalFlag } : o)); setSelected(null) } }}>Submit Result</Button>}
+          {s?.abnormal && <Button variant="danger" icon="alert" onClick={() => { if (s) { setOrders(prev => prev.map(o => o.id === s.id ? { ...o, status: "critical" as const } : o)); setSelected(null) } }}>Flag Critical</Button>}
         </>}
       >
         {s && (
@@ -239,8 +239,8 @@ export function ProcedureEngine({ accent, tenant, mode }: Props) {
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ fontSize: 13, color: T.tx }}>{s.test}</div>
                     <div style={{ display: "flex", gap: 10 }}>
-                      <Button variant="outline" icon="clock">Mark Preparing</Button>
-                      <Button variant="outline" icon="check">Ready to Serve</Button>
+                      <Button variant="outline" icon="clock" onClick={() => { if (s) { setOrders(prev => prev.map(o => o.id === s.id ? { ...o, status: "in_progress" as const } : o)); setSelected(null) } }}>Mark Preparing</Button>
+                      <Button variant="outline" icon="check" onClick={() => { if (s) { setOrders(prev => prev.map(o => o.id === s.id ? { ...o, status: "completed" as const } : o)); setSelected(null) } }}>Ready to Serve</Button>
                     </div>
                   </div>
                 )}

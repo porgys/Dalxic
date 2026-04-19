@@ -86,6 +86,23 @@ function IntakeView({ ax, accent, label }: { ax: string; accent: Accent; label: 
   const [search, setSearch] = useState("")
   const [selected, setSelected] = useState<QueueEntry | null>(null)
   const [queue, setQueue] = useState<QueueEntry[]>(DEMO_QUEUE)
+  const [regName, setRegName] = useState("")
+  const [regPhone, setRegPhone] = useState("")
+  const [regGender, setRegGender] = useState("Male")
+  const [regAge, setRegAge] = useState("")
+  const [regInsurance, setRegInsurance] = useState("NHIS")
+  const [regComplaint, setRegComplaint] = useState("")
+  const [regSeverity, setRegSeverity] = useState("1")
+
+  function addToQueue() {
+    if (!regName || !regComplaint) return
+    const entry: QueueEntry = { id: `q${Date.now()}`, token: `Q-${String(queue.length + 1).padStart(3, "0")}`, name: regName, complaint: regComplaint, severity: parseInt(regSeverity) || 1, status: "waiting", waitMins: 0, gender: regGender.charAt(0), age: parseInt(regAge) || 0, insurance: regInsurance }
+    setQueue(prev => [...prev, entry])
+    setRegName(""); setRegPhone(""); setRegComplaint(""); setRegSeverity("1")
+    setTab("queue")
+  }
+
+  function updateEntry(id: string, u: Partial<QueueEntry>) { setQueue(prev => prev.map(q => q.id === id ? { ...q, ...u } : q)); setSelected(null) }
 
   const fetchQueue = useCallback(async () => {
     if (!session) return
@@ -142,22 +159,22 @@ function IntakeView({ ax, accent, label }: { ax: string; accent: Accent; label: 
           <div style={{ fontSize: 16, fontWeight: 700, color: T.tx, marginBottom: 20, fontFamily: "'Space Grotesk', sans-serif" }}>New {label}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Full Name</label><input style={inputStyle(ax)} placeholder="Patient name" /></div>
-              <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Phone</label><input style={inputStyle(ax)} placeholder="0XX XXX XXXX" /></div>
+              <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Full Name</label><input value={regName} onChange={e => setRegName(e.target.value)} style={inputStyle(ax)} placeholder="Patient name" /></div>
+              <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Phone</label><input value={regPhone} onChange={e => setRegPhone(e.target.value)} style={inputStyle(ax)} placeholder="0XX XXX XXXX" /></div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-              <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Gender</label><select style={inputStyle(ax)}><option>Male</option><option>Female</option></select></div>
-              <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Age</label><input style={inputStyle(ax)} type="number" placeholder="Age" /></div>
-              <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Insurance</label><select style={inputStyle(ax)}><option>NHIS</option><option>Private</option><option>None</option></select></div>
+              <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Gender</label><select value={regGender} onChange={e => setRegGender(e.target.value)} style={inputStyle(ax)}><option>Male</option><option>Female</option></select></div>
+              <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Age</label><input value={regAge} onChange={e => setRegAge(e.target.value)} style={inputStyle(ax)} type="number" placeholder="Age" /></div>
+              <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Insurance</label><select value={regInsurance} onChange={e => setRegInsurance(e.target.value)} style={inputStyle(ax)}><option>NHIS</option><option>Private</option><option>None</option></select></div>
             </div>
-            <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Chief Complaint</label><textarea style={{ ...inputStyle(ax), minHeight: 80, resize: "vertical" }} placeholder="Describe the presenting complaint..." /></div>
-            <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Severity (1–10)</label><input style={{ ...inputStyle(ax), maxWidth: 100 }} type="number" min={1} max={10} placeholder="1" /></div>
-            <Button variant="outline" icon="check">Add to Queue</Button>
+            <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Chief Complaint</label><textarea value={regComplaint} onChange={e => setRegComplaint(e.target.value)} style={{ ...inputStyle(ax), minHeight: 80, resize: "vertical" }} placeholder="Describe the presenting complaint..." /></div>
+            <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Severity (1–10)</label><input value={regSeverity} onChange={e => setRegSeverity(e.target.value)} style={{ ...inputStyle(ax), maxWidth: 100 }} type="number" min={1} max={10} placeholder="1" /></div>
+            <Button variant="outline" icon="check" onClick={addToQueue}>Add to Queue</Button>
           </div>
         </div>
       )}
 
-      <Drawer open={!!s} onClose={() => setSelected(null)} title={s?.name ?? ""} subtitle={s?.token} width={520} footer={<><Button variant="ghost" icon="user">Assign Provider</Button><Button variant="outline" icon="check">Mark Seen</Button>{s?.severity && s.severity < 8 && <Button variant="danger" icon="alert">Escalate</Button>}</>}>
+      <Drawer open={!!s} onClose={() => setSelected(null)} title={s?.name ?? ""} subtitle={s?.token} width={520} footer={<><Button variant="ghost" icon="user" onClick={() => s && updateEntry(s.id, { status: "with_provider" })}>Assign Provider</Button><Button variant="outline" icon="check" onClick={() => s && updateEntry(s.id, { status: "completed" })}>Mark Seen</Button>{s?.severity && s.severity < 8 && <Button variant="danger" icon="alert" onClick={() => s && updateEntry(s.id, { status: "emergency", severity: 9 })}>Escalate</Button>}</>}>
         {s && (
           <>
             <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
@@ -184,6 +201,10 @@ function SOAPView({ ax, accent, label }: { ax: string; accent: Accent; label: st
   const [rxList, setRxList] = useState<{ drug: string; dosage: string; qty: number }[]>([])
   const [labList, setLabList] = useState<string[]>([])
   const [allQueue, setAllQueue] = useState<QueueEntry[]>(DEMO_QUEUE)
+  const [saved, setSaved] = useState(false)
+  const [rxDrug, setRxDrug] = useState(""); const [rxDosage, setRxDosage] = useState(""); const [rxQty, setRxQty] = useState("")
+  const [labTest, setLabTest] = useState("")
+  const [referredTo, setReferredTo] = useState<string | null>(null)
 
   const fetchQueue = useCallback(async () => {
     if (!session) return
@@ -273,9 +294,10 @@ function SOAPView({ ax, accent, label }: { ax: string; accent: Accent; label: st
                     <textarea value={soap[field]} onChange={e => setSoap(p => ({ ...p, [field]: e.target.value }))} style={{ ...inputStyle(ax), minHeight: 70, resize: "vertical" }} placeholder={`Enter ${field} findings...`} />
                   </div>
                 ))}
+                {saved && <div style={{ padding: "8px 14px", borderRadius: 8, background: `${T.emerald}14`, color: T.emerald, fontSize: 12, fontWeight: 600 }}>Notes saved</div>}
                 <div style={{ display: "flex", gap: 10 }}>
-                  <Button variant="outline" icon="check">Save Notes</Button>
-                  <Button variant="ghost" icon="clock">Complete Encounter</Button>
+                  <Button variant="outline" icon="check" onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000) }}>Save Notes</Button>
+                  <Button variant="ghost" icon="clock" onClick={() => { if (patient) { setAllQueue(prev => prev.map(q => q.id === patient.id ? { ...q, status: "completed" as const } : q)); setSelectedId(null); setSoap({ subjective: "", objective: "", assessment: "", plan: "" }); setRxList([]); setLabList([]); setActiveTemplate(null) } }}>Complete Encounter</Button>
                 </div>
               </div>
             )}
@@ -295,11 +317,11 @@ function SOAPView({ ax, accent, label }: { ax: string; accent: Accent; label: st
                 <div style={{ ...glass, background: `${ax}04` }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.tx, marginBottom: 12 }}>Add Prescription</div>
                   <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 80px", gap: 10 }}>
-                    <input style={inputStyle(ax)} placeholder="Drug name" />
-                    <input style={inputStyle(ax)} placeholder="Dosage" />
-                    <input style={inputStyle(ax)} type="number" placeholder="Qty" />
+                    <input value={rxDrug} onChange={e => setRxDrug(e.target.value)} style={inputStyle(ax)} placeholder="Drug name" />
+                    <input value={rxDosage} onChange={e => setRxDosage(e.target.value)} style={inputStyle(ax)} placeholder="Dosage" />
+                    <input value={rxQty} onChange={e => setRxQty(e.target.value)} style={inputStyle(ax)} type="number" placeholder="Qty" />
                   </div>
-                  <div style={{ marginTop: 10 }}><Button variant="ghost" icon="check">Add</Button></div>
+                  <div style={{ marginTop: 10 }}><Button variant="ghost" icon="check" onClick={() => { if (rxDrug) { setRxList(prev => [...prev, { drug: rxDrug, dosage: rxDosage, qty: parseInt(rxQty) || 1 }]); setRxDrug(""); setRxDosage(""); setRxQty("") } }}>Add</Button></div>
                 </div>
               </div>
             )}
@@ -316,22 +338,25 @@ function SOAPView({ ax, accent, label }: { ax: string; accent: Accent; label: st
                 <div style={{ ...glass, background: `${ax}04` }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.tx, marginBottom: 12 }}>Add Lab Order</div>
                   <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10 }}>
-                    <input style={inputStyle(ax)} placeholder="Test name" />
+                    <input value={labTest} onChange={e => setLabTest(e.target.value)} style={inputStyle(ax)} placeholder="Test name" />
                     <select style={inputStyle(ax)}><option>Routine</option><option>Urgent</option><option>STAT</option></select>
                   </div>
-                  <div style={{ marginTop: 10 }}><Button variant="ghost" icon="check">Add Test</Button></div>
+                  <div style={{ marginTop: 10 }}><Button variant="ghost" icon="check" onClick={() => { if (labTest) { setLabList(prev => [...prev, labTest]); setLabTest("") } }}>Add Test</Button></div>
                 </div>
               </div>
             )}
 
             {noteTab === "refer" && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+              <div>
+                {referredTo && <div style={{ padding: "10px 16px", borderRadius: 8, background: `${T.emerald}14`, color: T.emerald, fontSize: 12, fontWeight: 600, marginBottom: 16 }}>Referral sent to {referredTo}</div>}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
                 {[{ label: "Laboratory", icon: "lab" as const, tone: "sky" as Tone }, { label: "Pharmacy", icon: "pharmacy" as const, tone: "emerald" as Tone }, { label: "Radiology", icon: "radiology" as const, tone: "amber" as Tone }, { label: "Ward Admission", icon: "ward" as const, tone: "copper" as Tone }, { label: "Injection Room", icon: "injection" as const, tone: "red" as Tone }, { label: "Ultrasound", icon: "ultrasound" as const, tone: "sky" as Tone }].map(ref => (
-                  <button key={ref.label} style={{ ...glass, cursor: "pointer", textAlign: "center", padding: 24, border: `1px solid ${T.border}` }}>
+                  <button key={ref.label} onClick={() => { setReferredTo(ref.label); setTimeout(() => setReferredTo(null), 3000) }} style={{ ...glass, cursor: "pointer", textAlign: "center", padding: 24, border: `1px solid ${referredTo === ref.label ? T.emerald : T.border}` }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: T.tx, marginTop: 8 }}>{ref.label}</div>
-                    <div style={{ fontSize: 11, color: T.txM, marginTop: 4 }}>Send referral</div>
+                    <div style={{ fontSize: 11, color: T.txM, marginTop: 4 }}>{referredTo === ref.label ? "Sent" : "Send referral"}</div>
                   </button>
                 ))}
+              </div>
               </div>
             )}
           </>
@@ -457,7 +482,7 @@ function AssistView({ ax, accent, label }: { ax: string; accent: Accent; label: 
             <Section title="Assist Notes">
               <textarea style={{ ...inputStyle(ax), minHeight: 120, resize: "vertical" }} placeholder="Record assist notes..." />
             </Section>
-            <div style={{ marginTop: 16 }}><Button variant="outline" icon="check">Complete</Button></div>
+            <div style={{ marginTop: 16 }}><Button variant="outline" icon="check" onClick={() => { if (selected) { setAllQueue(prev => prev.map(q => q.id === selected.id ? { ...q, status: "completed" as const } : q)); setSelected(null) } }}>Complete</Button></div>
           </>
         )}
       </Drawer>

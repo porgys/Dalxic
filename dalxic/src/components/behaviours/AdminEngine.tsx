@@ -164,11 +164,15 @@ export function AdminEngine({ accent, tenant, mode }: Props) {
 function BillingView({ ax, accent }: { ax: string; accent: Accent }) {
   const [tab, setTab] = useState<"outstanding" | "paid" | "all">("outstanding")
   const [selected, setSelected] = useState<BillItem | null>(null)
-  const unpaid = DEMO_BILLS.filter(b => b.status !== "paid")
-  const paid = DEMO_BILLS.filter(b => b.status === "paid")
+  const [bills, setBills] = useState<BillItem[]>(DEMO_BILLS)
+  const [payMethod, setPayMethod] = useState<string | null>(null)
+  const unpaid = bills.filter(b => b.status !== "paid")
+  const paid = bills.filter(b => b.status === "paid")
   const totalOwed = unpaid.reduce((s, b) => s + b.total, 0)
   const totalPaid = paid.reduce((s, b) => s + b.total, 0)
-  const filtered = tab === "outstanding" ? unpaid : tab === "paid" ? paid : DEMO_BILLS
+  const filtered = tab === "outstanding" ? unpaid : tab === "paid" ? paid : bills
+
+  function collectPayment() { if (selected && payMethod) { setBills(prev => prev.map(b => b.id === selected.id ? { ...b, status: "paid" as const, payMethod } : b)); setSelected(null); setPayMethod(null) } }
 
   return (
     <>
@@ -178,7 +182,7 @@ function BillingView({ ax, accent }: { ax: string; accent: Accent }) {
         <Stat label="Bills Today" value={DEMO_BILLS.length} icon="trending" accent={accent} />
         <Stat label="Unpaid" value={unpaid.length} icon="clock" accent="amber" />
       </div>
-      <Tabs tabs={[{ key: "outstanding" as const, label: "Outstanding", count: unpaid.length }, { key: "paid" as const, label: "Paid", count: paid.length }, { key: "all" as const, label: "All", count: DEMO_BILLS.length }]} value={tab} onChange={setTab} />
+      <Tabs tabs={[{ key: "outstanding" as const, label: "Outstanding", count: unpaid.length }, { key: "paid" as const, label: "Paid", count: paid.length }, { key: "all" as const, label: "All", count: bills.length }]} value={tab} onChange={setTab} />
       <DataTable rows={filtered} columns={[
         { key: "patient", label: "Patient", render: r => <div><div style={{ fontWeight: 600 }}>{r.patient}</div><div style={{ fontSize: 11, color: T.txM }}>{r.detail}</div></div> },
         { key: "items", label: "Items", width: 60, align: "right", render: r => <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12 }}>{r.items.length}</span> },
@@ -187,7 +191,7 @@ function BillingView({ ax, accent }: { ax: string; accent: Accent }) {
         { key: "date", label: "Date", width: 100, render: r => <span style={{ fontSize: 12, color: T.txM }}>{r.date}</span> },
       ] as Column<BillItem>[]} onRowClick={r => setSelected(r)} empty="No bills." />
       <Drawer open={!!selected} onClose={() => setSelected(null)} title={selected?.patient ?? ""} subtitle="Bill" width={520}
-        footer={<>{selected?.status !== "paid" && <><Button variant="outline" icon="check">Collect Payment</Button><Button variant="ghost" icon="clock">Send Reminder</Button></>}</>}>
+        footer={<>{selected?.status !== "paid" && <><Button variant="outline" icon="check" onClick={collectPayment} disabled={!payMethod}>Collect Payment</Button><Button variant="ghost" icon="clock" onClick={() => setSelected(null)}>Send Reminder</Button></>}</>}>
         {selected && (<>
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}><Pill tone={billTone(selected.status)} dot>{selected.status}</Pill></div>
           <Section title="Line Items">{selected.items.map((item, i) => <div key={i} style={{ padding: "6px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, color: T.tx }}>{item}</div>)}</Section>
@@ -195,7 +199,7 @@ function BillingView({ ax, accent }: { ax: string; accent: Accent }) {
           {selected.status !== "paid" && (
             <Section title="Payment Method">
               <div style={{ display: "flex", gap: 8 }}>
-                {["Cash", "MoMo", "NHIS", "Insurance", "Card"].map(m => <button key={m} style={{ padding: "8px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, background: `${ax}08`, color: T.tx, border: `1px solid ${T.border}`, cursor: "pointer" }}>{m}</button>)}
+                {["Cash", "MoMo", "NHIS", "Insurance", "Card"].map(m => <button key={m} onClick={() => setPayMethod(m)} style={{ padding: "8px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, background: payMethod === m ? `${ax}20` : `${ax}08`, color: payMethod === m ? ax : T.tx, border: `1px solid ${payMethod === m ? ax : T.border}`, cursor: "pointer" }}>{m}</button>)}
               </div>
             </Section>
           )}
@@ -226,7 +230,7 @@ function NurseView({ ax, accent }: { ax: string; accent: Accent }) {
         { key: "time", label: "Taken", width: 70, render: r => <span style={{ fontSize: 11, color: T.txM }}>{r.time}</span> },
       ] as Column<VitalsEntry>[]} onRowClick={r => setSelected(r)} empty="No vitals recorded." />
       <Drawer open={!!selected} onClose={() => setSelected(null)} title={selected?.patient ?? ""} subtitle={selected?.bed} width={560}
-        footer={<Button variant="outline" icon="check">Record New Vitals</Button>}>
+        footer={<Button variant="outline" icon="check" onClick={() => setSelected(null)}>Record New Vitals</Button>}>
         {selected && (<>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
             {[{ l: "HR", v: `${selected.hr} bpm` }, { l: "BP", v: selected.bp }, { l: "Temp", v: `${selected.temp}°C` }, { l: "SpO2", v: `${selected.spo2}%` }, { l: "RR", v: `${selected.rr}/min` }, { l: "GCS", v: `${selected.gcs}/15` }].map(m => (
@@ -300,7 +304,7 @@ function AccountingView({ ax, accent }: { ax: string; accent: Accent }) {
             <input style={inputStyle(ax)} placeholder="Amount" type="number" />
             <input style={inputStyle(ax)} placeholder="Narration" />
           </div>
-          <div style={{ marginTop: 12 }}><Button variant="outline" icon="check">Post Entry</Button></div>
+          <div style={{ marginTop: 12 }}><Button variant="outline" icon="check" onClick={() => { setTab("coa") }}>Post Entry</Button></div>
         </div>
       )}
     </>
@@ -341,7 +345,7 @@ function ShiftsView({ ax, accent }: { ax: string; accent: Accent }) {
         <div key={s.id} style={{ ...glass, marginBottom: 16, border: `1px solid ${T.emerald}30` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div><div style={{ fontWeight: 700, fontSize: 16, color: T.tx }}>{s.operator}</div><div style={{ fontSize: 12, color: T.txM }}>{s.role} · {s.branch} · Opened {s.openedAt}</div></div>
-            <div style={{ display: "flex", gap: 8 }}><Pill tone="emerald" dot>Active</Pill><Button variant="outline" icon="lock">Close Shift</Button></div>
+            <div style={{ display: "flex", gap: 8 }}><Pill tone="emerald" dot>Active</Pill><Button variant="outline" icon="lock" onClick={() => setShifts(prev => prev.map(sh => sh.id === s.id ? { ...sh, status: "closed" as const, closedAt: new Date().toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }), closeCash: s.openFloat, variance: 0 } : sh))}>Close Shift</Button></div>
           </div>
         </div>
       ))}
@@ -398,6 +402,7 @@ function PayrollView({ ax, accent }: { ax: string; accent: Accent }) {
 }
 
 function ReportsView({ ax, accent }: { ax: string; accent: Accent }) {
+  const [generated, setGenerated] = useState<string | null>(null)
   return (
     <>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
@@ -415,8 +420,8 @@ function ReportsView({ ax, accent }: { ax: string; accent: Accent }) {
             </div>
             <div style={{ fontSize: 12, color: T.txM, marginBottom: 12 }}>{r.description}</div>
             <div style={{ display: "flex", gap: 8 }}>
-              <Button variant="ghost" icon="trending">Generate</Button>
-              <Button variant="ghost" icon="check">Export CSV</Button>
+              <Button variant="ghost" icon="trending" onClick={() => { setGenerated(r.id); setTimeout(() => setGenerated(null), 2000) }}>{generated === r.id ? "Generated" : "Generate"}</Button>
+              <Button variant="ghost" icon="check" onClick={() => { setGenerated(r.id); setTimeout(() => setGenerated(null), 2000) }}>{generated === r.id ? "Exported" : "Export CSV"}</Button>
             </div>
           </div>
         ))}
@@ -509,7 +514,7 @@ function RolesView({ ax, accent }: { ax: string; accent: Accent }) {
         ))}
       </div>
       <Drawer open={!!selected} onClose={() => setSelected(null)} title={selected?.name ?? ""} subtitle="Role" width={480}
-        footer={<Button variant="outline" icon="check">Save Changes</Button>}>
+        footer={<Button variant="outline" icon="check" onClick={() => setSelected(null)}>Save Changes</Button>}>
         {selected && (
           <Section title="Permissions">
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -583,7 +588,7 @@ function ExpensesView({ ax, accent }: { ax: string; accent: Accent }) {
         { key: "status", label: "Status", width: 100, render: r => <Pill tone={expTone(r.status)} dot>{r.status}</Pill> },
       ] as Column<Expense>[]} onRowClick={r => setSelected(r)} empty="No expenses." />
       <Drawer open={!!selected} onClose={() => setSelected(null)} title={selected?.description ?? ""} width={480}
-        footer={<>{selected?.status === "pending" && <><Button variant="outline" icon="check">Approve</Button><Button variant="danger" icon="lock">Reject</Button></>}</>}>
+        footer={<>{selected?.status === "pending" && <><Button variant="outline" icon="check" onClick={() => { if (selected) { setExpenses(prev => prev.map(e => e.id === selected.id ? { ...e, status: "approved" as const } : e)); setSelected(null) } }}>Approve</Button><Button variant="danger" icon="lock" onClick={() => { if (selected) { setExpenses(prev => prev.map(e => e.id === selected.id ? { ...e, status: "rejected" as const } : e)); setSelected(null) } }}>Reject</Button></>}</>}>
         {selected && (<>
           <Section title="Details">
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

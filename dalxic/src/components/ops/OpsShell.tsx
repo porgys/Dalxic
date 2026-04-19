@@ -194,13 +194,13 @@ function Sidebar() {
         <div style={{ fontSize: 9, color: T.emerald, fontFamily: "'DM Mono', monospace", letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>
           Verticals
         </div>
-        <Link href="/kiosk/DEMO" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", color: T.amber, fontSize: 11, fontWeight: 700, textDecoration: "none" }}>
+        <Link href="/kiosk/KASOA-MART" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", color: T.amber, fontSize: 11, fontWeight: 700, textDecoration: "none" }}>
           <Icon name="pos" size={12} /> DalxicTrade
         </Link>
-        <Link href="/kiosk/KBH" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", color: T.copper, fontSize: 11, fontWeight: 700, textDecoration: "none" }}>
+        <Link href="/kiosk/KORLE-BU" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", color: T.copper, fontSize: 11, fontWeight: 700, textDecoration: "none" }}>
           <Icon name="support" size={12} /> DalxicHealth
         </Link>
-        <Link href="/kiosk/ACAD" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", color: T.sky, fontSize: 11, fontWeight: 700, textDecoration: "none" }}>
+        <Link href="/kiosk/LEGON-ACAD" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", color: T.sky, fontSize: 11, fontWeight: 700, textDecoration: "none" }}>
           <Icon name="customers" size={12} /> DalxicInstitute
         </Link>
       </div>

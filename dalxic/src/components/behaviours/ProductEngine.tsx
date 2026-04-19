@@ -62,17 +62,20 @@ function DispenseView({ accent, tenant }: { accent: Accent; tenant: MockTenant }
   const [tab, setTab] = useState<"rx" | "retail" | "inventory">("rx")
   const [search, setSearch] = useState("")
   const [selected, setSelected] = useState<RxOrder | null>(null)
+  const [orders, setOrders] = useState<RxOrder[]>(DEMO_RX)
 
-  const pending = DEMO_RX.filter(r => r.status === "pending")
-  const dispensing = DEMO_RX.filter(r => r.status === "dispensing")
-  const dispensed = DEMO_RX.filter(r => r.status === "dispensed")
-  const outOfStock = DEMO_RX.filter(r => r.status === "out_of_stock")
+  const pending = orders.filter(r => r.status === "pending")
+  const dispensing = orders.filter(r => r.status === "dispensing")
+  const dispensed = orders.filter(r => r.status === "dispensed")
+  const outOfStock = orders.filter(r => r.status === "out_of_stock")
+
+  function updateOrder(id: string, status: RxOrder["status"]) { setOrders(prev => prev.map(r => r.id === id ? { ...r, status } : r)); setSelected(null) }
 
   const filtered = useMemo(() => {
-    if (!search) return DEMO_RX
+    if (!search) return orders
     const q = search.toLowerCase()
-    return DEMO_RX.filter(r => r.patient.toLowerCase().includes(q) || r.orderNo.toLowerCase().includes(q) || r.items.some(i => i.drug.toLowerCase().includes(q)))
-  }, [search])
+    return orders.filter(r => r.patient.toLowerCase().includes(q) || r.orderNo.toLowerCase().includes(q) || r.items.some(i => i.drug.toLowerCase().includes(q)))
+  }, [search, orders])
 
   const s = selected
 
@@ -106,9 +109,9 @@ function DispenseView({ accent, tenant }: { accent: Accent; tenant: MockTenant }
 
           <Drawer open={!!s} onClose={() => setSelected(null)} title={s?.patient ?? ""} subtitle={s?.orderNo} width={600}
             footer={<>
-              {s?.status === "pending" && <Button variant="outline" icon="check">Start Dispensing</Button>}
-              {s?.status === "dispensing" && <Button variant="outline" icon="check">Complete Dispense</Button>}
-              {s?.status === "out_of_stock" && <Button variant="ghost" icon="alert">Notify Doctor</Button>}
+              {s?.status === "pending" && <Button variant="outline" icon="check" onClick={() => s && updateOrder(s.id, "dispensing")}>Start Dispensing</Button>}
+              {s?.status === "dispensing" && <Button variant="outline" icon="check" onClick={() => s && updateOrder(s.id, "dispensed")}>Complete Dispense</Button>}
+              {s?.status === "out_of_stock" && <Button variant="ghost" icon="alert" onClick={() => s && updateOrder(s.id, "pending")}>Notify Doctor</Button>}
             </>}
           >
             {s && (

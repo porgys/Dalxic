@@ -80,6 +80,8 @@ export function RecurringEngine({ accent, tenant, mode }: Props) {
   const [search, setSearch] = useState("")
   const [selected, setSelected] = useState<RecurringSchedule | null>(null)
 
+  function updateSchedule(id: string, u: Partial<RecurringSchedule>) { setSchedules(prev => prev.map(s => s.id === id ? { ...s, ...u } : s)); setSelected(null) }
+
   const fetchSchedules = useCallback(async () => {
     if (!session) return
     try {
@@ -143,10 +145,10 @@ export function RecurringEngine({ accent, tenant, mode }: Props) {
 
       <Drawer open={!!s} onClose={() => setSelected(null)} title={s?.entity ?? ""} subtitle={s?.plan} width={520}
         footer={<>
-          {s?.status === "active" && <><Button variant="ghost" icon="clock">Charge Now</Button><Button variant="outline" icon="lock">Freeze</Button></>}
-          {s?.status === "overdue" && <><Button variant="outline" icon="check">Collect Payment</Button><Button variant="danger" icon="lock">Suspend</Button></>}
-          {s?.status === "frozen" && <Button variant="outline" icon="check">Reactivate</Button>}
-          {s?.status !== "cancelled" && <Button variant="danger" icon="lock">Cancel</Button>}
+          {s?.status === "active" && <><Button variant="ghost" icon="clock" onClick={() => s && updateSchedule(s.id, { chargeCount: s.chargeCount + 1, totalCharged: s.totalCharged + s.amount, lastCharge: new Date().toISOString().slice(0, 10) })}>Charge Now</Button><Button variant="outline" icon="lock" onClick={() => s && updateSchedule(s.id, { status: "frozen", nextCharge: "---" })}>Freeze</Button></>}
+          {s?.status === "overdue" && <><Button variant="outline" icon="check" onClick={() => s && updateSchedule(s.id, { status: "active", chargeCount: s.chargeCount + 1, totalCharged: s.totalCharged + s.amount, lastCharge: new Date().toISOString().slice(0, 10) })}>Collect Payment</Button><Button variant="danger" icon="lock" onClick={() => s && updateSchedule(s.id, { status: "frozen", nextCharge: "---" })}>Suspend</Button></>}
+          {s?.status === "frozen" && <Button variant="outline" icon="check" onClick={() => s && updateSchedule(s.id, { status: "active" })}>Reactivate</Button>}
+          {s?.status !== "cancelled" && <Button variant="danger" icon="lock" onClick={() => s && updateSchedule(s.id, { status: "cancelled", nextCharge: "---" })}>Cancel</Button>}
         </>}
       >
         {s && (

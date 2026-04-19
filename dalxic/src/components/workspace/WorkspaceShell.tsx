@@ -2,7 +2,9 @@
 
 import { ReactNode } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { T } from "@/components/ops/primitives"
+import { useAuth } from "@/lib/use-auth"
 
 type AccentKey = "amber" | "copper" | "sky" | "emerald"
 
@@ -39,6 +41,8 @@ export function WorkspaceShell({
   fromOps,
   operator,
 }: WorkspaceShellProps) {
+  const router = useRouter()
+  const { logout } = useAuth()
   const c = ACCENT_HEX[accent]
   const cL = ACCENT_LIGHT[accent]
   const op = operator ?? "Operator"
@@ -184,6 +188,7 @@ export function WorkspaceShell({
             </Link>
           ) : (
             <button
+              onClick={() => { logout(); router.push(`/kiosk/${orgCode}`) }}
               style={{
                 fontSize: 12,
                 fontWeight: 600,

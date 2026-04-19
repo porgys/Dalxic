@@ -98,6 +98,9 @@ export function AdmissionEngine({ accent, tenant, mode }: Props) {
   const [slots, setSlots] = useState<Slot[]>(() => genSlots(mode))
   const [tab, setTab] = useState<"grid" | "list" | "rounds">("grid")
   const [selected, setSelected] = useState<Slot | null>(null)
+  const [roundSaved, setRoundSaved] = useState<string | null>(null)
+
+  function updateSlot(id: string, u: Partial<Slot>) { setSlots(prev => prev.map(s => s.id === id ? { ...s, ...u } : s)); setSelected(null) }
 
   const fetchCapacity = useCallback(async () => {
     if (!session) return
@@ -188,7 +191,7 @@ export function AdmissionEngine({ accent, tenant, mode }: Props) {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
                 <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: T.txD }}>Day {slot.dayCount}</span>
-                <Button variant="ghost" icon="check">Record Round</Button>
+                <Button variant="ghost" icon="check" onClick={() => { setRoundSaved(slot.id); setTimeout(() => setRoundSaved(null), 2000) }}>{roundSaved === slot.id ? "Saved" : "Record Round"}</Button>
               </div>
             </div>
           ))}
@@ -197,9 +200,9 @@ export function AdmissionEngine({ accent, tenant, mode }: Props) {
 
       <Drawer open={!!s} onClose={() => setSelected(null)} title={s?.entity ?? s?.code ?? ""} subtitle={s?.code} width={560}
         footer={<>
-          {s?.status === "available" && <Button variant="outline" icon="check">Admit {cfg.entityLabel}</Button>}
-          {s?.status === "occupied" && <><Button variant="ghost" icon="user">Transfer</Button><Button variant="outline" icon="check">Discharge</Button></>}
-          {s?.status === "maintenance" && <Button variant="outline" icon="check">Mark Available</Button>}
+          {s?.status === "available" && <Button variant="outline" icon="check" onClick={() => s && updateSlot(s.id, { status: "occupied", entity: `New ${cfg.entityLabel}`, entityDetail: "Just admitted", admittedAt: new Date().toISOString().slice(0, 10), dayCount: 0 })}>Admit {cfg.entityLabel}</Button>}
+          {s?.status === "occupied" && <><Button variant="ghost" icon="user" onClick={() => s && updateSlot(s.id, { status: "reserved", entity: `Transferring ${s.entity}`, entityDetail: "Pending transfer" })}>Transfer</Button><Button variant="outline" icon="check" onClick={() => s && updateSlot(s.id, { status: "available", entity: undefined, entityDetail: undefined, admittedAt: undefined, estRelease: undefined, notes: undefined, dayCount: undefined })}>Discharge</Button></>}
+          {s?.status === "maintenance" && <Button variant="outline" icon="check" onClick={() => s && updateSlot(s.id, { status: "available" })}>Mark Available</Button>}
         </>}
       >
         {s && (
@@ -254,7 +257,7 @@ export function AdmissionEngine({ accent, tenant, mode }: Props) {
                     </div>
                   )}
                   <div><label style={{ fontSize: 11, color: T.txM, display: "block", marginBottom: 4 }}>Notes</label><textarea style={{ ...inputStyle(ax), minHeight: 60 }} placeholder="Round notes..." /></div>
-                  <Button variant="ghost" icon="check">Save Round</Button>
+                  <Button variant="ghost" icon="check" onClick={() => { if (s) { updateSlot(s.id, { notes: `Round recorded at ${new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}` }) } }}>Save Round</Button>
                 </div>
               </Section>
             )}
