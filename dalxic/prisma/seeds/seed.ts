@@ -15,22 +15,21 @@ async function main() {
   const pin1234 = await hashPin("1234")
 
   const kbh = await db.organization.upsert({
-    where: { code: "KORLE-BU" },
+    where: { code: "KBH" },
     update: {},
     create: {
-      code: "KORLE-BU",
-      name: "Korle Bu Hospital",
+      code: "KBH",
+      name: "Korle-Bu Teaching Hospital",
       type: "health",
       tier: "T3",
       activeBehaviours: ["consultation", "procedure", "product", "admission", "recurring", "admin"],
-      activeModules: ["front-desk","doctor","nurse-station","waiting-room","lab","pharmacy","billing-health","ward","injection-room"],
+      activeModules: ["*"],
       paymentGate: "pay_before",
       currency: "GHS",
       timezone: "Africa/Accra",
       maxOperators: 10,
       maxBranches: 3,
       whatsappBundle: 500,
-      labelConfig: { consultation: "Doctor Visit", procedure: "Surgery", product: "Drugs", admission: "Ward Bed", recurring: "Ward Nightly", admin: "Patient Card" },
     },
   })
 
@@ -47,22 +46,21 @@ async function main() {
   })
 
   const demo = await db.organization.upsert({
-    where: { code: "KASOA-MART" },
+    where: { code: "DEMO" },
     update: {},
     create: {
-      code: "KASOA-MART",
-      name: "Kasoa SuperMart",
+      code: "DEMO",
+      name: "Demo Trade Store",
       type: "trade",
       tier: "T2",
-      activeBehaviours: ["consultation", "procedure", "product", "admission", "recurring", "admin"],
-      activeModules: ["pos","inventory","stock","branches","customers","loyalty","suppliers","po","accounting","expenses","tax","shifts","reports","audit","roles"],
+      activeBehaviours: ["product", "admin"],
+      activeModules: ["trade.categories", "trade.products", "trade.sales", "trade.inventory", "trade.analytics", "whatsapp"],
       paymentGate: "pay_after",
       currency: "GHS",
       timezone: "Africa/Accra",
       maxOperators: 3,
       maxBranches: 1,
       whatsappBundle: 100,
-      labelConfig: { consultation: "Customer Assist", procedure: "Warehouse Pick", product: "Goods", admission: "Product → Shelf", recurring: "Supplier Credit", admin: "Bookkeeping" },
     },
   })
 
@@ -80,22 +78,21 @@ async function main() {
   })
 
   const acad = await db.organization.upsert({
-    where: { code: "LEGON-ACAD" },
+    where: { code: "ACAD" },
     update: {},
     create: {
-      code: "LEGON-ACAD",
-      name: "Legon Preparatory School",
+      code: "ACAD",
+      name: "Academy Institute",
       type: "institute",
       tier: "T2",
-      activeBehaviours: ["consultation", "procedure", "product", "admission", "recurring", "admin"],
-      activeModules: ["enrollment","gradebook","fees","attendance","parents","reports","audit","roles"],
+      activeBehaviours: ["recurring", "admin"],
+      activeModules: ["institute.groups", "institute.members", "institute.staff", "institute.fees", "institute.schedule", "whatsapp"],
       paymentGate: "pay_before",
       currency: "GHS",
       timezone: "Africa/Accra",
       maxOperators: 3,
       maxBranches: 1,
       whatsappBundle: 100,
-      labelConfig: { consultation: "Admissions", procedure: "Lessons", product: "Textbooks", admission: "Enrollment", recurring: "Term Fees", admin: "Grading" },
     },
   })
 
@@ -112,7 +109,7 @@ async function main() {
     create: { orgId: acad.id, name: "Registrar", pin: acadPin, role: "registrar" },
   })
 
-  console.log("Seed complete: KORLE-BU (health), KASOA-MART (trade), LEGON-ACAD (institute) — all PINs 1234, hashed with Argon2id")
+  console.log("Seed complete: KBH (health), DEMO (trade), ACAD (institute) — all PINs hashed with Argon2id")
 }
 
 main()

@@ -1,6 +1,5 @@
 "use client"
 import { useState, useCallback, useEffect } from "react"
-import { MOCK_TENANTS } from "@/lib/ops/mock"
 
 export interface Session {
   operatorId: string
@@ -32,40 +31,24 @@ export function useAuth() {
         body: JSON.stringify({ orgCode, pin }),
       })
       const json = await res.json()
-      if (json.success) {
-        const { operator, org } = json.data
-        const sess: Session = {
-          operatorId: operator.id,
-          operatorName: operator.name,
-          operatorRole: operator.role,
-          orgId: org.id,
-          orgCode: org.code,
-          orgName: org.name,
-          orgType: org.type,
-        }
-        sessionStorage.setItem("dalxic_session", JSON.stringify(sess))
-        setSession(sess)
-        return { success: true }
-      }
-    } catch { /* API unreachable — fall through to mock */ }
+      if (!json.success) return { success: false, error: json.error || "Login failed" }
 
-    const mock = MOCK_TENANTS.find(t => t.code === orgCode)
-    if (mock) {
+      const { operator, org } = json.data
       const sess: Session = {
-        operatorId: `mock-${mock.code}`,
-        operatorName: "Operator",
-        operatorRole: "super_admin",
-        orgId: mock.id,
-        orgCode: mock.code,
-        orgName: mock.name,
-        orgType: mock.type,
+        operatorId: operator.id,
+        operatorName: operator.name,
+        operatorRole: operator.role,
+        orgId: org.id,
+        orgCode: org.code,
+        orgName: org.name,
+        orgType: org.type,
       }
       sessionStorage.setItem("dalxic_session", JSON.stringify(sess))
       setSession(sess)
       return { success: true }
+    } catch {
+      return { success: false, error: "Network error" }
     }
-
-    return { success: false, error: "Organisation not found" }
   }, [])
 
   const logout = useCallback(() => {
