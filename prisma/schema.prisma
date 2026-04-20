@@ -1,0 +1,788 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CORE — Multi-tenant foundation
+// ═══════════════════════════════════════════════════════════════
+
+model Organization {
+  id                String   @id @default(cuid())
+  code              String   @unique
+  name              String
+  logoUrl           String?  @map("logo_url")
+  tagline           String?
+  type              String
+  tier              String   @default("T1")
+  activeBehaviours  String[] @default([]) @map("active_behaviours")
+  activeModules     String[] @default([]) @map("active_modules")
+  paymentGate       String   @default("pay_after") @map("payment_gate")
+  labelConfig       Json?    @map("label_config")
+  taxConfig         Json?    @map("tax_config")
+  currency          String   @default("GHS")
+  timezone          String   @default("Africa/Accra")
+  maxOperators      Int      @default(3) @map("max_operators")
+  maxBranches       Int      @default(1) @map("max_branches")
+  whatsappBundle    Int      @default(100) @map("whatsapp_bundle")
+  active            Boolean  @default(true)
+  meta              Json?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  operators        Operator[]
+  branches         Branch[]
+  auditLogs        AuditLog[]
+  serviceCategories ServiceCategory[]
+  serviceItems     ServiceItem[]
+  carts            Cart[]
+  payments         Payment[]
+  receipts         Receipt[]
+  stockMovements   StockMovement[]
+  stockTransfers   StockTransfer[]
+  returns          Return[]
+  contacts         Contact[]
+  admissions       Admission[]
+  recurringCharges RecurringCharge[]
+  clinicalRecords  ClinicalRecord[]
+  queueEntries     QueueEntry[]
+  groups           Group[]
+  subjects         Subject[]
+  exams            Exam[]
+  attendance       Attendance[]
+  scheduleSlots    ScheduleSlot[]
+  suppliers        Supplier[]
+  purchaseOrders   PurchaseOrder[]
+  shifts           Shift[]
+  expenses         Expense[]
+  employees        Employee[]
+  payRuns          PayRun[]
+  messageLogs      MessageLog[]
+
+  @@map("organizations")
+}
+
+model Operator {
+  id          String    @id @default(cuid())
+  orgId       String    @map("org_id")
+  name        String
+  phone       String?
+  pin         String
+  role        String
+  permissions String[]  @default([])
+  isActive    Boolean   @default(true) @map("is_active")
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  org Organization @relation(fields: [orgId], references: [id])
+  @@unique([orgId, pin])
+  @@index([orgId, isActive])
+  @@map("operators")
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  orgId     String   @map("org_id")
+  name      String
+  address   String?
+  phone     String?
+  isDefault Boolean  @default(false) @map("is_default")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  org Organization @relation(fields: [orgId], references: [id])
+  @@map("branches")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  orgId     String   @map("org_id")
+  actorId   String   @map("actor_id")
+  actorName String   @map("actor_name")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  before    Json?
+  after     Json?
+  ipAddress String   @map("ip_address")
+  timestamp DateTime @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id])
+  @@index([orgId, timestamp])
+  @@index([orgId, entity])
+  @@map("audit_log")
+}
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+  @@map("system_config")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UNIVERSAL SERVICE CATALOGUE
+// ═══════════════════════════════════════════════════════════════
+
+model ServiceCategory {
+  id        String  @id @default(cuid())
+  orgId     String  @map("org_id")
+  name      String
+  sortOrder Int     @default(0) @map("sort_order")
+  parentId  String? @map("parent_id")
+  isActive  Boolean @default(true) @map("is_active")
+
+  org      Organization     @relation(fields: [orgId], references: [id])
+  parent   ServiceCategory? @relation("CategoryTree", fields: [parentId], references: [id])
+  children ServiceCategory[] @relation("CategoryTree")
+  items    ServiceItem[]
+  @@unique([orgId, name])
+  @@map("service_categories")
+}
+
+model ServiceItem {
+  id                String    @id @default(cuid())
+  orgId             String    @map("org_id")
+  categoryId        String    @map("category_id")
+  name              String
+  sku               String?
+  unit              String    @default("piece")
+  description       String?
+  behaviour         String
+  stockType         String    @map("stock_type")
+  costPrice         Int       @default(0) @map("cost_price")
+  sellingPrice      Int       @map("selling_price")
+  stock             Int       @default(0)
+  minStock          Int       @default(0) @map("min_stock")
+  maxStock          Int?      @map("max_stock")
+  batchNo           String?   @map("batch_no")
+  expiresAt         DateTime? @map("expires_at")
+  storageConditions String?   @map("storage_conditions")
+  capacityTotal     Int?      @map("capacity_total")
+  capacityUsed      Int       @default(0) @map("capacity_used")
+  recurringInterval String?   @map("recurring_interval")
+  photoUrl          String?   @map("photo_url")
+  barcode           String?
+  taxable           Boolean   @default(true)
+  commissionRate    Int       @default(0) @map("commission_rate")
+  providerId        String?   @map("provider_id")
+  isActive          Boolean   @default(true) @map("is_active")
+  meta              Json?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  org      Organization    @relation(fields: [orgId], references: [id])
+  category ServiceCategory @relation(fields: [categoryId], references: [id])
+  @@index([orgId, behaviour])
+  @@index([orgId, stockType])
+  @@index([orgId, categoryId])
+  @@map("service_items")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// THE SPINE — Cart → Tender → Payment → Stock → Receipt → Done
+// ═══════════════════════════════════════════════════════════════
+
+model Cart {
+  id             String   @id @default(cuid())
+  orgId          String   @map("org_id")
+  branchId       String   @map("branch_id")
+  operatorId     String   @map("operator_id")
+  contactId      String?  @map("contact_id")
+  status         String   @default("open")
+  paymentGate    String   @map("payment_gate")
+  entryBehaviour String?  @map("entry_behaviour")
+  notes          String?
+  meta           Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  org      Organization @relation(fields: [orgId], references: [id])
+  items    CartItem[]
+  payments Payment[]
+  receipts Receipt[]
+  @@index([orgId, status])
+  @@map("carts")
+}
+
+model CartItem {
+  id            String @id @default(cuid())
+  cartId        String @map("cart_id")
+  serviceItemId String @map("service_item_id")
+  behaviour     String
+  itemName      String @map("item_name")
+  unitPrice     Int    @map("unit_price")
+  quantity      Int
+  discount      Int    @default(0)
+  tax           Int    @default(0)
+  total         Int
+  meta          Json?
+
+  cart Cart @relation(fields: [cartId], references: [id])
+  @@map("cart_items")
+}
+
+model Payment {
+  id              String    @id @default(cuid())
+  orgId           String    @map("org_id")
+  cartId          String    @map("cart_id")
+  receiptCode     String    @unique @map("receipt_code")
+  method          String
+  amount          Int
+  reference       String?
+  status          String    @default("pending")
+  processedBy     String    @map("processed_by")
+  processedByName String    @map("processed_by_name")
+  processedAt     DateTime? @map("processed_at")
+  meta            Json?
+
+  org     Organization @relation(fields: [orgId], references: [id])
+  cart    Cart         @relation(fields: [cartId], references: [id])
+  receipt Receipt?
+  returns Return[]
+  @@index([orgId, status])
+  @@map("payments")
+}
+
+model Receipt {
+  id            String    @id @default(cuid())
+  orgId         String    @map("org_id")
+  paymentId     String    @unique @map("payment_id")
+  cartId        String    @map("cart_id")
+  code          String    @unique
+  subtotal      Int
+  discountTotal Int       @map("discount_total")
+  taxTotal      Int       @map("tax_total")
+  grandTotal    Int       @map("grand_total")
+  items         Json
+  customerName  String?   @map("customer_name")
+  customerPhone String?   @map("customer_phone")
+  printedAt     DateTime? @map("printed_at")
+  emailedAt     DateTime? @map("emailed_at")
+  whatsappedAt  DateTime? @map("whatsapped_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  org     Organization @relation(fields: [orgId], references: [id])
+  payment Payment      @relation(fields: [paymentId], references: [id])
+  cart    Cart         @relation(fields: [cartId], references: [id])
+  @@map("receipts")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STOCK
+// ═══════════════════════════════════════════════════════════════
+
+model StockMovement {
+  id            String    @id @default(cuid())
+  orgId         String    @map("org_id")
+  serviceItemId String    @map("service_item_id")
+  branchId      String    @map("branch_id")
+  type          String
+  quantity      Int
+  balanceBefore Int       @map("balance_before")
+  balanceAfter  Int       @map("balance_after")
+  reference     String?
+  batchNo       String?   @map("batch_no")
+  expiresAt     DateTime? @map("expires_at")
+  performedBy   String    @map("performed_by")
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  org Organization @relation(fields: [orgId], references: [id])
+  @@index([orgId, serviceItemId])
+  @@index([orgId, type])
+  @@map("stock_movements")
+}
+
+model StockTransfer {
+  id            String    @id @default(cuid())
+  orgId         String    @map("org_id")
+  fromBranchId  String    @map("from_branch_id")
+  toBranchId    String    @map("to_branch_id")
+  serviceItemId String    @map("service_item_id")
+  quantity      Int
+  status        String    @default("pending")
+  initiatedBy   String    @map("initiated_by")
+  receivedBy    String?   @map("received_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  completedAt   DateTime? @map("completed_at")
+
+  org Organization @relation(fields: [orgId], references: [id])
+  @@map("stock_transfers")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RETURNS
+// ═══════════════════════════════════════════════════════════════
+
+model Return {
+  id                String   @id @default(cuid())
+  orgId             String   @map("org_id")
+  originalPaymentId String   @map("original_payment_id")
+  creditNoteCode    String?  @unique @map("credit_note_code")
+  type              String
+  status            String   @default("completed")
+  reason            String
+  reasonText        String?  @map("reason_text")
+  refundMethod      String   @map("refund_method")
+  refundAmount      Int      @map("refund_amount")
+  restockItems      Boolean  @default(true) @map("restock_items")
+  approvedBy        String?  @map("approved_by")
+  processedBy       String   @map("processed_by")
+  processedByName   String   @map("processed_by_name")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  org             Organization @relation(fields: [orgId], references: [id])
+  originalPayment Payment      @relation(fields: [originalPaymentId], references: [id])
+  items           ReturnItem[]
+  @@index([orgId, createdAt])
+  @@map("returns")
+}
+
+model ReturnItem {
+  id            String  @id @default(cuid())
+  returnId      String  @map("return_id")
+  serviceItemId String  @map("service_item_id")
+  itemName      String  @map("item_name")
+  unitPrice     Int     @map("unit_price")
+  quantity      Int
+  total         Int
+  restock       Boolean @default(true)
+
+  return Return @relation(fields: [returnId], references: [id])
+  @@map("return_items")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UNIVERSAL CONTACT
+// ═══════════════════════════════════════════════════════════════
+
+model Contact {
+  id               String    @id @default(cuid())
+  orgId            String    @map("org_id")
+  name             String
+  phone            String?
+  email            String?
+  type             String
+  status           String    @default("active")
+  dateOfBirth      String?   @map("date_of_birth")
+  gender           String?
+  bloodGroup       String?   @map("blood_group")
+  allergies        String[]  @default([])
+  guardianId       String?   @map("guardian_id")
+  groupId          String?   @map("group_id")
+  insuranceType    String?   @map("insurance_type")
+  insuranceId      String?   @map("insurance_id")
+  loyaltyTier      String?   @map("loyalty_tier")
+  loyaltyPoints    Int       @default(0) @map("loyalty_points")
+  totalSpent       Int       @default(0) @map("total_spent")
+  visitCount       Int       @default(0) @map("visit_count")
+  emergencyContact String?   @map("emergency_contact")
+  emergencyPhone   String?   @map("emergency_phone")
+  photo            String?
+  meta             Json?
+  enrolledAt       DateTime? @map("enrolled_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  org          Organization @relation(fields: [orgId], references: [id])
+  guardian     Contact?     @relation("GuardianRelation", fields: [guardianId], references: [id])
+  wards        Contact[]    @relation("GuardianRelation")
+  queueEntries QueueEntry[]
+  @@index([orgId, type])
+  @@index([orgId, status])
+  @@map("contacts")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADMISSION + RECURRING
+// ═══════════════════════════════════════════════════════════════
+
+model Admission {
+  id            String    @id @default(cuid())
+  orgId         String    @map("org_id")
+  contactId     String    @map("contact_id")
+  serviceItemId String    @map("service_item_id")
+  type          String
+  identifier    String
+  status        String    @default("active")
+  admittedAt    DateTime  @default(now()) @map("admitted_at")
+  dischargedAt  DateTime? @map("discharged_at")
+  notes         String?
+  meta          Json?
+
+  org              Organization     @relation(fields: [orgId], references: [id])
+  recurringCharges RecurringCharge[]
+  @@index([orgId, status])
+  @@map("admissions")
+}
+
+model RecurringCharge {
+  id            String    @id @default(cuid())
+  orgId         String    @map("org_id")
+  contactId     String    @map("contact_id")
+  admissionId   String?   @map("admission_id")
+  serviceItemId String    @map("service_item_id")
+  interval      String
+  amount        Int
+  nextDueDate   DateTime  @map("next_due_date")
+  autoCharge    Boolean   @default(false) @map("auto_charge")
+  status        String    @default("active")
+  chargeCount   Int       @default(0) @map("charge_count")
+  lastChargedAt DateTime? @map("last_charged_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  org       Organization @relation(fields: [orgId], references: [id])
+  admission Admission?   @relation(fields: [admissionId], references: [id])
+  @@index([orgId, status])
+  @@map("recurring_charges")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HEALTH EXTENSIONS
+// ═══════════════════════════════════════════════════════════════
+
+model ClinicalRecord {
+  id              String   @id @default(cuid())
+  orgId           String   @map("org_id")
+  contactId       String   @map("contact_id")
+  cartId          String?  @map("cart_id")
+  type            String
+  data            Json
+  status          String
+  performedBy     String   @map("performed_by")
+  performedByName String   @map("performed_by_name")
+  performedAt     DateTime @default(now()) @map("performed_at")
+
+  org Organization @relation(fields: [orgId], references: [id])
+  @@index([orgId, contactId, type])
+  @@index([orgId, type, status])
+  @@map("clinical_records")
+}
+
+model QueueEntry {
+  id               String    @id @default(cuid())
+  orgId            String    @map("org_id")
+  contactId        String    @map("contact_id")
+  token            String
+  department       String?
+  chiefComplaint   String?   @map("chief_complaint")
+  symptomSeverity  Int       @default(1) @map("symptom_severity")
+  emergencyFlag    Boolean   @default(false) @map("emergency_flag")
+  visitStatus      String    @default("waiting") @map("visit_status")
+  assignedDoctorId String?   @map("assigned_doctor_id")
+  checkoutPin      String?   @map("checkout_pin")
+  priority         Int       @default(0)
+  queuedAt         DateTime  @default(now()) @map("queued_at")
+  calledAt         DateTime? @map("called_at")
+  completedAt      DateTime? @map("completed_at")
+
+  org     Organization @relation(fields: [orgId], references: [id])
+  contact Contact      @relation(fields: [contactId], references: [id])
+  @@index([orgId, visitStatus])
+  @@index([orgId, queuedAt])
+  @@map("queue_entries")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INSTITUTE EXTENSIONS
+// ═══════════════════════════════════════════════════════════════
+
+model Group {
+  id           String   @id @default(cuid())
+  orgId        String   @map("org_id")
+  name         String
+  type         String   @default("class")
+  academicYear String?  @map("academic_year")
+  term         String?
+  capacity     Int?
+  teacherId    String?  @map("teacher_id")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  org Organization @relation(fields: [orgId], references: [id])
+  @@unique([orgId, name])
+  @@map("groups")
+}
+
+model Subject {
+  id         String  @id @default(cuid())
+  orgId      String  @map("org_id")
+  name       String
+  department String?
+  isActive   Boolean @default(true) @map("is_active")
+
+  org Organization @relation(fields: [orgId], references: [id])
+  @@unique([orgId, name])
+  @@map("subjects")
+}
+
+model GroupSubject {
+  id        String  @id @default(cuid())
+  groupId   String  @map("group_id")
+  subjectId String  @map("subject_id")
+  teacherId String? @map("teacher_id")
+
+  @@unique([groupId, subjectId])
+  @@map("group_subjects")
+}
+
+model Exam {
+  id           String   @id @default(cuid())
+  orgId        String   @map("org_id")
+  groupId      String   @map("group_id")
+  subjectId    String   @map("subject_id")
+  name         String
+  term         String
+  academicYear String   @map("academic_year")
+  maxScore     Int      @map("max_score")
+  weight       Int      @default(100)
+  date         DateTime
+  status       String   @default("upcoming")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  org    Organization @relation(fields: [orgId], references: [id])
+  grades Grade[]
+  @@map("exams")
+}
+
+model Grade {
+  id        String   @id @default(cuid())
+  examId    String   @map("exam_id")
+  studentId String   @map("student_id")
+  score     Int
+  grade     String
+  remarks   String?
+  gradedBy  String   @map("graded_by")
+  gradedAt  DateTime @default(now()) @map("graded_at")
+
+  exam Exam @relation(fields: [examId], references: [id])
+  @@unique([examId, studentId])
+  @@map("grades")
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  orgId     String   @map("org_id")
+  groupId   String   @map("group_id")
+  studentId String   @map("student_id")
+  date      DateTime
+  status    String
+  markedBy  String   @map("marked_by")
+  markedAt  DateTime @default(now()) @map("marked_at")
+
+  org Organization @relation(fields: [orgId], references: [id])
+  @@unique([groupId, studentId, date])
+  @@index([orgId, date])
+  @@map("attendance")
+}
+
+model ScheduleSlot {
+  id        String  @id @default(cuid())
+  orgId     String  @map("org_id")
+  groupId   String  @map("group_id")
+  subjectId String  @map("subject_id")
+  staffId   String? @map("staff_id")
+  dayOfWeek Int     @map("day_of_week")
+  startTime String  @map("start_time")
+  endTime   String  @map("end_time")
+  room      String?
+
+  org Organization @relation(fields: [orgId], references: [id])
+  @@index([orgId, groupId])
+  @@map("schedule_slots")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRADE EXTENSIONS
+// ═══════════════════════════════════════════════════════════════
+
+model Supplier {
+  id           String   @id @default(cuid())
+  orgId        String   @map("org_id")
+  contactId    String?  @map("contact_id")
+  name         String
+  contactName  String?  @map("contact_name")
+  phone        String?
+  email        String?
+  address      String?
+  taxId        String?  @map("tax_id")
+  paymentTerms String?  @map("payment_terms")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  org            Organization    @relation(fields: [orgId], references: [id])
+  purchaseOrders PurchaseOrder[]
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id           String    @id @default(cuid())
+  orgId        String    @map("org_id")
+  supplierId   String    @map("supplier_id")
+  poNumber     String    @map("po_number")
+  status       String    @default("draft")
+  subtotal     Int
+  tax          Int       @default(0)
+  total        Int
+  expectedDate DateTime? @map("expected_date")
+  receivedDate DateTime? @map("received_date")
+  createdBy    String    @map("created_by")
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  org      Organization @relation(fields: [orgId], references: [id])
+  supplier Supplier     @relation(fields: [supplierId], references: [id])
+  items    POItem[]
+  @@unique([orgId, poNumber])
+  @@map("purchase_orders")
+}
+
+model POItem {
+  id            String @id @default(cuid())
+  poId          String @map("po_id")
+  serviceItemId String @map("service_item_id")
+  quantity      Int
+  unitCost      Int    @map("unit_cost")
+  total         Int
+  receivedQty   Int    @default(0) @map("received_qty")
+
+  po PurchaseOrder @relation(fields: [poId], references: [id])
+  @@map("po_items")
+}
+
+model Shift {
+  id           String    @id @default(cuid())
+  orgId        String    @map("org_id")
+  branchId     String    @map("branch_id")
+  operatorId   String    @map("operator_id")
+  operatorName String    @map("operator_name")
+  startedAt    DateTime  @default(now()) @map("started_at")
+  endedAt      DateTime? @map("ended_at")
+  openingCash  Int       @map("opening_cash")
+  closingCash  Int?      @map("closing_cash")
+  salesCount   Int       @default(0) @map("sales_count")
+  salesTotal   Int       @default(0) @map("sales_total")
+  returnsTotal Int       @default(0) @map("returns_total")
+  status       String    @default("active")
+  notes        String?
+
+  org Organization @relation(fields: [orgId], references: [id])
+  @@index([orgId, status])
+  @@map("shifts")
+}
+
+model Expense {
+  id            String   @id @default(cuid())
+  orgId         String   @map("org_id")
+  branchId      String?  @map("branch_id")
+  category      String
+  vendor        String?
+  description   String
+  amount        Int
+  taxAmount     Int      @default(0) @map("tax_amount")
+  paymentMethod String   @map("payment_method")
+  reference     String?
+  approvedBy    String?  @map("approved_by")
+  date          DateTime
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  org Organization @relation(fields: [orgId], references: [id])
+  @@index([orgId, date])
+  @@map("expenses")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAYROLL
+// ═══════════════════════════════════════════════════════════════
+
+model Employee {
+  id           String   @id @default(cuid())
+  orgId        String   @map("org_id")
+  contactId    String?  @map("contact_id")
+  employeeCode String   @map("employee_code")
+  department   String
+  position     String
+  baseSalary   Int      @map("base_salary")
+  ssnitTier    String   @default("T1") @map("ssnit_tier")
+  bankName     String?  @map("bank_name")
+  bankAccount  String?  @map("bank_account")
+  startDate    DateTime @map("start_date")
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  org      Organization @relation(fields: [orgId], references: [id])
+  paySlips PaySlip[]
+  @@unique([orgId, employeeCode])
+  @@map("employees")
+}
+
+model PayRun {
+  id              String    @id @default(cuid())
+  orgId           String    @map("org_id")
+  period          String
+  status          String    @default("draft")
+  totalGross      Int       @default(0) @map("total_gross")
+  totalDeductions Int       @default(0) @map("total_deductions")
+  totalNet        Int       @default(0) @map("total_net")
+  employeeCount   Int       @default(0) @map("employee_count")
+  processedBy     String?   @map("processed_by")
+  processedAt     DateTime? @map("processed_at")
+  paidAt          DateTime? @map("paid_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  org   Organization @relation(fields: [orgId], references: [id])
+  slips PaySlip[]
+  @@unique([orgId, period])
+  @@map("pay_runs")
+}
+
+model PaySlip {
+  id              String @id @default(cuid())
+  payRunId        String @map("pay_run_id")
+  employeeId      String @map("employee_id")
+  baseSalary      Int    @map("base_salary")
+  allowances      Json?
+  grossPay        Int    @map("gross_pay")
+  ssnitEmployee   Int    @map("ssnit_employee")
+  ssnitEmployer   Int    @map("ssnit_employer")
+  paye            Int
+  otherDeductions Json?  @map("other_deductions")
+  netPay          Int    @map("net_pay")
+  status          String @default("draft")
+
+  payRun   PayRun   @relation(fields: [payRunId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id])
+  @@map("pay_slips")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMMUNICATION
+// ═══════════════════════════════════════════════════════════════
+
+model MessageLog {
+  id             String    @id @default(cuid())
+  orgId          String    @map("org_id")
+  type           String
+  recipientType  String    @map("recipient_type")
+  recipientId    String?   @map("recipient_id")
+  recipientName  String?   @map("recipient_name")
+  recipientPhone String?   @map("recipient_phone")
+  title          String?
+  body           String
+  status         String    @default("queued")
+  sentBy         String    @map("sent_by")
+  sentAt         DateTime? @map("sent_at")
+  deliveredAt    DateTime? @map("delivered_at")
+  readAt         DateTime? @map("read_at")
+  meta           Json?
+
+  org Organization @relation(fields: [orgId], references: [id])
+  @@index([orgId, type])
+  @@map("message_log")
+}

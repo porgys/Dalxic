@@ -25,6 +25,9 @@ yarn-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Prisma generated
+src/generated/
+
 # Backup files
 *.bak
 
@@ -44,3 +47,15 @@ NexusLink*
 **/memory/
 **/research/
 **/docs/SYSTEM-DESIGN*
+
+# Private tooling and findings — NEVER push
+_tools/
+generated/
+ANALYSIS-GUIDE.md
+MY-FINDINGS.md
+MASTER.md
+MASTER-BLUEPRINT.md
+BUILD-BLUEPRINT.md
+DESIGN-GUIDE.md
+UI-BLUEPRINT.md
+SECURITY-BLUEPRINT.md

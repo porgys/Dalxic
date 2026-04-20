@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #040A0F;
+  --surface-1: rgba(255, 255, 255, 0.03);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --surface-3: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-bright: rgba(255, 255, 255, 0.12);
+  --text-primary: #ECF5F0;
+  --text-secondary: rgba(236, 245, 240, 0.6);
+  --text-muted: rgba(236, 245, 240, 0.35);
+  --emerald: #10B981;
+  --emerald-glow: rgba(16, 185, 129, 0.35);
+  --amber: #F59E0B;
+  --sky: #0EA5E9;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(16, 185, 129, 0.3);
+  color: #fff;
+}

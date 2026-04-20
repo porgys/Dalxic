@@ -1,0 +1,59 @@
+import { db } from "@/lib/db"
+import { authenticateRequest, requireRole } from "@/lib/auth"
+import { ok, fail } from "@/lib/api/response"
+import { logAudit } from "@/lib/api/audit"
+import { validate, dischargeSchema } from "@/lib/api/schemas"
+import { rateLimit, STRICT_RATE_LIMIT } from "@/lib/rate-limit"
+
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const blocked = rateLimit(request, STRICT_RATE_LIMIT)
+  if (blocked) return blocked
+  const auth = await authenticateRequest(request)
+  if (auth instanceof Response) return auth
+  const denied = requireRole(auth, ["doctor", "nurse", "admin"])
+  if (denied) return denied
+  try {
+    const { id } = await params
+    const admission = await db.admission.findUnique({ where: { id } })
+    if (!admission || admission.orgId !== auth.orgId) return fail("Not found", 404)
+    if (admission.status === "discharged") return fail("Already discharged")
+
+    const data = validate(dischargeSchema, await request.json())
+    if (data instanceof Response) return data
+
+    const operator = await db.operator.findUnique({ where: { id: auth.operatorId } })
+
+    const [updated, dischargeRecord] = await Promise.all([
+      db.admission.update({
+        where: { id },
+        data: { status: "discharged", dischargedAt: new Date(), notes: data.dischargeNotes ?? admission.notes },
+      }),
+      db.clinicalRecord.create({
+        data: {
+          orgId: auth.orgId, contactId: admission.contactId,
+          type: "discharge",
+          data: {
+            admissionId: id,
+            diagnosis: data.diagnosis ?? "",
+            condition: data.conditionAtDischarge ?? "stable",
+            instructions: data.instructions ?? "",
+            followUp: data.followUp ?? "",
+            medications: data.medications ?? [],
+          },
+          status: "completed",
+          performedBy: auth.operatorId, performedByName: operator?.name ?? auth.role,
+        },
+      }),
+    ])
+
+    await db.recurringCharge.updateMany({
+      where: { orgId: auth.orgId, admissionId: id, status: "active" },
+      data: { status: "cancelled" },
+    })
+
+    await logAudit({ orgId: auth.orgId, actorId: auth.operatorId, actorName: operator?.name ?? auth.role, action: "discharge_patient", entity: "admission", entityId: id, before: { status: admission.status }, after: { status: "discharged" } })
+    return ok({ admission: updated, dischargeRecord })
+  } catch {
+    return fail("An error occurred", 500)
+  }
+}

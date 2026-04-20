@@ -3,12 +3,34 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n main,media -c cyan,magenta \"npm run dev --prefix main-dalxic\" \"npm run dev --prefix media-dalxic -- -p 3001\"",
-    "dev:main": "npm run dev --prefix main-dalxic",
-    "dev:media": "npm run dev --prefix media-dalxic -- -p 3001",
-    "build": "concurrently \"npm run build --prefix main-dalxic\" \"npm run build --prefix media-dalxic\""
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
+    "@node-rs/argon2": "^2.0.2",
+    "@prisma/adapter-neon": "^7.7.0",
+    "@prisma/client": "^7.6.0",
+    "next": "16.2.3",
+    "pg": "^8.20.0",
+    "playwright": "^1.59.1",
+    "prisma": "^7.6.0",
+    "pusher": "^5.3.3",
+    "pusher-js": "^8.5.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.3",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
